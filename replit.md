@@ -43,9 +43,10 @@ The application follows a monorepo structure with clear separation between clien
 
 ### UI Design System
 - **Theme**: Dual light/dark theme support with CSS variables
-- **Colors**: Custom Mosswood brand colors with accent primary (purple)
+- **Colors**: Cinematic color palette with amber accents (no purple)
 - **Typography**: Inter font family
 - **Components**: Comprehensive UI component library from Shadcn/ui
+- **Logo System**: Reusable Logo component with configurable text display
 
 ### Routing Structure
 - **Home** (`/`): Landing page with hero, video, and mission sections
@@ -105,6 +106,8 @@ The application follows a monorepo structure with clear separation between clien
 ```
 Changelog:
 - July 02, 2025. Initial setup
+- July 02, 2025. Implemented cinematic color palette with amber accents
+- July 02, 2025. Created reusable Logo component for brand consistency
 ```
 
 ## User Preferences

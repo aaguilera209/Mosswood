@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Play } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -21,14 +22,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
-          <Link href="/">
-            <div className="flex items-center justify-center space-x-2 cursor-pointer mb-6">
-              <div className="w-8 h-8 bg-amber-700 dark:bg-amber-300 rounded-lg flex items-center justify-center">
-                <Play className="text-white dark:text-gray-900 text-sm fill-current" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Mosswood</span>
-            </div>
-          </Link>
+          <Logo showText={true} className="justify-center mb-6" />
           
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
