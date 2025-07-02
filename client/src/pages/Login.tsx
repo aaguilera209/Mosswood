@@ -23,16 +23,16 @@ export default function Login() {
         <div className="text-center space-y-4">
           <Link href="/">
             <div className="flex items-center justify-center space-x-2 cursor-pointer mb-6">
-              <div className="w-8 h-8 bg-accent-primary rounded-lg flex items-center justify-center">
-                <Play className="text-white text-sm fill-current" />
+              <div className="w-8 h-8 bg-amber-700 dark:bg-amber-300 rounded-lg flex items-center justify-center">
+                <Play className="text-white dark:text-gray-900 text-sm fill-current" />
               </div>
-              <span className="text-xl font-bold tracking-tight">Mosswood</span>
+              <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Mosswood</span>
             </div>
           </Link>
           
           <div>
-            <h1 className="text-2xl font-bold">Welcome back</h1>
-            <p className="text-muted-foreground">Sign in to your creator account</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
+            <p className="text-gray-500 dark:text-gray-400">Sign in to your creator account</p>
           </div>
         </div>
 
@@ -70,7 +70,7 @@ export default function Login() {
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-accent-primary hover:bg-accent-hover">
+              <Button type="submit" className="w-full bg-amber-700 hover:bg-amber-800 dark:bg-amber-300 dark:hover:bg-amber-400 text-white dark:text-gray-900">
                 Sign In
               </Button>
             </form>
@@ -79,17 +79,17 @@ export default function Login() {
 
         {/* Links */}
         <div className="text-center space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Don't have an account?{' '}
             <Link href="/signup">
-              <span className="text-accent-primary hover:text-accent-hover cursor-pointer underline">
+              <span className="text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-400 cursor-pointer underline">
                 Sign up
               </span>
             </Link>
           </p>
           
           <Link href="/">
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
+            <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to home
             </Button>

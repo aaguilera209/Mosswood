@@ -8,10 +8,10 @@ export function Header() {
       <nav className="max-w-7xl mx-auto flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center space-x-2 cursor-pointer">
-            <div className="w-8 h-8 bg-accent-primary rounded-lg flex items-center justify-center">
-              <Play className="text-white text-sm fill-current" />
+            <div className="w-8 h-8 bg-amber-700 dark:bg-amber-300 rounded-lg flex items-center justify-center">
+              <Play className="text-white dark:text-gray-900 text-sm fill-current" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Mosswood</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Mosswood</span>
           </div>
         </Link>
         

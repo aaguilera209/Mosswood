@@ -35,7 +35,7 @@ export function VideoSection() {
           <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white">
             Your vision.
             <br />
-            <span className="text-accent-primary">Your platform.</span>
+            <span className="text-amber-300">Your platform.</span>
           </h2>
           <p className="text-xl text-gray-200 font-light">
             Break free from algorithms and intermediaries
