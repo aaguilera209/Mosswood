@@ -52,6 +52,7 @@ The application follows a monorepo structure with clear separation between clien
 - **Home** (`/`): Landing page with hero, video, and mission sections
 - **Signup** (`/signup`): User registration page
 - **Login** (`/login`): User authentication page
+- **Dashboard** (`/dashboard`): Creator dashboard for content management
 - **404**: Not found page
 
 ## Data Flow
@@ -108,6 +109,7 @@ Changelog:
 - July 02, 2025. Initial setup
 - July 02, 2025. Implemented cinematic color palette with amber accents
 - July 02, 2025. Created reusable Logo component for brand consistency
+- July 02, 2025. Built Creator Dashboard page with placeholder content structure
 ```
 
 ## User Preferences
