@@ -1,0 +1,37 @@
+Refactor the video upload flow in the Mosswood creator dashboard:
+
+1. **Remove the inline upload form** currently located beneath the “Your Videos” section.
+
+2. Replace it with a centered **modal overlay** that appears when a user clicks the “Upload New Video” button in the top-right corner of the dashboard.
+
+3. **Modal Behavior & Styling**:
+   - When the modal is open, darken the dashboard behind it with a semi-transparent black overlay (`bg-black opacity-60`) and apply a slight background blur (`backdrop-blur`).
+   - Modal should be vertically and horizontally centered.
+   - Design the modal to be responsive and styled with TailwindCSS using the Mosswood visual language (Inter font, dark theme, amber/yellow accents).
+
+4. **Inside the modal, include the following fields**:
+   - **Header**: Title “Upload New Video” and a close (X) button
+   - **Video Title**: Single-line text input
+   - **Description**: Multiline textarea
+   - **Pricing section**:
+     - Show a number input field by default, formatted as currency
+     - Input should auto-insert a decimal after two digits (e.g., typing “999” renders as “9.99”)
+     - Include a toggle labeled “Make this video free”
+     - If toggle is **ON** → hide the price input and set the price to `0`
+     - If toggle is **OFF** (default state) → price input is visible
+   - **File Upload**: Accept `.mp4`, `.mov`, and other common video file formats
+
+5. **Action Buttons** (bottom of modal):
+   - “Upload Video” → Logs the form data to the console (placeholder for now)
+   - “Cancel” → Closes the modal and returns user to dashboard view
+
+6. **Post-Upload Behavior**:
+   - On successful upload (mocked for now), modal closes automatically
+   - Display a temporary toast or success message
+   - Optionally show uploaded video as a new thumbnail in the dashboard video grid
+
+7. Add clear `// TODO` comments where Supabase logic will later be added for:
+   - Uploading video files
+   - Saving metadata (title, description, price, etc.)
+
+The goal is to simplify and declutter the dashboard while creating a cinematic, focused upload experience. Modal should feel premium and intentional, not busy or cluttered.

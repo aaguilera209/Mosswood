@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Upload, CheckCircle } from 'lucide-react';
+import { Upload, X, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface VideoUploadFormData {
   file: File | null;
@@ -15,17 +15,22 @@ interface VideoUploadFormData {
   price: number;
 }
 
-export function VideoUpload() {
+interface VideoUploadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = useState<VideoUploadFormData>({
     file: null,
     title: '',
     description: '',
-    isFree: true,
+    isFree: false, // Default to paid
     price: 0,
   });
   const [priceInput, setPriceInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -50,7 +55,7 @@ export function VideoUpload() {
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow digits and decimal point
+    // Only allow digits
     const numericValue = value.replace(/[^0-9]/g, '');
     
     if (numericValue.length === 0) {
@@ -80,18 +85,21 @@ export function VideoUpload() {
       file: null,
       title: '',
       description: '',
-      isFree: true,
+      isFree: false,
       price: 0,
     });
     setPriceInput('');
-    setUploadSuccess(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.file || !formData.title) {
-      alert('Please select a video file and enter a title');
+      toast({
+        title: "Missing Information",
+        description: "Please select a video file and enter a title",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -99,6 +107,8 @@ export function VideoUpload() {
     
     try {
       // TODO: Replace with actual Supabase upload logic
+      // TODO: Upload video file to Supabase Storage
+      // TODO: Save video metadata (title, description, price) to Supabase database
       console.log('Video Upload Form Data:', {
         fileName: formData.file.name,
         fileSize: formData.file.size,
@@ -112,70 +122,63 @@ export function VideoUpload() {
       // Simulate upload delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      setUploadSuccess(true);
-      setTimeout(() => {
-        resetForm();
-      }, 2000);
+      // Show success toast
+      toast({
+        title: "Video Uploaded Successfully!",
+        description: "Your video is being processed and will be available shortly.",
+      });
+
+      // Close modal and reset form
+      resetForm();
+      onClose();
 
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
+      toast({
+        title: "Upload Failed",
+        description: "There was an error uploading your video. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsUploading(false);
     }
   };
 
-  if (uploadSuccess) {
-    return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="text-center py-12">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <CardTitle className="text-2xl text-gray-900 dark:text-white mb-2">
-            Video Uploaded Successfully!
-          </CardTitle>
-          <CardDescription className="text-gray-500 dark:text-gray-400">
-            Your video is being processed and will be available shortly.
-          </CardDescription>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleCancel = () => {
+    resetForm();
+    onClose();
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl text-gray-900 dark:text-white">
-          Upload New Video
-        </CardTitle>
-        <CardDescription className="text-gray-500 dark:text-gray-400">
-          Share your content with your audience
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* File Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="video-file" className="text-gray-900 dark:text-white">
-              Video File
-            </Label>
-            <div className="relative">
-              <Input
-                id="video-file"
-                type="file"
-                accept="video/mp4,video/mov,video/avi,video/webm"
-                onChange={handleFileChange}
-                className="cursor-pointer"
-                disabled={isUploading}
-              />
-              {formData.file && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Selected: {formData.file.name} ({Math.round(formData.file.size / 1024 / 1024)}MB)
-                </p>
-              )}
-            </div>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={handleCancel}
+      />
+      
+      {/* Modal */}
+      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            Upload New Video
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+            className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
 
-          {/* Title */}
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Video Title */}
           <div className="space-y-2">
             <Label htmlFor="video-title" className="text-gray-900 dark:text-white">
               Video Title
@@ -206,20 +209,13 @@ export function VideoUpload() {
             />
           </div>
 
-          {/* Pricing */}
+          {/* Pricing Section */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <Switch
-                id="free-toggle"
-                checked={formData.isFree}
-                onCheckedChange={handleFreeToggle}
-                disabled={isUploading}
-              />
-              <Label htmlFor="free-toggle" className="text-gray-900 dark:text-white">
-                Make this video free
-              </Label>
-            </div>
-
+            <Label className="text-gray-900 dark:text-white text-base font-medium">
+              Pricing
+            </Label>
+            
+            {/* Price Input (shown by default) */}
             {!formData.isFree && (
               <div className="space-y-2">
                 <Label htmlFor="video-price" className="text-gray-900 dark:text-white">
@@ -239,33 +235,74 @@ export function VideoUpload() {
                     className="pl-8"
                   />
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Set a price for your premium content
-                </p>
               </div>
+            )}
+
+            {/* Free Toggle */}
+            <div className="flex items-center space-x-3">
+              <Switch
+                id="free-toggle"
+                checked={formData.isFree}
+                onCheckedChange={handleFreeToggle}
+                disabled={isUploading}
+              />
+              <Label htmlFor="free-toggle" className="text-gray-900 dark:text-white">
+                Make this video free
+              </Label>
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div className="space-y-2">
+            <Label htmlFor="video-file" className="text-gray-900 dark:text-white">
+              Video File
+            </Label>
+            <Input
+              id="video-file"
+              type="file"
+              accept="video/mp4,video/mov,video/avi,video/webm,video/quicktime"
+              onChange={handleFileChange}
+              disabled={isUploading}
+              className="cursor-pointer"
+            />
+            {formData.file && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Selected: {formData.file.name} ({Math.round(formData.file.size / 1024 / 1024)}MB)
+              </p>
             )}
           </div>
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            disabled={isUploading || !formData.file || !formData.title}
-            className="w-full bg-amber-700 hover:bg-amber-800 dark:bg-amber-300 dark:hover:bg-amber-400 text-white dark:text-gray-900"
-          >
-            {isUploading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Uploading...</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Upload className="w-4 h-4" />
-                <span>Upload Video</span>
-              </div>
-            )}
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isUploading}
+              className="text-gray-700 dark:text-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isUploading || !formData.file || !formData.title}
+              className="bg-amber-700 hover:bg-amber-800 dark:bg-amber-300 dark:hover:bg-amber-400 text-white dark:text-gray-900"
+            >
+              {isUploading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Uploading...</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Upload className="w-4 h-4" />
+                  <span>Upload Video</span>
+                </div>
+              )}
+            </Button>
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

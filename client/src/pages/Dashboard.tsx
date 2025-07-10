@@ -1,9 +1,10 @@
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Plus, Play, MoreHorizontal } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { VideoUpload } from '@/components/VideoUpload';
+import { VideoUploadModal } from '@/components/VideoUploadModal';
 
 // Mock video data - TODO: Replace with actual data from backend
 const mockVideos = [
@@ -49,6 +50,7 @@ export default function Dashboard() {
   // TODO: Replace with actual user data from authentication
   const username = "Creator";
   const hasVideos = mockVideos.length > 0;
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   
   // For testing - can toggle between showing videos and empty state
   // const hasVideos = false; // Uncomment to test empty state
@@ -59,8 +61,11 @@ export default function Dashboard() {
   };
 
   const handleUploadVideo = () => {
-    // TODO: Implement video upload flow
-    console.log('Upload video clicked');
+    setIsUploadModalOpen(true);
+  };
+
+  const handleCloseUploadModal = () => {
+    setIsUploadModalOpen(false);
   };
 
   return (
@@ -202,11 +207,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Video Upload Section */}
-        <div className="mt-12">
-          <VideoUpload />
-        </div>
-
         {/* Future Dashboard Sections */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           {/* Analytics Card */}
@@ -255,6 +255,12 @@ export default function Dashboard() {
           </Card>
         </div>
       </main>
+
+      {/* Video Upload Modal */}
+      <VideoUploadModal 
+        isOpen={isUploadModalOpen} 
+        onClose={handleCloseUploadModal} 
+      />
     </div>
   );
 }
