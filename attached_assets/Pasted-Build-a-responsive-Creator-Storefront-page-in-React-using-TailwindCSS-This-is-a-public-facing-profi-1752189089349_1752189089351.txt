@@ -1,0 +1,71 @@
+Build a responsive Creator Storefront page in React using TailwindCSS. This is a public-facing profile page for a content creator where fans can browse and purchase their videos.
+
+1. Set up a new component (CreatorStorefront.jsx) and route (/creator/:username).
+
+2. Page layout:
+- Full-width hero banner image (placeholder URL is fine)
+- Centered creator name over the banner
+- Circular avatar that overlaps the banner bottom
+- Follow or Subscribe button
+- Optional social media icons: Twitter, IG, YouTube
+
+3. Creator bio section:
+- Short paragraph-style bio beneath avatar
+- Optional tags like location, creator type (e.g. filmmaker, fitness instructor), or tagline
+
+4. Video grid (main content area):
+- Display videos in a responsive 3-column grid on desktop, 2-column on tablet, 1-column on mobile
+- Each video card should include:
+  - Thumbnail (placeholder okay)
+  - Video title
+  - Duration (e.g. "12:34")
+  - Pricing logic:
+    - If price > 0, show "$X.XX" and button “Buy” or “Rent”
+    - If price === 0, show “Free” and button “Watch Now”
+
+5. Footer:
+- Basic footer with "Powered by Mosswood"
+- Add placeholder links: Terms | Privacy | Explore Creators
+
+6. Styling:
+- Use TailwindCSS with dark theme: bg-black text-white and amber accents
+- Add subtle hover effects to buttons and cards (hover:scale, hover:opacity)
+- Use rounded corners and drop shadows on cards
+
+7. No filters or sorting controls yet — keep it clean and focused
+
+8. Use dummy data for the creator and their videos:
+const creator = {
+  name: "Alex Ramirez",
+  avatar: "https://placehold.co/100x100",
+  banner: "https://placehold.co/1200x400",
+  bio: "Filmmaker and storyteller. Capturing truth one frame at a time.",
+  socialLinks: {
+    twitter: "#",
+    youtube: "#",
+    website: "#"
+  }
+};
+
+const videos = [
+  {
+    title: "How I Shot This Scene",
+    duration: "12:34",
+    price: 9.99,
+    thumbnail: "https://placehold.co/400x200"
+  },
+  {
+    title: "My Creative Process",
+    duration: "08:15",
+    price: 0,
+    thumbnail: "https://placehold.co/400x200"
+  },
+  {
+    title: "Documentary BTS",
+    duration: "15:22",
+    price: 4.99,
+    thumbnail: "https://placehold.co/400x200"
+  }
+];
+
+Keep it modular and clean. No backend logic or auth required yet.

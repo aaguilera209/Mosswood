@@ -53,6 +53,7 @@ The application follows a monorepo structure with clear separation between clien
 - **Signup** (`/signup`): User registration page
 - **Login** (`/login`): User authentication page
 - **Dashboard** (`/dashboard`): Creator dashboard for content management
+- **Creator Storefront** (`/creator/:username`): Public-facing creator profile and video store
 - **404**: Not found page
 
 ## Data Flow
@@ -110,6 +111,7 @@ Changelog:
 - July 02, 2025. Implemented cinematic color palette with amber accents
 - July 02, 2025. Created reusable Logo component for brand consistency
 - July 02, 2025. Built Creator Dashboard page with placeholder content structure
+- July 10, 2025. Created responsive Creator Storefront page with video grid and pricing
 ```
 
 ## User Preferences
