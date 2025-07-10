@@ -6,7 +6,7 @@ import { FaTwitter, FaYoutube, FaGlobe } from 'react-icons/fa';
 // Mock creator data
 const creator = {
   name: "Maya Lee",
-  avatar: "https://placehold.co/100x100",
+  avatar: "https://placehold.co/180x180",
   banner: "https://placehold.co/1200x400",
   bio: "Documentarian and digital storyteller. Sharing human stories through raw lenses.",
   socialLinks: {
