@@ -102,11 +102,11 @@ export default function CreatorStorefront() {
       <div className="relative px-6 pb-8">
         <div className="max-w-4xl mx-auto">
           {/* Avatar (overlapping banner) */}
-          <div className="flex justify-center -mt-12 mb-6">
+          <div className="flex justify-center -mt-14 mb-6">
             <img
               src={creator.avatar}
               alt={creator.name}
-              className="w-24 h-24 rounded-full border-4 border-black bg-gray-800"
+              className="w-[180px] h-[180px] rounded-full ring-4 ring-white bg-gray-800"
             />
           </div>
 
