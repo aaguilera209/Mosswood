@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Upload, Plus, Play, MoreHorizontal } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { VideoUpload } from '@/components/VideoUpload';
 
 // Mock video data - TODO: Replace with actual data from backend
 const mockVideos = [
@@ -199,6 +200,11 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           )}
+        </div>
+
+        {/* Video Upload Section */}
+        <div className="mt-12">
+          <VideoUpload />
         </div>
 
         {/* Future Dashboard Sections */}
