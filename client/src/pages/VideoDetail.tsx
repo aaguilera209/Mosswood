@@ -6,6 +6,9 @@ import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useRoute } from 'wouter';
 import { getVideoById, getRelatedVideos, type Video } from '@/../../shared/videoData';
+import { PaymentModal } from '@/components/PaymentModal';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 type PlaybackMode = 'default' | 'theater' | 'fullscreen';
 
@@ -17,6 +20,10 @@ export default function VideoDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [volume, setVolume] = useState(100);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const { toast } = useToast();
 
   // Load video data based on URL parameter
   useEffect(() => {
@@ -28,6 +35,46 @@ export default function VideoDetail() {
       }
     }
   }, [params?.id]);
+
+  // Check for existing email and purchase status
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      // Get stored email or prompt for one
+      let email = localStorage.getItem('userEmail');
+      if (!email) {
+        email = prompt('Enter your email to check for existing purchases:');
+        if (email) {
+          localStorage.setItem('userEmail', email);
+        }
+      }
+      
+      if (email && videoData) {
+        setUserEmail(email);
+        
+        // Check if video is free
+        if (videoData.price === 0) {
+          setHasPurchased(true);
+          return;
+        }
+        
+        // Check purchase status
+        try {
+          const response = await apiRequest('POST', '/api/check-purchase', {
+            email,
+            videoId: videoData.id
+          });
+          const data = await response.json();
+          setHasPurchased(data.hasPurchased);
+        } catch (error) {
+          console.error('Error checking purchase status:', error);
+        }
+      }
+    };
+
+    if (videoData) {
+      checkPurchaseStatus();
+    }
+  }, [videoData]);
 
   // If video not found, show error
   if (!videoData) {
@@ -45,7 +92,23 @@ export default function VideoDetail() {
   }
 
   const handlePurchase = () => {
-    console.log(`Purchasing video: ${videoData.title} for $${videoData.price}`);
+    if (videoData.price === 0) {
+      setHasPurchased(true);
+      toast({
+        title: "Access Granted!",
+        description: "This video is free to watch.",
+      });
+    } else {
+      setIsPaymentModalOpen(true);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    setHasPurchased(true);
+    toast({
+      title: "Purchase Successful!",
+      description: "You now have access to this video.",
+    });
   };
 
   const handleRelatedVideoClick = (video: Video) => {
@@ -57,8 +120,11 @@ export default function VideoDetail() {
   };
 
   const handleVideoClick = () => {
-    // For now, show purchase flow since video isn't purchased
-    handlePurchase();
+    if (hasPurchased) {
+      togglePlayPause();
+    } else {
+      handlePurchase();
+    }
   };
 
   const handleVolumeChange = (newVolume: number) => {
@@ -136,16 +202,28 @@ export default function VideoDetail() {
                 alt={videoData.title}
                 className="w-full h-full object-cover"
               />
-              {/* Play Button Overlay */}
+              
+              {/* Overlay for purchased vs non-purchased */}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <div className="bg-white/90 hover:bg-white transition-colors rounded-full p-4">
-                  <Play className="w-8 h-8 text-black ml-1" />
-                </div>
+                {hasPurchased ? (
+                  // Play Button for purchased videos
+                  <div className="bg-white/90 hover:bg-white transition-colors rounded-full p-4">
+                    <Play className="w-8 h-8 text-black ml-1" />
+                  </div>
+                ) : (
+                  // Purchase Button for non-purchased videos
+                  <div className="bg-primary hover:bg-primary/90 transition-colors rounded-lg px-6 py-3">
+                    <span className="text-white font-semibold">
+                      {videoData.price === 0 ? 'Watch Free' : `Buy for $${videoData.price.toFixed(2)}`}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             
-            {/* YouTube-style Video Controls Overlay */}
-            <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || playbackMode === 'fullscreen' ? 'opacity-100' : 'opacity-0'}`}>
+            {/* YouTube-style Video Controls Overlay - only show for purchased videos */}
+            {hasPurchased && (
+              <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || playbackMode === 'fullscreen' ? 'opacity-100' : 'opacity-0'}`}>
               
               {/* Progress Bar - positioned at bottom edge */}
               <div className="absolute bottom-12 left-0 right-0 px-3">
@@ -307,6 +385,7 @@ export default function VideoDetail() {
                 </div>
               )}
             </div>
+            )}
             
             {/* Exit Fullscreen Button (only shown in fullscreen) */}
             {playbackMode === 'fullscreen' && (
@@ -434,6 +513,16 @@ export default function VideoDetail() {
           </div>
         </footer>
       )}
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onSuccess={handlePaymentSuccess}
+        videoTitle={videoData.title}
+        videoPrice={videoData.price}
+        videoId={videoData.id}
+      />
     </div>
   );
 }
