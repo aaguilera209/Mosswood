@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Plus, Play, MoreHorizontal } from 'lucide-react';
+import { Upload, Plus, Play, MoreHorizontal, LogOut } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { VideoUploadModal } from '@/components/VideoUploadModal';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 
 // Mock video data - TODO: Replace with actual data from backend
 const mockVideos = [
@@ -46,18 +50,28 @@ const mockVideos = [
   }
 ];
 
-export default function Dashboard() {
-  // TODO: Replace with actual user data from authentication
-  const username = "Creator";
+function DashboardContent() {
+  const { profile, signOut } = useAuth();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const hasVideos = mockVideos.length > 0;
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  
-  // For testing - can toggle between showing videos and empty state
-  // const hasVideos = false; // Uncomment to test empty state
 
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log('Logout clicked');
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out",
+        description: "You've been signed out successfully.",
+      });
+      setLocation('/');
+    } catch (error: any) {
+      toast({
+        title: "Logout failed",
+        description: error.message || "An error occurred during logout.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUploadVideo = () => {
@@ -77,12 +91,16 @@ export default function Dashboard() {
             <Logo showText={true} />
             
             <div className="flex items-center space-x-4">
+              <span className="text-sm text-muted-foreground">
+                {profile?.email} ({profile?.role})
+              </span>
               <ThemeToggle />
               <Button 
                 variant="outline"
                 onClick={handleLogout}
                 className="text-muted-foreground hover:text-primary border-border"
               >
+                <LogOut className="w-4 h-4 mr-2" />
                 Log out
               </Button>
             </div>
@@ -262,5 +280,13 @@ export default function Dashboard() {
         onClose={handleCloseUploadModal} 
       />
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <ProtectedRoute requireRole="creator">
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }
