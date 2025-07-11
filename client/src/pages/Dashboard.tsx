@@ -81,7 +81,7 @@ export default function Dashboard() {
               <Button 
                 variant="outline"
                 onClick={handleLogout}
-                className="text-gray-700 dark:text-gray-300 hover:text-amber-700 dark:hover:text-amber-300"
+                className="text-muted-foreground hover:text-primary border-border"
               >
                 Log out
               </Button>
@@ -94,10 +94,10 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             Welcome, {username}
           </h1>
-          <p className="text-lg text-gray-500 dark:text-gray-400">
+          <p className="text-lg text-muted-foreground">
             Manage your content and grow your audience
           </p>
         </div>
@@ -105,12 +105,12 @@ export default function Dashboard() {
         {/* Your Videos Section */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-2xl font-semibold text-foreground">
               Your Videos
             </h2>
             <Button 
               onClick={handleUploadVideo}
-              className="bg-amber-700 hover:bg-amber-800 dark:bg-amber-300 dark:hover:bg-amber-400 text-white dark:text-gray-900"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Upload className="w-4 h-4 mr-2" />
               Upload New Video
@@ -126,7 +126,7 @@ export default function Dashboard() {
                     {/* Video Thumbnail */}
                     <div className="relative aspect-video bg-gray-900 dark:bg-gray-800 rounded-t-lg overflow-hidden">
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Play className="w-12 h-12 text-gray-400 group-hover:text-amber-300 transition-colors" />
+                        <Play className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                       {/* Duration Badge */}
                       <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">

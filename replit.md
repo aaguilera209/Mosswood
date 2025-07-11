@@ -43,7 +43,7 @@ The application follows a monorepo structure with clear separation between clien
 
 ### UI Design System
 - **Theme**: Dual light/dark theme support with CSS variables
-- **Colors**: Cinematic color palette with amber accents (no purple)
+- **Colors**: Deep navy background (#0d1b2a) with lavender accents (#cdb4db) for premium aesthetic
 - **Typography**: Inter font family
 - **Components**: Comprehensive UI component library from Shadcn/ui
 - **Logo System**: Reusable Logo component with configurable text display
@@ -114,6 +114,9 @@ Changelog:
 - July 02, 2025. Built Creator Dashboard page with placeholder content structure
 - July 10, 2025. Created responsive Creator Storefront page with video grid and pricing
 - July 10, 2025. Built Video Detail page with three playback modes (default, theater, fullscreen)
+- July 11, 2025. Major color palette redesign: Deep navy background (#0d1b2a) with lavender accents (#cdb4db)
+- July 11, 2025. Cleaned up Video Detail navigation: removed Dashboard link, added "Back to Maya's Page" button
+- July 11, 2025. Updated all pages and components to use new premium lavender/navy color scheme
 ```
 
 ## User Preferences

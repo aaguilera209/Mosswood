@@ -25,8 +25,8 @@ export default function Login() {
           <Logo showText={true} className="justify-center mb-6" />
           
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
-            <p className="text-gray-500 dark:text-gray-400">Sign in to your creator account</p>
+            <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+            <p className="text-muted-foreground">Sign in to your creator account</p>
           </div>
         </div>
 
@@ -64,7 +64,7 @@ export default function Login() {
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-amber-700 hover:bg-amber-800 dark:bg-amber-300 dark:hover:bg-amber-400 text-white dark:text-gray-900">
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 Sign In
               </Button>
             </form>

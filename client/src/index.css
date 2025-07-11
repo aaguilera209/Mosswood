@@ -28,25 +28,31 @@
 }
 
 .dark {
-  --background: hsl(0, 0%, 4%);
+  /* Deep Navy Background (#0d1b2a) */
+  --background: hsl(210, 54%, 11%);
   --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(0, 0%, 10%);
+  /* Slightly lighter navy for cards */
+  --muted: hsl(210, 54%, 15%);
   --muted-foreground: hsl(0, 0%, 64%);
-  --popover: hsl(0, 0%, 4%);
+  --popover: hsl(210, 54%, 15%);
   --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(0, 0%, 4%);
+  --card: hsl(210, 54%, 15%);
   --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(0, 0%, 15.9%);
-  --input: hsl(0, 0%, 15.9%);
-  --primary: hsl(43, 96%, 72%);
-  --primary-foreground: hsl(0, 0%, 9%);
-  --secondary: hsl(0, 0%, 10%);
+  /* Navy borders */
+  --border: hsl(210, 54%, 25%);
+  --input: hsl(210, 54%, 20%);
+  /* Lavender Primary (#cdb4db) */
+  --primary: hsl(285, 35%, 78%);
+  --primary-foreground: hsl(210, 54%, 11%);
+  /* Secondary navy tones */
+  --secondary: hsl(210, 54%, 20%);
   --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(0, 0%, 10%);
-  --accent-foreground: hsl(0, 0%, 98%);
+  /* Lavender accent */
+  --accent: hsl(285, 35%, 78%);
+  --accent-foreground: hsl(210, 54%, 11%);
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(0, 0%, 83.9%);
+  --ring: hsl(285, 35%, 78%);
 }
 
 @layer base {

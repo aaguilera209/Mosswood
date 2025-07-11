@@ -98,11 +98,11 @@ export default function VideoDetail() {
   const getPageClasses = () => {
     switch (playbackMode) {
       case 'theater':
-        return 'min-h-screen bg-black text-white';
+        return 'min-h-screen bg-background text-foreground';
       case 'fullscreen':
-        return 'min-h-screen bg-black text-white overflow-hidden';
+        return 'min-h-screen bg-background text-foreground overflow-hidden';
       default:
-        return 'min-h-screen bg-black text-white';
+        return 'min-h-screen bg-background text-foreground';
     }
   };
 
@@ -110,17 +110,15 @@ export default function VideoDetail() {
     <div className={getPageClasses()}>
       {/* Header - hidden in fullscreen */}
       {playbackMode !== 'fullscreen' && (
-        <header className="border-b border-gray-800 px-6 py-4">
+        <header className="border-b border-border px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <a href="/creator/maya-lee" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to Maya's Page</span>
+            </a>
             <Logo showText={true} className="text-2xl" />
-            <nav className="flex space-x-6">
-              <a href="/dashboard" className="text-gray-300 hover:text-amber-400 transition-colors">
-                Dashboard
-              </a>
-              <a href="/creator/maya-lee" className="text-gray-300 hover:text-amber-400 transition-colors">
-                Maya's Store
-              </a>
-            </nav>
           </div>
         </header>
       )}
@@ -341,7 +339,7 @@ export default function VideoDetail() {
                 
                 <Button
                   onClick={handlePurchase}
-                  className="bg-amber-600 hover:bg-amber-700 text-black font-semibold px-6 py-2 w-fit"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-2 w-fit"
                 >
                   Buy for ${videoData.price.toFixed(2)}
                 </Button>
@@ -366,7 +364,7 @@ export default function VideoDetail() {
                 {relatedVideos.map((video) => (
                   <Card
                     key={video.id}
-                    className="group bg-gray-900 border-gray-700 hover:bg-gray-800 transition-all duration-200 hover:scale-105 cursor-pointer"
+                    className="group bg-card border-border hover:bg-muted transition-all duration-200 hover:scale-105 cursor-pointer"
                     onClick={() => handleRelatedVideoClick(video)}
                   >
                     <CardContent className="p-0">

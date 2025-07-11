@@ -4,7 +4,7 @@ export function VideoSection() {
   return (
     <section className="relative w-full h-screen overflow-hidden">
       {/* Background Video Placeholder */}
-      <div className="absolute inset-0 bg-gradient-to-b from-secondary via-gray-900 to-background dark:from-secondary dark:via-gray-900 dark:to-background">
+      <div className="absolute inset-0 bg-gradient-to-b from-muted via-background to-background">
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-60 dark:bg-opacity-60"></div>
         
@@ -35,7 +35,7 @@ export function VideoSection() {
           <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white">
             Your vision.
             <br />
-            <span className="text-amber-300">Your platform.</span>
+            <span className="text-primary">Your platform.</span>
           </h2>
           <p className="text-xl text-gray-200 font-light">
             Break free from algorithms and intermediaries

@@ -76,7 +76,7 @@ export default function CreatorStorefront() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Hero Banner Section */}
       <div className="relative">
         {/* Banner Image */}
@@ -111,7 +111,7 @@ export default function CreatorStorefront() {
           <div className="flex flex-col items-center space-y-4 mb-8">
             <Button
               onClick={handleFollow}
-              className="bg-amber-600 hover:bg-amber-700 text-black font-semibold px-8 py-2 transition-colors"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-2 transition-colors"
             >
               Follow
             </Button>
@@ -120,21 +120,21 @@ export default function CreatorStorefront() {
             <div className="flex space-x-4">
               <a 
                 href={creator.socialLinks.twitter} 
-                className="text-gray-400 hover:text-amber-400 transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Twitter"
               >
                 <FaTwitter className="w-5 h-5" />
               </a>
               <a 
                 href={creator.socialLinks.youtube} 
-                className="text-gray-400 hover:text-amber-400 transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="YouTube"
               >
                 <FaYoutube className="w-5 h-5" />
               </a>
               <a 
                 href={creator.socialLinks.website} 
-                className="text-gray-400 hover:text-amber-400 transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Website"
               >
                 <FaGlobe className="w-5 h-5" />
@@ -144,7 +144,7 @@ export default function CreatorStorefront() {
 
           {/* Bio Section */}
           <div className="text-center mb-12">
-            <p className="text-gray-300 text-lg leading-relaxed max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto">
               {creator.bio}
             </p>
           </div>
@@ -162,7 +162,7 @@ export default function CreatorStorefront() {
             {videos.map((video) => (
               <Card 
                 key={video.id} 
-                className="group bg-gray-900 border-gray-700 hover:bg-gray-800 transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer"
+                className="group bg-card border-border hover:bg-muted transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer"
                 onClick={() => handleVideoAction(video)}
               >
                 <CardContent className="p-0">
@@ -188,13 +188,13 @@ export default function CreatorStorefront() {
 
                   {/* Video Info */}
                   <div className="p-4">
-                    <h3 className="font-semibold text-white mb-3 line-clamp-2">
+                    <h3 className="font-semibold text-foreground mb-3 line-clamp-2">
                       {video.title}
                     </h3>
                     
                     <div className="flex items-center justify-between">
                       {/* Price */}
-                      <div className="text-amber-400 font-semibold">
+                      <div className="text-primary font-semibold">
                         {video.price === 0 ? 'Free' : `$${video.price.toFixed(2)}`}
                       </div>
                       
@@ -208,7 +208,7 @@ export default function CreatorStorefront() {
                         className={`${
                           video.price === 0
                             ? 'bg-green-600 hover:bg-green-700 text-white'
-                            : 'bg-amber-600 hover:bg-amber-700 text-black'
+                            : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                         } transition-colors font-medium`}
                       >
                         {video.price === 0 ? 'Watch Now' : 'View'}
@@ -223,20 +223,20 @@ export default function CreatorStorefront() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 py-8 px-6">
+      <footer className="border-t border-border py-8 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-4">
-            <p className="text-gray-400">
-              Powered by <span className="text-amber-400 font-semibold">Mosswood</span>
+            <p className="text-muted-foreground">
+              Powered by <span className="text-primary font-semibold">Mosswood</span>
             </p>
             <div className="flex justify-center space-x-6 text-sm">
-              <a href="#" className="text-gray-400 hover:text-amber-400 transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 Terms
               </a>
-              <a href="#" className="text-gray-400 hover:text-amber-400 transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 Privacy
               </a>
-              <a href="#" className="text-gray-400 hover:text-amber-400 transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                 Explore Creators
               </a>
             </div>
