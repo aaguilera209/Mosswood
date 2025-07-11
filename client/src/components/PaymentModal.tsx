@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
+import { useStripe, useElements, PaymentElement, Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { X, CreditCard } from 'lucide-react';
+
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -17,7 +21,8 @@ interface PaymentModalProps {
   videoId: number;
 }
 
-export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPrice, videoId }: PaymentModalProps) {
+// Payment Form Component (inside Elements provider)
+function PaymentForm({ onSuccess, onClose, videoTitle, videoPrice, videoId }: Omit<PaymentModalProps, 'isOpen'>) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -25,32 +30,14 @@ export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPric
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
-  // Create payment intent when modal opens
+  // Load email from localStorage if available
   useEffect(() => {
-    if (isOpen && videoPrice > 0) {
-      createPaymentIntent();
+    const storedEmail = localStorage.getItem('userEmail');
+    if (storedEmail) {
+      setEmail(storedEmail);
     }
-  }, [isOpen, videoPrice]);
-
-  const createPaymentIntent = async () => {
-    try {
-      const response = await apiRequest('POST', '/api/create-payment-intent', {
-        amount: videoPrice,
-        videoId,
-        videoTitle
-      });
-      const data = await response.json();
-      setPaymentIntentId(data.clientSecret?.split('_secret_')[0]);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to initialize payment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +106,111 @@ export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPric
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <div className="space-y-6">
+      {/* Video Info */}
+      <div className="bg-muted p-4 rounded-lg">
+        <div className="flex items-center space-x-3">
+          <div className="bg-primary/10 p-2 rounded">
+            <CreditCard className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-medium">{videoTitle}</h3>
+            <p className="text-lg font-bold text-primary">${videoPrice.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Customer Information */}
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="name">Full Name *</Label>
+            <Input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your full name"
+              required
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="email">Email Address *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+        </div>
+
+        {/* Payment Element */}
+        <div className="space-y-2">
+          <Label>Payment Details *</Label>
+          <div className="border rounded-lg p-3">
+            <PaymentElement />
+          </div>
+          
+          {/* Test Card Info */}
+          <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+            <strong>Test Mode:</strong> Use card number 4242 4242 4242 4242 with any future date and CVC.
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={!stripe || !elements || isProcessing}
+        >
+          {isProcessing ? 'Processing...' : `Pay $${videoPrice.toFixed(2)}`}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+// Main PaymentModal Component
+export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPrice, videoId }: PaymentModalProps) {
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Create payment intent when modal opens
+  useEffect(() => {
+    if (isOpen && videoPrice > 0) {
+      createPaymentIntent();
+    }
+  }, [isOpen, videoPrice]);
+
+  const createPaymentIntent = async () => {
+    try {
+      const response = await apiRequest('POST', '/api/create-payment-intent', {
+        amount: videoPrice,
+        videoId,
+        videoTitle
+      });
+      const data = await response.json();
+      setClientSecret(data.clientSecret);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to initialize payment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClose = () => {
+    setClientSecret(null);
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -127,7 +218,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPric
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
+              onClick={handleClose}
               className="h-8 w-8 p-0"
             >
               <X className="h-4 w-4" />
@@ -135,76 +226,21 @@ export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPric
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Video Info */}
-          <div className="bg-muted p-4 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className="bg-primary/10 p-2 rounded">
-                <CreditCard className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium">{videoTitle}</h3>
-                <p className="text-lg font-bold text-primary">${videoPrice.toFixed(2)}</p>
-              </div>
-            </div>
+        {clientSecret ? (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <PaymentForm
+              onSuccess={onSuccess}
+              onClose={handleClose}
+              videoTitle={videoTitle}
+              videoPrice={videoPrice}
+              videoId={videoId}
+            />
+          </Elements>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Customer Information */}
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="email">Email Address *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Payment Element */}
-            <div>
-              <Label>Payment Details</Label>
-              <div className="mt-2">
-                <PaymentElement />
-              </div>
-            </div>
-
-            {/* Test Card Info */}
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
-                Test Mode - Use Test Card:
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-300 font-mono">
-                4242 4242 4242 4242 | Any future date | Any CVC
-              </p>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={!stripe || isProcessing}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {isProcessing ? "Processing..." : `Pay $${videoPrice.toFixed(2)}`}
-            </Button>
-          </form>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
