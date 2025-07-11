@@ -136,6 +136,10 @@ Changelog:
 - July 11, 2025. Implemented "Become a Creator" CTA with Supabase role conversion functionality across ViewerHome and MyLibrary pages
 - July 11, 2025. Enhanced MyLibrary empty state with dual-action buttons for viewer engagement
 - July 11, 2025. Removed authentication barriers for testing - all pages accessible without sign-in
+- July 11, 2025. Refactored Creator Dashboard with comprehensive tab-based architecture (Overview, Videos, Analytics, Promo Codes)
+- July 11, 2025. Added Promo Code Redemption Tracking with detailed redemption history and revenue metrics
+- July 11, 2025. Implemented Advanced Analytics v1 with video performance metrics, revenue insights, and audience data
+- July 11, 2025. Enhanced dashboard with comprehensive mock data for testing all analytics and promo code features
 ```
 
 ## User Preferences
