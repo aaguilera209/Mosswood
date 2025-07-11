@@ -129,11 +129,20 @@ export default function VideoDetail() {
             onMouseLeave={() => setShowControls(false)}
             onClick={handleVideoClick}
           >
-            <img
-              src={videoData.videoUrl}
-              alt={videoData.title}
-              className={getVideoClasses()}
-            />
+            {/* Video Poster/Thumbnail */}
+            <div className={`${getVideoClasses()} bg-gray-900 flex items-center justify-center relative`}>
+              <img
+                src={videoData.thumbnail}
+                alt={videoData.title}
+                className="w-full h-full object-cover"
+              />
+              {/* Play Button Overlay */}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <div className="bg-white/90 hover:bg-white transition-colors rounded-full p-4">
+                  <Play className="w-8 h-8 text-black ml-1" />
+                </div>
+              </div>
+            </div>
             
             {/* YouTube-style Video Controls Overlay */}
             <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || playbackMode === 'fullscreen' ? 'opacity-100' : 'opacity-0'}`}>
@@ -201,7 +210,7 @@ export default function VideoDetail() {
                     
                     {/* Time Display */}
                     <span className="text-white text-sm font-medium">
-                      55:45 / 10:00:00
+                      0:00 / {videoData.duration}
                     </span>
                   </div>
                   
