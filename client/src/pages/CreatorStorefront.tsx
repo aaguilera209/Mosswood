@@ -54,8 +54,8 @@ export default function CreatorStorefront() {
           {/* Avatar (overlapping banner) */}
           <div className="flex justify-center -mt-14 mb-6">
             <img
-              src={creator.avatar}
-              alt={creator.name}
+              src={mockCreator.avatar}
+              alt={mockCreator.name}
               className="w-[180px] h-[180px] rounded-full ring-4 ring-white bg-gray-800"
             />
           </div>
