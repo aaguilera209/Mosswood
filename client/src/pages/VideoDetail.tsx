@@ -143,17 +143,20 @@ export default function VideoDetail() {
             />
             
             {/* YouTube-style Video Controls Overlay */}
-            <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${showControls || playbackMode === 'fullscreen' ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || playbackMode === 'fullscreen' ? 'opacity-100' : 'opacity-0'}`}>
+              
+              {/* Progress Bar - positioned at bottom edge */}
+              <div className="absolute bottom-12 left-0 right-0 px-3">
+                <div className="w-full bg-white/30 h-1 rounded-full cursor-pointer group">
+                  <div className="bg-red-600 h-1 rounded-full w-1/2 relative">
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </div>
+                </div>
+              </div>
               
               {/* Bottom Controls Bar */}
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-600/50 h-1 rounded-full mb-3 cursor-pointer">
-                  <div className="bg-amber-500 h-1 rounded-full w-1/3"></div>
-                </div>
-                
-                {/* Control Buttons */}
-                <div className="flex items-center justify-between">
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="flex items-center justify-between px-3 py-2">
                   {/* Left Controls */}
                   <div className="flex items-center space-x-3">
                     {/* Play/Pause Button */}
@@ -163,9 +166,22 @@ export default function VideoDetail() {
                         togglePlayPause();
                       }}
                       size="sm"
-                      className="bg-transparent hover:bg-white/20 text-white p-2"
+                      className="bg-transparent hover:bg-white/20 text-white p-1 h-8 w-8"
                     >
-                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </Button>
+                    
+                    {/* Skip Forward */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      size="sm"
+                      className="bg-transparent hover:bg-white/20 text-white p-1 h-8 w-8"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+                      </svg>
                     </Button>
                     
                     {/* Volume Control */}
@@ -176,73 +192,40 @@ export default function VideoDetail() {
                           handleVolumeChange(volume === 0 ? 100 : 0);
                         }}
                         size="sm"
-                        className="bg-transparent hover:bg-white/20 text-white p-2"
+                        className="bg-transparent hover:bg-white/20 text-white p-1 h-8 w-8"
                       >
                         <Volume2 className="w-4 h-4" />
                       </Button>
-                      <div className="w-20 bg-gray-600/50 h-1 rounded-full cursor-pointer">
+                      <div className="w-16 bg-white/30 h-1 rounded-full cursor-pointer group">
                         <div 
-                          className="bg-white h-1 rounded-full" 
+                          className="bg-white h-1 rounded-full relative" 
                           style={{ width: `${volume}%` }}
-                        ></div>
+                        >
+                          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        </div>
                       </div>
                     </div>
                     
                     {/* Time Display */}
                     <span className="text-white text-sm font-medium">
-                      4:20 / {videoData.duration}
+                      55:45 / 10:00:00
                     </span>
                   </div>
                   
                   {/* Right Controls */}
-                  <div className="flex items-center space-x-2">
-                    {/* Playback Mode Buttons */}
+                  <div className="flex items-center space-x-1">
+                    {/* CC/Subtitles */}
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPlaybackMode('default');
                       }}
                       size="sm"
-                      className={`${
-                        playbackMode === 'default'
-                          ? 'bg-amber-600 hover:bg-amber-700 text-black'
-                          : 'bg-transparent hover:bg-white/20 text-white'
-                      } p-2`}
-                      title="Default Mode"
+                      className="bg-transparent hover:bg-white/20 text-white p-1 h-8 w-8"
+                      title="Closed Captions"
                     >
-                      <Monitor className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPlaybackMode('theater');
-                      }}
-                      size="sm"
-                      className={`${
-                        playbackMode === 'theater'
-                          ? 'bg-amber-600 hover:bg-amber-700 text-black'
-                          : 'bg-transparent hover:bg-white/20 text-white'
-                      } p-2`}
-                      title="Theater Mode"
-                    >
-                      <Users className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPlaybackMode('fullscreen');
-                      }}
-                      size="sm"
-                      className={`${
-                        playbackMode === 'fullscreen'
-                          ? 'bg-amber-600 hover:bg-amber-700 text-black'
-                          : 'bg-transparent hover:bg-white/20 text-white'
-                      } p-2`}
-                      title="Fullscreen Mode"
-                    >
-                      <Maximize className="w-4 h-4" />
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z"/>
+                      </svg>
                     </Button>
                     
                     {/* Settings */}
@@ -251,14 +234,76 @@ export default function VideoDetail() {
                         e.stopPropagation();
                       }}
                       size="sm"
-                      className="bg-transparent hover:bg-white/20 text-white p-2"
+                      className="bg-transparent hover:bg-white/20 text-white p-1 h-8 w-8"
                       title="Settings"
                     >
                       <Settings className="w-4 h-4" />
                     </Button>
+                    
+                    {/* Picture in Picture */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPlaybackMode('default');
+                      }}
+                      size="sm"
+                      className={`${
+                        playbackMode === 'default'
+                          ? 'bg-white/20'
+                          : 'bg-transparent hover:bg-white/20'
+                      } text-white p-1 h-8 w-8`}
+                      title="Picture in Picture"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.99h18v14.02z"/>
+                      </svg>
+                    </Button>
+                    
+                    {/* Theater Mode */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPlaybackMode('theater');
+                      }}
+                      size="sm"
+                      className={`${
+                        playbackMode === 'theater'
+                          ? 'bg-white/20'
+                          : 'bg-transparent hover:bg-white/20'
+                      } text-white p-1 h-8 w-8`}
+                      title="Theater Mode"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"/>
+                      </svg>
+                    </Button>
+                    
+                    {/* Fullscreen */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPlaybackMode('fullscreen');
+                      }}
+                      size="sm"
+                      className={`${
+                        playbackMode === 'fullscreen'
+                          ? 'bg-white/20'
+                          : 'bg-transparent hover:bg-white/20'
+                      } text-white p-1 h-8 w-8`}
+                      title="Fullscreen"
+                    >
+                      <Maximize className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
+              
+              {/* Theater Mode Indicator */}
+              {playbackMode === 'theater' && (
+                <div className="absolute top-4 right-4 bg-black/60 text-white text-sm px-2 py-1 rounded">
+                  Theater mode (t)
+                </div>
+              )}
             </div>
             
             {/* Exit Fullscreen Button (only shown in fullscreen) */}
