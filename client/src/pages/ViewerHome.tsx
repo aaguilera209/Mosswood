@@ -102,11 +102,9 @@ export default function ViewerHome() {
                 My Library
               </Button>
             </Link>
-            {user && profile?.role === 'viewer' && (
-              <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
-                Become a Creator
-              </Button>
-            )}
+            <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
+              Become a Creator
+            </Button>
             {!user && (
               <>
                 <Link href="/signup">

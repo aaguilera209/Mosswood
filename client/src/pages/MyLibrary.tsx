@@ -171,11 +171,9 @@ function MyLibraryContent() {
                     Explore Creators
                   </Button>
                 </Link>
-                {user && profile?.role === 'viewer' && (
-                  <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
-                    Become a Creator
-                  </Button>
-                )}
+                <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
+                  Become a Creator
+                </Button>
               </div>
             )}
           </div>
