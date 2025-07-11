@@ -9,6 +9,7 @@ import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import CreatorStorefront from "@/pages/CreatorStorefront";
+import VideoDetail from "@/pages/VideoDetail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/creator/:username" component={CreatorStorefront} />
+      <Route path="/video/:id" component={VideoDetail} />
       <Route component={NotFound} />
     </Switch>
   );

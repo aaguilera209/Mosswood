@@ -67,11 +67,8 @@ export default function CreatorStorefront() {
   // const { username } = useParams();
 
   const handleVideoAction = (video: typeof videos[0]) => {
-    if (video.price === 0) {
-      console.log(`Playing free video: ${video.title}`);
-    } else {
-      console.log(`Purchasing video: ${video.title} for $${video.price}`);
-    }
+    // Navigate to video detail page
+    window.location.href = `/video/${video.id}`;
   };
 
   const handleFollow = () => {
@@ -165,7 +162,8 @@ export default function CreatorStorefront() {
             {videos.map((video) => (
               <Card 
                 key={video.id} 
-                className="group bg-gray-900 border-gray-700 hover:bg-gray-800 transition-all duration-200 hover:scale-105 hover:shadow-xl"
+                className="group bg-gray-900 border-gray-700 hover:bg-gray-800 transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer"
+                onClick={() => handleVideoAction(video)}
               >
                 <CardContent className="p-0">
                   {/* Video Thumbnail */}
@@ -202,7 +200,10 @@ export default function CreatorStorefront() {
                       
                       {/* Action Button */}
                       <Button
-                        onClick={() => handleVideoAction(video)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVideoAction(video);
+                        }}
                         size="sm"
                         className={`${
                           video.price === 0
@@ -210,7 +211,7 @@ export default function CreatorStorefront() {
                             : 'bg-amber-600 hover:bg-amber-700 text-black'
                         } transition-colors font-medium`}
                       >
-                        {video.price === 0 ? 'Watch Now' : 'Buy'}
+                        {video.price === 0 ? 'Watch Now' : 'View'}
                       </Button>
                     </div>
                   </div>
