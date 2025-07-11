@@ -13,46 +13,45 @@ export function Header() {
         <Logo showText={true} />
         
         <div className="flex items-center space-x-4">
-          {user ? (
-            <>
-              {profile?.role === 'creator' ? (
-                <Link href="/dashboard">
+          <div className="flex items-center space-x-2">
+            <Link href="/explore">
+              <Button variant="outline" size="sm">
+                Explore
+              </Button>
+            </Link>
+            <Link href="/library">
+              <Button variant="outline" size="sm">
+                My Library
+              </Button>
+            </Link>
+            {user ? (
+              <>
+                {profile?.role === 'creator' && (
+                  <Link href="/dashboard">
+                    <Button variant="outline" size="sm">
+                      Dashboard
+                    </Button>
+                  </Link>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {profile?.email || user.email}
+                </span>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
                   <Button variant="outline" size="sm">
-                    Dashboard
+                    Sign In
                   </Button>
                 </Link>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Link href="/explore">
-                    <Button variant="outline" size="sm">
-                      Explore
-                    </Button>
-                  </Link>
-                  <Link href="/library">
-                    <Button variant="outline" size="sm">
-                      My Library
-                    </Button>
-                  </Link>
-                </div>
-              )}
-              <span className="text-sm text-muted-foreground">
-                {profile?.email}
-              </span>
-            </>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <Link href="/login">
-                <Button variant="outline" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button size="sm">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          )}
+                <Link href="/signup">
+                  <Button size="sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
           <ThemeToggle />
         </div>
       </nav>

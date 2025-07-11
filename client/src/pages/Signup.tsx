@@ -27,7 +27,7 @@ export default function Signup() {
         title: "Account created!",
         description: "Please check your email to verify your account.",
       });
-      setLocation('/dashboard');
+      setLocation('/');
     } catch (error: any) {
       toast({
         title: "Signup failed",
@@ -47,8 +47,8 @@ export default function Signup() {
           <Logo showText={true} className="justify-center mb-6" />
           
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Start Creating</h1>
-            <p className="text-muted-foreground">Join the platform built for creators</p>
+            <h1 className="text-2xl font-bold text-foreground">Join Mosswood</h1>
+            <p className="text-muted-foreground">Discover amazing content from independent creators</p>
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export default function Signup() {
           <CardHeader>
             <CardTitle>Create your account</CardTitle>
             <CardDescription>
-              Take control of your creative journey
+              Start exploring and supporting creators
             </CardDescription>
           </CardHeader>
           <CardContent>

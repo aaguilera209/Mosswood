@@ -27,7 +27,7 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       });
-      setLocation('/dashboard');
+      setLocation('/');
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -48,7 +48,7 @@ export default function Login() {
           
           <div>
             <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
-            <p className="text-muted-foreground">Sign in to your creator account</p>
+            <p className="text-muted-foreground">Sign in to your account</p>
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export default function Login() {
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              Access your creator dashboard
+              Access your account
             </CardDescription>
           </CardHeader>
           <CardContent>

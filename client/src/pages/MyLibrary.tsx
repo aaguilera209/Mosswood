@@ -185,9 +185,5 @@ function MyLibraryContent() {
 }
 
 export default function MyLibrary() {
-  return (
-    <ProtectedRoute requireRole="viewer">
-      <MyLibraryContent />
-    </ProtectedRoute>
-  );
+  return <MyLibraryContent />;
 }

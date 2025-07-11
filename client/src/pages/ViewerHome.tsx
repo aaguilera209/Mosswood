@@ -61,33 +61,32 @@ export default function ViewerHome() {
             Discover amazing content from independent creators. Support artists directly and own your viewing experience.
           </p>
           
-          {user ? (
-            <div className="flex justify-center space-x-4">
-              <Link href="/library">
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
-                  My Library
-                </Button>
-              </Link>
-              <Link href="/explore">
-                <Button size="lg" variant="outline">
-                  Explore Creators
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="flex justify-center space-x-4">
-              <Link href="/signup">
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
-                  Get Started
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
-          )}
+          <div className="flex justify-center space-x-4">
+            <Link href="/explore">
+              <Button size="lg" className="bg-primary hover:bg-primary/90">
+                Explore Creators
+              </Button>
+            </Link>
+            <Link href="/library">
+              <Button size="lg" variant="outline">
+                My Library
+              </Button>
+            </Link>
+            {!user && (
+              <>
+                <Link href="/signup">
+                  <Button size="lg" variant="outline">
+                    Sign Up
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="lg" variant="outline">
+                    Sign In
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Featured Creators Section */}
