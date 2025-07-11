@@ -43,7 +43,7 @@ The application follows a monorepo structure with clear separation between clien
 
 ### UI Design System
 - **Theme**: Dual light/dark theme support with CSS variables
-- **Colors**: Deep navy background (#0d1b2a) with lavender accents (#cdb4db) for premium aesthetic
+- **Colors**: Deep navy background (#0d1b2a) with sunset orange accents (#ff914d) for creative indie aesthetic
 - **Typography**: Inter font family
 - **Components**: Comprehensive UI component library from Shadcn/ui
 - **Logo System**: Reusable Logo component with configurable text display
@@ -114,9 +114,12 @@ Changelog:
 - July 02, 2025. Built Creator Dashboard page with placeholder content structure
 - July 10, 2025. Created responsive Creator Storefront page with video grid and pricing
 - July 10, 2025. Built Video Detail page with three playback modes (default, theater, fullscreen)
-- July 11, 2025. Major color palette redesign: Deep navy background (#0d1b2a) with lavender accents (#cdb4db)
+- July 11, 2025. Major color palette redesign: Deep navy background (#0d1b2a) with sunset orange accents (#ff914d)
 - July 11, 2025. Cleaned up Video Detail navigation: removed Dashboard link, added "Back to Maya's Page" button
-- July 11, 2025. Updated all pages and components to use new premium lavender/navy color scheme
+- July 11, 2025. Added comprehensive theme toggle (light/dark mode) across all pages
+- July 11, 2025. Implemented dynamic video routing: Video Detail page now loads correct video data based on URL parameter
+- July 11, 2025. Created shared video data structure for consistent video information across pages
+- July 11, 2025. Enhanced Video Detail page with proper error handling for missing videos
 ```
 
 ## User Preferences

@@ -1,63 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Play, Pause, Volume2, Monitor, Maximize, Users, Settings } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-
-// Mock video data
-const videoData = {
-  id: 1,
-  title: "How I Shot This Scene",
-  duration: "12:34",
-  price: 9.99,
-  creator: "Maya Lee",
-  description: "In this behind-the-scenes documentary, I break down the cinematography techniques and creative decisions that went into capturing one of my most challenging scenes. From camera angles to lighting setups, discover the artistic process behind creating compelling visual narratives that connect with audiences on an emotional level.",
-  videoUrl: "https://placehold.co/800x450/1a1a1a/white?text=Video+Player", // Placeholder video frame
-};
-
-// Mock related videos
-const relatedVideos = [
-  {
-    id: 2,
-    title: "My Creative Process",
-    duration: "08:15",
-    price: 0,
-    thumbnail: "https://placehold.co/400x200/2a2a2a/white?text=Creative+Process"
-  },
-  {
-    id: 3,
-    title: "Documentary BTS",
-    duration: "15:22", 
-    price: 4.99,
-    thumbnail: "https://placehold.co/400x200/2a2a2a/white?text=Documentary+BTS"
-  },
-  {
-    id: 4,
-    title: "Behind the Camera",
-    duration: "06:45",
-    price: 0,
-    thumbnail: "https://placehold.co/400x200/2a2a2a/white?text=Behind+Camera"
-  }
-];
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useRoute } from 'wouter';
+import { getVideoById, getRelatedVideos, type Video } from '@/../../shared/videoData';
 
 type PlaybackMode = 'default' | 'theater' | 'fullscreen';
 
 export default function VideoDetail() {
+  const [match, params] = useRoute('/video/:id');
+  const [videoData, setVideoData] = useState<Video | null>(null);
+  const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('default');
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [volume, setVolume] = useState(100);
 
+  // Load video data based on URL parameter
+  useEffect(() => {
+    if (params?.id) {
+      const video = getVideoById(parseInt(params.id));
+      if (video) {
+        setVideoData(video);
+        setRelatedVideos(getRelatedVideos(video.id));
+      }
+    }
+  }, [params?.id]);
+
+  // If video not found, show error
+  if (!videoData) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Video Not Found</h1>
+          <p className="text-muted-foreground mb-6">The video you're looking for doesn't exist.</p>
+          <Button onClick={() => window.location.href = '/creator/maya-lee'} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            Back to Maya's Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const handlePurchase = () => {
     console.log(`Purchasing video: ${videoData.title} for $${videoData.price}`);
   };
 
-  const handleRelatedVideoClick = (video: typeof relatedVideos[0]) => {
-    if (video.price === 0) {
-      console.log(`Playing free video: ${video.title}`);
-    } else {
-      console.log(`Viewing video: ${video.title} ($${video.price})`);
-    }
+  const handleRelatedVideoClick = (video: Video) => {
+    window.location.href = `/video/${video.id}`;
   };
 
   const togglePlayPause = () => {
@@ -118,7 +110,10 @@ export default function VideoDetail() {
               </svg>
               <span>Back to Maya's Page</span>
             </a>
-            <Logo showText={true} className="text-2xl" />
+            <div className="flex items-center space-x-4">
+              <Logo showText={true} className="text-2xl" />
+              <ThemeToggle />
+            </div>
           </div>
         </header>
       )}

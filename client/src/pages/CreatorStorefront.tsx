@@ -3,86 +3,39 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Play, ExternalLink } from 'lucide-react';
 import { FaTwitter, FaYoutube, FaGlobe } from 'react-icons/fa';
-// Mock creator data
-const creator = {
-  name: "Maya Lee",
-  avatar: "https://placehold.co/180x180",
-  banner: "https://placehold.co/1200x400",
-  bio: "Documentarian and digital storyteller. Sharing human stories through raw lenses.",
-  socialLinks: {
-    twitter: "#",
-    youtube: "#",
-    website: "#"
-  }
-};
-
-// Mock videos data
-const videos = [
-  {
-    id: 1,
-    title: "How I Shot This Scene",
-    duration: "12:34",
-    price: 9.99,
-    thumbnail: "https://placehold.co/400x200"
-  },
-  {
-    id: 2,
-    title: "My Creative Process",
-    duration: "08:15",
-    price: 0,
-    thumbnail: "https://placehold.co/400x200"
-  },
-  {
-    id: 3,
-    title: "Documentary BTS",
-    duration: "15:22",
-    price: 4.99,
-    thumbnail: "https://placehold.co/400x200"
-  },
-  {
-    id: 4,
-    title: "Behind the Camera",
-    duration: "06:45",
-    price: 0,
-    thumbnail: "https://placehold.co/400x200"
-  },
-  {
-    id: 5,
-    title: "Equipment Tour",
-    duration: "18:30",
-    price: 12.99,
-    thumbnail: "https://placehold.co/400x200"
-  },
-  {
-    id: 6,
-    title: "Location Scouting",
-    duration: "09:12",
-    price: 5.99,
-    thumbnail: "https://placehold.co/400x200"
-  }
-];
+import { Logo } from '@/components/Logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { mockVideos, mockCreator, type Video } from '@/../../shared/videoData';
 
 export default function CreatorStorefront() {
   // TODO: Use useParams to get username from URL when implementing dynamic creator loading
   // const { username } = useParams();
 
-  const handleVideoAction = (video: typeof videos[0]) => {
+  const handleVideoAction = (video: Video) => {
     // Navigate to video detail page
     window.location.href = `/video/${video.id}`;
   };
 
   const handleFollow = () => {
-    console.log('Following creator:', creator.name);
+    console.log('Following creator:', mockCreator.name);
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Header */}
+      <header className="relative z-50 px-6 py-4 bg-background/95 backdrop-blur-sm border-b border-border">
+        <nav className="max-w-7xl mx-auto flex items-center justify-between">
+          <Logo showText={true} />
+          <ThemeToggle />
+        </nav>
+      </header>
+
       {/* Hero Banner Section */}
       <div className="relative">
         {/* Banner Image */}
         <div 
           className="w-full h-80 md:h-96 bg-cover bg-center bg-gray-800"
-          style={{ backgroundImage: `url(${creator.banner})` }}
+          style={{ backgroundImage: `url(${mockCreator.banner})` }}
         >
           <div className="absolute inset-0 bg-black/40" />
         </div>
@@ -90,7 +43,7 @@ export default function CreatorStorefront() {
         {/* Creator Name Overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
           <h1 className="text-4xl md:text-6xl font-bold text-white text-center drop-shadow-lg">
-            {creator.name}
+            {mockCreator.name}
           </h1>
         </div>
       </div>
@@ -119,21 +72,21 @@ export default function CreatorStorefront() {
             {/* Social Media Links */}
             <div className="flex space-x-4">
               <a 
-                href={creator.socialLinks.twitter} 
+                href={mockCreator.socialLinks.twitter} 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Twitter"
               >
                 <FaTwitter className="w-5 h-5" />
               </a>
               <a 
-                href={creator.socialLinks.youtube} 
+                href={mockCreator.socialLinks.youtube} 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="YouTube"
               >
                 <FaYoutube className="w-5 h-5" />
               </a>
               <a 
-                href={creator.socialLinks.website} 
+                href={mockCreator.socialLinks.website} 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Website"
               >
@@ -145,7 +98,7 @@ export default function CreatorStorefront() {
           {/* Bio Section */}
           <div className="text-center mb-12">
             <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto">
-              {creator.bio}
+              {mockCreator.bio}
             </p>
           </div>
         </div>
@@ -159,7 +112,7 @@ export default function CreatorStorefront() {
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {videos.map((video) => (
+            {mockVideos.map((video) => (
               <Card 
                 key={video.id} 
                 className="group bg-card border-border hover:bg-muted transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer"

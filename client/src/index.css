@@ -15,12 +15,12 @@
   --card-foreground: hsl(220, 10%, 3.9%);
   --border: hsl(220, 5.9%, 90%);
   --input: hsl(220, 5.9%, 90%);
-  --primary: hsl(43, 96%, 56%);
+  --primary: hsl(23, 100%, 65%);
   --primary-foreground: hsl(0, 0%, 98%);
   --secondary: hsl(220, 4.8%, 95.9%);
   --secondary-foreground: hsl(220, 5.9%, 10%);
-  --accent: hsl(220, 4.8%, 95.9%);
-  --accent-foreground: hsl(220, 5.9%, 10%);
+  --accent: hsl(23, 100%, 65%);
+  --accent-foreground: hsl(0, 0%, 98%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
   --ring: hsl(220, 10%, 3.9%);
@@ -41,18 +41,18 @@
   /* Navy borders */
   --border: hsl(210, 54%, 25%);
   --input: hsl(210, 54%, 20%);
-  /* Lavender Primary (#cdb4db) */
-  --primary: hsl(285, 35%, 78%);
-  --primary-foreground: hsl(210, 54%, 11%);
+  /* Sunset Orange Primary (#ff914d) */
+  --primary: hsl(23, 100%, 65%);
+  --primary-foreground: hsl(0, 0%, 98%);
   /* Secondary navy tones */
   --secondary: hsl(210, 54%, 20%);
   --secondary-foreground: hsl(0, 0%, 98%);
-  /* Lavender accent */
-  --accent: hsl(285, 35%, 78%);
-  --accent-foreground: hsl(210, 54%, 11%);
+  /* Orange accent */
+  --accent: hsl(23, 100%, 65%);
+  --accent-foreground: hsl(0, 0%, 98%);
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(285, 35%, 78%);
+  --ring: hsl(23, 100%, 65%);
 }
 
 @layer base {
