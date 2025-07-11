@@ -113,7 +113,7 @@ function DashboardContent() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-            Welcome, {username}
+            Welcome, Creator
           </h1>
           <p className="text-lg text-muted-foreground">
             Manage your content and grow your audience
@@ -284,9 +284,5 @@ function DashboardContent() {
 }
 
 export default function Dashboard() {
-  return (
-    <ProtectedRoute requireRole="creator">
-      <DashboardContent />
-    </ProtectedRoute>
-  );
+  return <DashboardContent />;
 }

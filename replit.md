@@ -133,6 +133,9 @@ Changelog:
 - July 11, 2025. Updated VideoDetail page with viewer authentication checks and role-based video access control
 - July 11, 2025. Changed default user role from 'creator' to 'viewer' to support two-sided marketplace
 - July 11, 2025. Integrated PaymentModal across viewer-facing pages for seamless content purchasing
+- July 11, 2025. Implemented "Become a Creator" CTA with Supabase role conversion functionality across ViewerHome and MyLibrary pages
+- July 11, 2025. Enhanced MyLibrary empty state with dual-action buttons for viewer engagement
+- July 11, 2025. Removed authentication barriers for testing - all pages accessible without sign-in
 ```
 
 ## User Preferences
