@@ -1,19 +1,44 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Play, ExternalLink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Play, ExternalLink, Lock, Star, DollarSign } from 'lucide-react';
 import { FaTwitter, FaYoutube, FaGlobe } from 'react-icons/fa';
-import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
+import { PaymentModal } from '@/components/PaymentModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { mockVideos, mockCreator, type Video } from '@/../../shared/videoData';
 
 export default function CreatorStorefront() {
-  // TODO: Use useParams to get username from URL when implementing dynamic creator loading
-  // const { username } = useParams();
+  const { user, profile } = useAuth();
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  
+  // Mock purchased videos - in real app, this would come from API
+  const purchasedVideoIds = [1, 3]; // Mock user has purchased videos 1 and 3
+  
+  // Check if current user is the creator viewing their own page
+  const isOwnPage = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
   const handleVideoAction = (video: Video) => {
-    // Navigate to video detail page
-    window.location.href = `/video/${video.id}`;
+    const isPurchased = purchasedVideoIds.includes(video.id);
+    
+    if (isPurchased || video.isFree || isOwnPage) {
+      // Navigate to video detail page
+      window.location.href = `/video/${video.id}`;
+    } else {
+      // Show payment modal for purchase
+      setSelectedVideo(video);
+      setPaymentModalOpen(true);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    setPaymentModalOpen(false);
+    if (selectedVideo) {
+      window.location.href = `/video/${selectedVideo.id}`;
+    }
   };
 
   const handleFollow = () => {
@@ -22,13 +47,7 @@ export default function CreatorStorefront() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="relative z-50 px-6 py-4 bg-background/95 backdrop-blur-sm border-b border-border">
-        <nav className="max-w-7xl mx-auto flex items-center justify-between">
-          <Logo showText={true} />
-          <ThemeToggle />
-        </nav>
-      </header>
+      <Header />
 
       {/* Hero Banner Section */}
       <div className="relative">
@@ -159,12 +178,20 @@ export default function CreatorStorefront() {
                         }}
                         size="sm"
                         className={`${
-                          video.price === 0
-                            ? 'bg-green-600 hover:bg-green-700 text-white'
-                            : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                          (() => {
+                            const isPurchased = purchasedVideoIds.includes(video.id);
+                            if (isOwnPage) return 'bg-blue-600 hover:bg-blue-700 text-white';
+                            if (isPurchased || video.price === 0) return 'bg-green-600 hover:bg-green-700 text-white';
+                            return 'bg-primary hover:bg-primary/90 text-primary-foreground';
+                          })()
                         } transition-colors font-medium`}
                       >
-                        {video.price === 0 ? 'Watch Now' : 'View'}
+                        {(() => {
+                          const isPurchased = purchasedVideoIds.includes(video.id);
+                          if (isOwnPage) return 'Edit';
+                          if (isPurchased || video.price === 0) return 'Watch';
+                          return 'Buy';
+                        })()}
                       </Button>
                     </div>
                   </div>
@@ -175,27 +202,19 @@ export default function CreatorStorefront() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              Powered by <span className="text-primary font-semibold">Mosswood</span>
-            </p>
-            <div className="flex justify-center space-x-6 text-sm">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Terms
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Privacy
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                Explore Creators
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
+      
+      {/* Payment Modal */}
+      {selectedVideo && (
+        <PaymentModal
+          isOpen={paymentModalOpen}
+          onClose={() => setPaymentModalOpen(false)}
+          onSuccess={handlePaymentSuccess}
+          videoTitle={selectedVideo.title}
+          videoPrice={selectedVideo.price}
+          videoId={selectedVideo.id}
+        />
+      )}
     </div>
   );
 }

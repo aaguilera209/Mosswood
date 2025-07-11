@@ -15,12 +15,25 @@ export function Header() {
         <div className="flex items-center space-x-4">
           {user ? (
             <>
-              {profile?.role === 'creator' && (
+              {profile?.role === 'creator' ? (
                 <Link href="/dashboard">
                   <Button variant="outline" size="sm">
                     Dashboard
                   </Button>
                 </Link>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Link href="/explore">
+                    <Button variant="outline" size="sm">
+                      Explore
+                    </Button>
+                  </Link>
+                  <Link href="/library">
+                    <Button variant="outline" size="sm">
+                      My Library
+                    </Button>
+                  </Link>
+                </div>
               )}
               <span className="text-sm text-muted-foreground">
                 {profile?.email}

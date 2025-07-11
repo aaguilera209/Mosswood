@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           {
             id: data.user.id,
             email: data.user.email!,
-            role: 'creator', // Default to creator role for new signups
+            role: 'viewer', // Default to viewer role for new signups
           },
         ]);
 

@@ -1,0 +1,48 @@
+Build the viewer-facing UI for a two-sided content platform (like YouTube). The current system already supports creators with dashboards and upload flows. This prompt focuses on building the interface and experience for the “viewer” role.
+
+🧑‍💻 ROLE CONTEXT:
+Viewers are regular users who browse creator storefronts, watch video trailers, and purchase full videos via Stripe. Their experience should feel clean, focused, and user-first.
+
+🎯 OBJECTIVES:
+
+1. 🏠 **Viewer Homepage**
+   - Create a simple landing page that shows a welcome message and a few suggested creators
+   - Include login/signup buttons (if not logged in)
+   - If logged in, greet by name and provide quick links to:
+     - My Library (purchased videos)
+     - Explore Creators
+
+2. 🛍️ **Creator Shop Page (Viewer View)**
+   - Show a creator’s storefront (already exists — confirm it’s viewer-safe)
+   - Hide any creator-only controls like "Edit" or "Upload"
+   - If viewer has already purchased a video, show it as unlocked
+   - If not, display price + “Buy & Watch” button
+
+3. 🎥 **Video Detail Page**
+   - Consistent with viewer context:
+     - If purchased → Show video player (unlocked)
+     - If not purchased → Show locked state and Stripe purchase modal
+     - If not logged in → Prompt to log in before purchase
+   - Add a “Back to Creator Page” link for easy navigation
+
+4. 🧭 **Viewer Navigation Header**
+   - Remove or hide creator-only items like Dashboard or Upload
+   - Header should include:
+     - Explore
+     - My Library
+     - Profile icon / dropdown (Logout, Settings)
+   - Optional: add dark mode toggle if not already included
+
+5. 📚 **My Library Page**
+   - Page that lists all purchased videos for the logged-in viewer
+   - Each item links to the video detail page
+
+6. 🔐 **Access Control**
+   - Viewer should never see creator-only UI
+   - Creator should never see purchase buttons on their own content
+
+7. ⚠️ IMPORTANT:
+   - Make sure viewer UI works only for users with role = “viewer” from Supabase
+   - Fallback gracefully if user is not logged in
+
+Use existing styles and page structure where possible. Keep the UX clean and modern. 

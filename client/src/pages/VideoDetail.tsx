@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Play, Pause, Volume2, Monitor, Maximize, Users, Settings } from 'lucide-react';
-import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { useRoute } from 'wouter';
+import { Badge } from '@/components/ui/badge';
+import { Play, Pause, Volume2, Monitor, Maximize, Users, Settings, Lock, ArrowLeft, DollarSign } from 'lucide-react';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
+import { useRoute, Link } from 'wouter';
 import { getVideoById, getRelatedVideos, type Video } from '@/../../shared/videoData';
 import { PaymentModal } from '@/components/PaymentModal';
-import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 type PlaybackMode = 'default' | 'theater' | 'fullscreen';
@@ -21,9 +22,13 @@ export default function VideoDetail() {
   const [showControls, setShowControls] = useState(false);
   const [volume, setVolume] = useState(100);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [hasPurchased, setHasPurchased] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
+  const { user, profile } = useAuth();
   const { toast } = useToast();
+  
+  // Mock purchased videos - in real app, this would come from API
+  const purchasedVideoIds = [1, 3];
+  const hasPurchased = videoData ? purchasedVideoIds.includes(videoData.id) : false;
+  const isOwnVideo = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
   // Load video data based on URL parameter
   useEffect(() => {
@@ -36,80 +41,68 @@ export default function VideoDetail() {
     }
   }, [params?.id]);
 
-  // Check for existing email and purchase status
-  useEffect(() => {
-    const checkPurchaseStatus = async () => {
-      // Get stored email or prompt for one
-      let email = localStorage.getItem('userEmail');
-      if (!email) {
-        email = prompt('Enter your email to check for existing purchases:');
-        if (email) {
-          localStorage.setItem('userEmail', email);
-        }
-      }
-      
-      if (email && videoData) {
-        setUserEmail(email);
-        
-        // Check if video is free
-        if (videoData.price === 0) {
-          setHasPurchased(true);
-          return;
-        }
-        
-        // Check purchase status
-        try {
-          const response = await apiRequest('POST', '/api/check-purchase', {
-            email,
-            videoId: videoData.id
-          });
-          const data = await response.json();
-          setHasPurchased(data.hasPurchased);
-        } catch (error) {
-          console.error('Error checking purchase status:', error);
-        }
-      }
-    };
+  // Show video access controls based on user status
+  const canWatchVideo = () => {
+    if (!videoData) return false;
+    if (videoData.price === 0) return true; // Free videos
+    if (isOwnVideo) return true; // Creator's own videos
+    if (hasPurchased) return true; // Purchased videos
+    return false;
+  };
 
-    if (videoData) {
-      checkPurchaseStatus();
-    }
-  }, [videoData]);
-
-  // If video not found, show error
-  if (!videoData) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Video Not Found</h1>
-          <p className="text-muted-foreground mb-6">The video you're looking for doesn't exist.</p>
-          <Button onClick={() => window.location.href = '/creator/maya-lee'} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            Back to Maya's Page
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const handlePurchase = () => {
-    if (videoData.price === 0) {
-      setHasPurchased(true);
+  const handleWatchAction = () => {
+    if (!user) {
       toast({
-        title: "Access Granted!",
-        description: "This video is free to watch.",
+        title: "Sign in required",
+        description: "Please sign in to purchase and watch videos.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    if (canWatchVideo()) {
+      setIsPlaying(!isPlaying);
     } else {
       setIsPaymentModalOpen(true);
     }
   };
 
   const handlePaymentSuccess = () => {
-    setHasPurchased(true);
+    setIsPaymentModalOpen(false);
     toast({
-      title: "Purchase Successful!",
-      description: "You now have access to this video.",
+      title: "Purchase successful!",
+      description: "You can now watch the video.",
     });
+    // In real app, refresh purchase status from API
   };
+
+  // If video not found, show error
+  if (!videoData) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <Header />
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Video Not Found</h1>
+            <p className="text-muted-foreground mb-6">The video you're looking for doesn't exist.</p>
+            <div className="flex space-x-4 justify-center">
+              <Link href="/creator/maya">
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  Back to Creator Page
+                </Button>
+              </Link>
+              <Link href="/explore">
+                <Button variant="outline">
+                  Explore Other Creators
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   const handleRelatedVideoClick = (video: Video) => {
     window.location.href = `/video/${video.id}`;
@@ -120,10 +113,10 @@ export default function VideoDetail() {
   };
 
   const handleVideoClick = () => {
-    if (hasPurchased) {
+    if (canWatchVideo()) {
       togglePlayPause();
     } else {
-      handlePurchase();
+      handleWatchAction();
     }
   };
 
@@ -170,12 +163,10 @@ export default function VideoDetail() {
       {playbackMode !== 'fullscreen' && (
         <header className="border-b border-border px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <a href="/creator/maya-lee" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
+            <Link href="/creator/maya" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
+              <ArrowLeft className="w-4 h-4" />
               <span>Back to Maya's Page</span>
-            </a>
+            </Link>
             <div className="flex items-center space-x-4">
               <Logo showText={true} className="text-2xl" />
               <ThemeToggle />

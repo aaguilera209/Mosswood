@@ -37,9 +37,12 @@ The application follows a monorepo structure with clear separation between clien
 - **Current Schema**: Users table with id, username, and password fields
 
 ### Authentication System
-- **Strategy**: Session-based authentication (prepared for implementation)
-- **Storage**: PostgreSQL sessions via connect-pg-simple
-- **User Model**: Basic user entity with username/password
+- **Strategy**: Supabase authentication with row-level security
+- **Provider**: Supabase Auth with email/password
+- **Profiles**: Separate profiles table with role-based access control
+- **Roles**: 'creator' (content creators) and 'viewer' (content consumers)
+- **Default Role**: New users default to 'viewer' role for two-sided marketplace
+- **Authorization**: Role-based UI rendering and protected routes
 
 ### UI Design System
 - **Theme**: Dual light/dark theme support with CSS variables
@@ -49,12 +52,15 @@ The application follows a monorepo structure with clear separation between clien
 - **Logo System**: Reusable Logo component with configurable text display
 
 ### Routing Structure
-- **Home** (`/`): Landing page with hero, video, and mission sections
-- **Signup** (`/signup`): User registration page
+- **Viewer Home** (`/`): Main landing page with featured creators and platform overview
+- **Home** (`/home`): Original marketing landing page with hero, video, and mission sections
+- **Signup** (`/signup`): User registration page (defaults to 'viewer' role)
 - **Login** (`/login`): User authentication page
-- **Dashboard** (`/dashboard`): Creator dashboard for content management
-- **Creator Storefront** (`/creator/:username`): Public-facing creator profile and video store
-- **Video Detail** (`/video/:id`): Individual video viewing page with playback modes
+- **Dashboard** (`/dashboard`): Creator dashboard for content management (creator role only)
+- **Creator Storefront** (`/creator/:username`): Public-facing creator profile and video store with purchase integration
+- **Video Detail** (`/video/:id`): Individual video viewing page with role-based access control
+- **My Library** (`/library`): Viewer's purchased video collection (viewer role only)
+- **Explore** (`/explore`): Creator discovery page with search and filtering (viewer role only)
 - **404**: Not found page
 
 ## Data Flow
@@ -120,6 +126,13 @@ Changelog:
 - July 11, 2025. Implemented dynamic video routing: Video Detail page now loads correct video data based on URL parameter
 - July 11, 2025. Created shared video data structure for consistent video information across pages
 - July 11, 2025. Enhanced Video Detail page with proper error handling for missing videos
+- July 11, 2025. Completed Supabase authentication system with role-based access control ('creator' and 'viewer' roles)
+- July 11, 2025. Built comprehensive viewer-facing UI: ViewerHome, MyLibrary, and ExplorePage
+- July 11, 2025. Updated Header to show role-specific navigation (Dashboard for creators, Explore/Library for viewers)
+- July 11, 2025. Enhanced CreatorStorefront with viewer-aware features: buy buttons, purchase status, payment integration
+- July 11, 2025. Updated VideoDetail page with viewer authentication checks and role-based video access control
+- July 11, 2025. Changed default user role from 'creator' to 'viewer' to support two-sided marketplace
+- July 11, 2025. Integrated PaymentModal across viewer-facing pages for seamless content purchasing
 ```
 
 ## User Preferences

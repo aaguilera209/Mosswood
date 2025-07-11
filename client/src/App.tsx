@@ -12,17 +12,23 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import CreatorStorefront from "@/pages/CreatorStorefront";
 import VideoDetail from "@/pages/VideoDetail";
+import ViewerHome from "@/pages/ViewerHome";
+import MyLibrary from "@/pages/MyLibrary";
+import ExplorePage from "@/pages/ExplorePage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={ViewerHome} />
+      <Route path="/home" component={Home} />
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/creator/:username" component={CreatorStorefront} />
       <Route path="/video/:id" component={VideoDetail} />
+      <Route path="/library" component={MyLibrary} />
+      <Route path="/explore" component={ExplorePage} />
       <Route component={NotFound} />
     </Switch>
   );
