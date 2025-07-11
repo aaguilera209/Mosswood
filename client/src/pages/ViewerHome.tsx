@@ -47,12 +47,13 @@ export default function ViewerHome() {
   const [, setLocation] = useLocation();
 
   const handleBecomeCreator = async () => {
+    // For testing without authentication, simulate the flow
     if (!user) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to become a creator.",
-        variant: "destructive",
+        title: "Demo: You're now a creator!",
+        description: "In a real app, you'd need to sign in first. Redirecting to dashboard...",
       });
+      setLocation('/dashboard');
       return;
     }
 

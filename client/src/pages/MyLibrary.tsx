@@ -34,12 +34,13 @@ function MyLibraryContent() {
   const totalValue = mockPurchasedVideos.reduce((sum, video) => sum + video.price, 0);
 
   const handleBecomeCreator = async () => {
+    // For testing without authentication, simulate the flow
     if (!user) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to become a creator.",
-        variant: "destructive",
+        title: "Demo: You're now a creator!",
+        description: "In a real app, you'd need to sign in first. Redirecting to dashboard...",
       });
+      setLocation('/dashboard');
       return;
     }
 
