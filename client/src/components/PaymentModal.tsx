@@ -106,43 +106,45 @@ function PaymentForm({ onSuccess, onClose, videoTitle, videoPrice, videoId }: Om
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-1">
       {/* Video Info */}
-      <div className="bg-muted p-4 rounded-lg">
+      <div className="bg-muted p-3 rounded-lg">
         <div className="flex items-center space-x-3">
           <div className="bg-primary/10 p-2 rounded">
-            <CreditCard className="w-5 h-5 text-primary" />
+            <CreditCard className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-medium">{videoTitle}</h3>
+            <h3 className="font-medium text-sm">{videoTitle}</h3>
             <p className="text-lg font-bold text-primary">${videoPrice.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {/* Customer Information */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div>
-            <Label htmlFor="name">Full Name *</Label>
+            <Label htmlFor="name" className="text-sm">Full Name *</Label>
             <Input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your full name"
+              className="h-9"
               required
             />
           </div>
           
           <div>
-            <Label htmlFor="email">Email Address *</Label>
+            <Label htmlFor="email" className="text-sm">Email Address *</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              className="h-9"
               required
             />
           </div>
@@ -150,25 +152,27 @@ function PaymentForm({ onSuccess, onClose, videoTitle, videoPrice, videoId }: Om
 
         {/* Payment Element */}
         <div className="space-y-2">
-          <Label>Payment Details *</Label>
-          <div className="border rounded-lg p-3">
+          <Label className="text-sm">Payment Details *</Label>
+          <div className="border rounded-lg p-2">
             <PaymentElement />
           </div>
           
           {/* Test Card Info */}
           <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-            <strong>Test Mode:</strong> Use card number 4242 4242 4242 4242 with any future date and CVC.
+            <strong>Test Mode:</strong> Use card 4242 4242 4242 4242
           </div>
         </div>
 
         {/* Submit Button */}
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={!stripe || !elements || isProcessing}
-        >
-          {isProcessing ? 'Processing...' : `Pay $${videoPrice.toFixed(2)}`}
-        </Button>
+        <div className="pt-2">
+          <Button
+            type="submit"
+            className="w-full h-10"
+            disabled={!stripe || !elements || isProcessing}
+          >
+            {isProcessing ? 'Processing...' : `Pay $${videoPrice.toFixed(2)}`}
+          </Button>
+        </div>
       </form>
     </div>
   );
@@ -211,8 +215,8 @@ export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPric
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold">Complete Purchase</DialogTitle>
             <Button
@@ -226,21 +230,23 @@ export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPric
           </div>
         </DialogHeader>
 
-        {clientSecret ? (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <PaymentForm
-              onSuccess={onSuccess}
-              onClose={handleClose}
-              videoTitle={videoTitle}
-              videoPrice={videoPrice}
-              videoId={videoId}
-            />
-          </Elements>
-        ) : (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto">
+          {clientSecret ? (
+            <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <PaymentForm
+                onSuccess={onSuccess}
+                onClose={handleClose}
+                videoTitle={videoTitle}
+                videoPrice={videoPrice}
+                videoId={videoId}
+              />
+            </Elements>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
