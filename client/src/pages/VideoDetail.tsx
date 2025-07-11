@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Play, Monitor, Maximize, Users } from 'lucide-react';
+import { Play, Pause, Volume2, Monitor, Maximize, Users, Settings } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 // Mock video data
@@ -44,6 +44,9 @@ type PlaybackMode = 'default' | 'theater' | 'fullscreen';
 
 export default function VideoDetail() {
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('default');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const [volume, setVolume] = useState(100);
 
   const handlePurchase = () => {
     console.log(`Purchasing video: ${videoData.title} for $${videoData.price}`);
@@ -55,6 +58,19 @@ export default function VideoDetail() {
     } else {
       console.log(`Viewing video: ${video.title} ($${video.price})`);
     }
+  };
+
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleVideoClick = () => {
+    // For now, show purchase flow since video isn't purchased
+    handlePurchase();
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
   };
 
   const getVideoContainerClasses = () => {
@@ -110,77 +126,149 @@ export default function VideoDetail() {
       )}
 
       <div className={`${playbackMode === 'theater' ? 'bg-gray-900' : ''} ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
-        {/* Playback Mode Controls - hidden in fullscreen */}
-        {playbackMode !== 'fullscreen' && (
-          <div className="max-w-4xl mx-auto mb-6">
-            <div className="flex space-x-2">
-              <Button
-                onClick={() => setPlaybackMode('default')}
-                variant={playbackMode === 'default' ? 'default' : 'outline'}
-                size="sm"
-                className={`${
-                  playbackMode === 'default'
-                    ? 'bg-amber-600 hover:bg-amber-700 text-black'
-                    : 'border-gray-600 text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Monitor className="w-4 h-4 mr-2" />
-                Default
-              </Button>
-              <Button
-                onClick={() => setPlaybackMode('theater')}
-                variant={playbackMode === 'theater' ? 'default' : 'outline'}
-                size="sm"
-                className={`${
-                  playbackMode === 'theater'
-                    ? 'bg-amber-600 hover:bg-amber-700 text-black'
-                    : 'border-gray-600 text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Theater
-              </Button>
-              <Button
-                onClick={() => setPlaybackMode('fullscreen')}
-                variant={playbackMode === 'fullscreen' ? 'default' : 'outline'}
-                size="sm"
-                className={`${
-                  playbackMode === 'fullscreen'
-                    ? 'bg-amber-600 hover:bg-amber-700 text-black'
-                    : 'border-gray-600 text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Maximize className="w-4 h-4 mr-2" />
-                Fullscreen
-              </Button>
-            </div>
-          </div>
-        )}
+
 
         {/* Video Player Section */}
         <div className={getVideoContainerClasses()}>
-          <div className="relative group">
+          <div 
+            className="relative group cursor-pointer"
+            onMouseEnter={() => setShowControls(true)}
+            onMouseLeave={() => setShowControls(false)}
+            onClick={handleVideoClick}
+          >
             <img
               src={videoData.videoUrl}
               alt={videoData.title}
               className={getVideoClasses()}
             />
-            {/* Play Button Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Button
-                onClick={handlePurchase}
-                className="bg-amber-600 hover:bg-amber-700 text-black font-semibold px-8 py-4 text-lg"
-              >
-                <Play className="w-6 h-6 mr-2" />
-                Buy & Watch for ${videoData.price.toFixed(2)}
-              </Button>
+            
+            {/* YouTube-style Video Controls Overlay */}
+            <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${showControls || playbackMode === 'fullscreen' ? 'opacity-100' : 'opacity-0'}`}>
+              
+              {/* Bottom Controls Bar */}
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-600/50 h-1 rounded-full mb-3 cursor-pointer">
+                  <div className="bg-amber-500 h-1 rounded-full w-1/3"></div>
+                </div>
+                
+                {/* Control Buttons */}
+                <div className="flex items-center justify-between">
+                  {/* Left Controls */}
+                  <div className="flex items-center space-x-3">
+                    {/* Play/Pause Button */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePlayPause();
+                      }}
+                      size="sm"
+                      className="bg-transparent hover:bg-white/20 text-white p-2"
+                    >
+                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </Button>
+                    
+                    {/* Volume Control */}
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVolumeChange(volume === 0 ? 100 : 0);
+                        }}
+                        size="sm"
+                        className="bg-transparent hover:bg-white/20 text-white p-2"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </Button>
+                      <div className="w-20 bg-gray-600/50 h-1 rounded-full cursor-pointer">
+                        <div 
+                          className="bg-white h-1 rounded-full" 
+                          style={{ width: `${volume}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {/* Time Display */}
+                    <span className="text-white text-sm font-medium">
+                      4:20 / {videoData.duration}
+                    </span>
+                  </div>
+                  
+                  {/* Right Controls */}
+                  <div className="flex items-center space-x-2">
+                    {/* Playback Mode Buttons */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPlaybackMode('default');
+                      }}
+                      size="sm"
+                      className={`${
+                        playbackMode === 'default'
+                          ? 'bg-amber-600 hover:bg-amber-700 text-black'
+                          : 'bg-transparent hover:bg-white/20 text-white'
+                      } p-2`}
+                      title="Default Mode"
+                    >
+                      <Monitor className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPlaybackMode('theater');
+                      }}
+                      size="sm"
+                      className={`${
+                        playbackMode === 'theater'
+                          ? 'bg-amber-600 hover:bg-amber-700 text-black'
+                          : 'bg-transparent hover:bg-white/20 text-white'
+                      } p-2`}
+                      title="Theater Mode"
+                    >
+                      <Users className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPlaybackMode('fullscreen');
+                      }}
+                      size="sm"
+                      className={`${
+                        playbackMode === 'fullscreen'
+                          ? 'bg-amber-600 hover:bg-amber-700 text-black'
+                          : 'bg-transparent hover:bg-white/20 text-white'
+                      } p-2`}
+                      title="Fullscreen Mode"
+                    >
+                      <Maximize className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Settings */}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      size="sm"
+                      className="bg-transparent hover:bg-white/20 text-white p-2"
+                      title="Settings"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
             
             {/* Exit Fullscreen Button (only shown in fullscreen) */}
             {playbackMode === 'fullscreen' && (
               <Button
-                onClick={() => setPlaybackMode('default')}
-                className="absolute top-4 right-4 bg-gray-800/80 hover:bg-gray-700 text-white"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPlaybackMode('default');
+                }}
+                className="absolute top-4 right-4 bg-gray-800/80 hover:bg-gray-700 text-white z-10"
                 size="sm"
               >
                 Exit Fullscreen

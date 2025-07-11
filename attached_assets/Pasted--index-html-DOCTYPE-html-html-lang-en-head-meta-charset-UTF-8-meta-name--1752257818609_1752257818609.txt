@@ -1,0 +1,83 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mosswood - Video Detail Page</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">▶ Mosswood</div>
+    <nav>
+      <a href="#">Dashboard</a>
+      <a href="#">Maya's Store</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="video-section">
+      <div class="video-wrapper">
+        <video id="videoPlayer" poster="https://placehold.co/800x450" controls></video>
+
+        <div class="video-overlay" id="videoOverlay">
+          <button id="buyPrompt" class="buy-overlay-btn">Buy to Watch</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="video-meta">
+      <h1>How I Shot This Scene</h1>
+      <p class="duration">Duration: 12:34 <span>by Maya Lee</span></p>
+      <button class="buy-btn">Buy for $9.99</button>
+    </section>
+
+    <section class="video-description">
+      <h2>Description</h2>
+      <p>
+        In this behind-the-scenes documentary, I break down the cinematography techniques and creative
+        decisions that went into capturing one of my most challenging scenes...
+      </p>
+    </section>
+
+    <section class="more-videos">
+      <h2>More from Maya Lee</h2>
+      <div class="video-grid">
+        <div class="video-card" onclick="window.location.href='video1.html'">
+          <img src="https://placehold.co/300x200?text=Creative+Process" />
+          <div class="card-details">
+            <h3>My Creative Process</h3>
+            <span class="label">Free</span>
+          </div>
+        </div>
+        <div class="video-card" onclick="window.location.href='video2.html'">
+          <img src="https://placehold.co/300x200?text=Documentary+BTS" />
+          <div class="card-details">
+            <h3>Documentary BTS</h3>
+            <span class="label">$4.99</span>
+          </div>
+        </div>
+        <div class="video-card" onclick="window.location.href='video3.html'">
+          <img src="https://placehold.co/300x200?text=Behind+Camera" />
+          <div class="card-details">
+            <h3>Behind the Camera</h3>
+            <span class="label">Free</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>Powered by <strong>Mosswood</strong></p>
+      <nav>
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+        <a href="#">Explore Creators</a>
+      </nav>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
