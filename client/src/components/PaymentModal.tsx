@@ -159,7 +159,7 @@ function PaymentForm({ onSuccess, onClose, videoTitle, videoPrice, videoId }: Om
           
           {/* Test Card Info */}
           <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-            <strong>Test Mode:</strong> Use card 4242 4242 4242 4242
+            <strong>Test Mode:</strong> Use card 4242 4242 4242 4242 with expiry 12/28 and any CVC
           </div>
         </div>
 
