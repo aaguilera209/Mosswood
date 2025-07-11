@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,46 +9,16 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock purchased videos data - in real app, this would come from API
-const mockPurchasedVideos = [
-  {
-    id: 1,
-    title: "Advanced Digital Painting Techniques",
-    creator: "Maya Chen",
-    creatorUsername: "maya",
-    duration: "45:32",
-    purchaseDate: "2024-07-10",
-    thumbnail: "/api/placeholder/300/200",
-    price: 29.99,
-    category: "Art & Design"
-  },
-  {
-    id: 2,
-    title: "Professional Photography Lighting Setup",
-    creator: "Alex Rivera",
-    creatorUsername: "alex", 
-    duration: "32:18",
-    purchaseDate: "2024-07-08",
-    thumbnail: "/api/placeholder/300/200",
-    price: 24.99,
-    category: "Photography"
-  },
-  {
-    id: 3,
-    title: "Music Production Fundamentals",
-    creator: "Sarah Thompson",
-    creatorUsername: "sarah",
-    duration: "58:45",
-    purchaseDate: "2024-07-05",
-    thumbnail: "/api/placeholder/300/200",
-    price: 39.99,
-    category: "Music"
-  }
-];
+// Temporarily empty to demonstrate the enhanced empty state
+const mockPurchasedVideos = [];
 
 function MyLibraryContent() {
-  const { profile } = useAuth();
+  const { user, profile, becomeCreator } = useAuth();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -62,6 +32,32 @@ function MyLibraryContent() {
   });
 
   const totalValue = mockPurchasedVideos.reduce((sum, video) => sum + video.price, 0);
+
+  const handleBecomeCreator = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to become a creator.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await becomeCreator();
+      toast({
+        title: "You're now a creator!",
+        description: "Your dashboard is ready.",
+      });
+      setLocation('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to become a creator.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -160,20 +156,27 @@ function MyLibraryContent() {
               <Play className="w-12 h-12 text-muted-foreground" />
             </div>
             <h2 className="text-2xl font-semibold text-foreground mb-4">
-              {searchTerm || selectedCategory !== 'all' ? 'No videos found' : 'Your library is empty'}
+              {searchTerm || selectedCategory !== 'all' ? 'No videos found' : 'Your video library is empty'}
             </h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
               {searchTerm || selectedCategory !== 'all' 
                 ? 'Try adjusting your search or filter criteria.'
-                : 'Start building your video collection by exploring creators and purchasing videos you love.'
+                : 'Browse creators or become a creator yourself!'
               }
             </p>
             {(!searchTerm && selectedCategory === 'all') && (
-              <Link href="/explore">
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
-                  Explore Creators
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <Link href="/explore">
+                  <Button size="lg" className="bg-primary hover:bg-primary/90">
+                    Explore Creators
+                  </Button>
+                </Link>
+                {user && profile?.role === 'viewer' && (
+                  <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
+                    Become a Creator
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         )}

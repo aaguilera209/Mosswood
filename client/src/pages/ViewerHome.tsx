@@ -7,6 +7,8 @@ import { Play, Star, Users, Clock } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 
 // Mock featured creators data
 const featuredCreators = [
@@ -40,7 +42,35 @@ const featuredCreators = [
 ];
 
 export default function ViewerHome() {
-  const { user, profile } = useAuth();
+  const { user, profile, becomeCreator } = useAuth();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  const handleBecomeCreator = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to become a creator.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await becomeCreator();
+      toast({
+        title: "You're now a creator!",
+        description: "Your dashboard is ready.",
+      });
+      setLocation('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to become a creator.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,6 +102,11 @@ export default function ViewerHome() {
                 My Library
               </Button>
             </Link>
+            {user && profile?.role === 'viewer' && (
+              <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
+                Become a Creator
+              </Button>
+            )}
             {!user && (
               <>
                 <Link href="/signup">

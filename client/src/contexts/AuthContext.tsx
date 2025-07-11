@@ -9,6 +9,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  becomeCreator: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => {},
   signIn: async () => {},
   signOut: async () => {},
+  becomeCreator: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -107,6 +109,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const becomeCreator = async () => {
+    if (!user) throw new Error('Must be logged in to become a creator');
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: 'creator' })
+      .eq('id', user.id);
+
+    if (error) throw error;
+
+    // Reload the profile to get updated role
+    await loadProfile(user.id);
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -115,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signIn,
       signOut,
+      becomeCreator,
     }}>
       {children}
     </AuthContext.Provider>
