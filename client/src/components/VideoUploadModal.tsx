@@ -286,7 +286,7 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
             <Button
               type="submit"
               disabled={isUploading || !formData.file || !formData.title}
-              className="bg-amber-700 hover:bg-amber-800 dark:bg-amber-300 dark:hover:bg-amber-400 text-white dark:text-gray-900"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isUploading ? (
                 <div className="flex items-center space-x-2">

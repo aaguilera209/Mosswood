@@ -213,7 +213,7 @@ export default function ExplorePage() {
                         {creator.displayName}
                       </h3>
                       {creator.isVerified && (
-                        <Badge variant="secondary" className="bg-primary text-primary-foreground text-xs">
+                        <Badge variant="verified" className="text-xs">
                           <Star className="w-2 h-2 mr-1" />
                           Verified
                         </Badge>

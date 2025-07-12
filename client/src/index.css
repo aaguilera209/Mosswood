@@ -5,25 +5,31 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 98%);
-  --foreground: hsl(220, 10%, 9%);
-  --muted: hsl(220, 4.8%, 95.9%);
-  --muted-foreground: hsl(220, 3.8%, 46.1%);
+  /* Light Mode - Indie Film Festival Aesthetic */
+  --background: hsl(0, 0%, 98%); /* #FAFAFA off-white */
+  --foreground: hsl(0, 0%, 10%); /* #1A1A1A dark gray */
+  --muted: hsl(0, 0%, 96%);
+  --muted-foreground: hsl(0, 0%, 45%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(220, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 10%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(220, 10%, 3.9%);
-  --border: hsl(220, 5.9%, 90%);
-  --input: hsl(220, 5.9%, 90%);
-  --primary: hsl(23, 100%, 65%);
+  --card-foreground: hsl(0, 0%, 10%);
+  --border: hsl(0, 0%, 90%);
+  --input: hsl(0, 0%, 90%);
+  /* Deep Teal Primary (#007B82) */
+  --primary: hsl(183, 100%, 25%);
   --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(220, 4.8%, 95.9%);
-  --secondary-foreground: hsl(220, 5.9%, 10%);
-  --accent: hsl(23, 100%, 65%);
+  --secondary: hsl(0, 0%, 96%);
+  --secondary-foreground: hsl(0, 0%, 10%);
+  /* Deep Teal Accent */
+  --accent: hsl(183, 100%, 25%);
   --accent-foreground: hsl(0, 0%, 98%);
+  /* Twitter Blue for Verified (#1DA1F2) */
+  --verified: hsl(203, 89%, 53%);
+  --verified-foreground: hsl(0, 0%, 98%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(220, 10%, 3.9%);
+  --ring: hsl(183, 100%, 25%);
   --radius: 0.5rem;
 }
 
@@ -41,18 +47,21 @@
   /* Navy borders */
   --border: hsl(210, 54%, 25%);
   --input: hsl(210, 54%, 20%);
-  /* Sunset Orange Primary (#ff914d) */
-  --primary: hsl(23, 100%, 65%);
+  /* Deep Teal Primary (#007B82) */
+  --primary: hsl(183, 100%, 25%);
   --primary-foreground: hsl(0, 0%, 98%);
   /* Secondary navy tones */
   --secondary: hsl(210, 54%, 20%);
   --secondary-foreground: hsl(0, 0%, 98%);
-  /* Orange accent */
-  --accent: hsl(23, 100%, 65%);
+  /* Deep Teal accent */
+  --accent: hsl(183, 100%, 25%);
   --accent-foreground: hsl(0, 0%, 98%);
+  /* Twitter Blue for Verified (#1DA1F2) */
+  --verified: hsl(203, 89%, 53%);
+  --verified-foreground: hsl(0, 0%, 98%);
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(23, 100%, 65%);
+  --ring: hsl(183, 100%, 25%);
 }
 
 @layer base {

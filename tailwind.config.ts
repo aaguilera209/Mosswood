@@ -40,6 +40,10 @@ export default {
           DEFAULT: "var(--accent)",
           foreground: "var(--accent-foreground)",
         },
+        verified: {
+          DEFAULT: "var(--verified)",
+          foreground: "var(--verified-foreground)",
+        },
         destructive: {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",

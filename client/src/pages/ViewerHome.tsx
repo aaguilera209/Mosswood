@@ -141,7 +141,7 @@ export default function ViewerHome() {
                     <div className="flex items-center space-x-2 mb-2">
                       <h3 className="font-semibold text-lg">{creator.displayName}</h3>
                       {creator.isVerified && (
-                        <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                        <Badge variant="verified">
                           <Star className="w-3 h-3 mr-1" />
                           Verified
                         </Badge>

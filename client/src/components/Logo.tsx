@@ -15,7 +15,7 @@ export function Logo({ showText = true, className }: LogoProps) {
         className
       )}>
         {/* Logo Icon - using Play icon as placeholder until logo-icon.svg is available */}
-        <div className="w-8 h-8 bg-amber-700 dark:bg-amber-300 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
           {/* 
           Future implementation with actual logo file:
           <img 
@@ -24,7 +24,7 @@ export function Logo({ showText = true, className }: LogoProps) {
             className="w-6 h-6"
           />
           */}
-          <Play className="text-white dark:text-gray-900 text-sm fill-current" />
+          <Play className="text-primary-foreground text-sm fill-current" />
         </div>
         
         {/* Logo Text */}

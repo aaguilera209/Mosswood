@@ -99,7 +99,7 @@ export default function Signup() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Already have an account?{' '}
             <Link href="/login">
-              <span className="text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-400 cursor-pointer underline">
+              <span className="text-primary hover:text-primary/80 cursor-pointer underline">
                 Sign in
               </span>
             </Link>

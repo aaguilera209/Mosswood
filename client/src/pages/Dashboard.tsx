@@ -478,7 +478,7 @@ function DashboardContent() {
                   <Button 
                     onClick={handleUploadVideo}
                     variant="outline"
-                    className="text-amber-700 dark:text-amber-300 border-amber-700 dark:border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                    className="text-primary border-primary hover:bg-primary/10"
                   >
                     <Upload className="w-4 h-4 mr-2" />
                     Upload Your First Video

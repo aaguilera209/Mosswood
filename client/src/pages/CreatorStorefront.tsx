@@ -149,7 +149,7 @@ export default function CreatorStorefront() {
                     
                     {/* Play Icon Overlay */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Play className="w-12 h-12 text-white/80 group-hover:text-amber-400 transition-colors" />
+                      <Play className="w-12 h-12 text-white/80 group-hover:text-primary transition-colors" />
                     </div>
                     
                     {/* Duration Badge */}
