@@ -140,9 +140,19 @@
     opacity: 0;
   }
 
-  /* Basic carousel styles */
+  /* Carousel specific styles */
   .carousel-container {
     scroll-behavior: smooth;
+  }
+  
+  /* Ensure hover effects are isolated to individual cards */
+  .group:hover .group-hover\:opacity-100 {
+    opacity: 1;
+  }
+  
+  /* Prevent layout shifts during hover */
+  .group {
+    transform: translateZ(0);
   }
 
   /* Smooth scroll snap for better mobile experience */

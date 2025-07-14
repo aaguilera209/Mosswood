@@ -5,31 +5,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Play, Star, Users } from 'lucide-react';
 
-const FeaturedCreatorsCarousel = ({ creators = [] }) => {
+export function FeaturedCreatorsCarousel({ creators = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  
-  // Simple responsive setup - showing more cards for smaller size
-  const getCardsPerView = () => {
-    if (typeof window === 'undefined') return 4;
-    const width = window.innerWidth;
-    if (width < 640) return 1;
-    if (width < 768) return 2;
-    if (width < 1024) return 3;
-    return 4;
-  };
-
-  const [cardsPerView, setCardsPerView] = useState(getCardsPerView);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setCardsPerView(getCardsPerView());
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  const cardsPerView = 3;
   const maxIndex = Math.max(0, creators.length - cardsPerView);
   const showNavigation = creators.length > cardsPerView;
+
+  // Calculate total pages for pagination dots
+  const totalPages = Math.ceil(creators.length / cardsPerView);
+  const currentPage = Math.floor(currentIndex / cardsPerView);
 
   const goToPrevious = () => {
     setCurrentIndex(prev => Math.max(0, prev - 1));
@@ -39,8 +23,8 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
     setCurrentIndex(prev => Math.min(maxIndex, prev + 1));
   };
 
-  const goToSlide = (index) => {
-    setCurrentIndex(Math.min(index, maxIndex));
+  const goToPage = (pageIndex) => {
+    setCurrentIndex(pageIndex * cardsPerView);
   };
 
   if (!creators || creators.length === 0) {
@@ -52,89 +36,85 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
   }
 
   return (
-    <div className="relative overflow-visible py-4">
-      {/* Container with margin for arrows */}
-      <div className="mx-12 relative">
-        {/* Cards container */}
+    <div className="relative py-4">
+      {/* Main carousel container */}
+      <div className="relative mx-12">
         <div className="overflow-hidden">
           <div 
             className="flex transition-transform duration-500 ease-out"
             style={{
               transform: `translateX(-${currentIndex * (100 / cardsPerView)}%)`,
-              width: `${Math.ceil(creators.length / cardsPerView) * 100}%`
+              width: `${creators.length * (100 / cardsPerView)}%`
             }}
           >
             {creators.map((creator, index) => (
               <div
                 key={creator.username || index}
-                className="flex-shrink-0 px-2"
+                className="flex-shrink-0 px-3"
                 style={{ width: `${100 / cardsPerView}%` }}
               >
-                {/* Individual card with hover effects */}
-                <div className="group hover:scale-105 transition-transform duration-300">
-                  <Card className="relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:shadow-xl overflow-hidden max-w-xs">
-                    {/* Thumbnail */}
-                    <div className="aspect-[4/3] bg-muted rounded-t-lg relative overflow-hidden">
-                      <img 
-                        src={creator.thumbnail || '/api/placeholder/300/200'} 
-                        alt={`${creator.displayName || creator.name} thumbnail`}
-                        className="w-full h-full object-cover"
-                      />
-                      
-                      {/* Dark overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      
-                      {/* Creator info */}
-                      <div className="absolute bottom-2 left-3 text-white">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-sm">{creator.displayName || creator.name}</h3>
-                          {creator.isVerified && (
-                            <Badge className="bg-blue-500 text-white text-xs">
-                              <Star className="w-3 h-3 mr-1 fill-current" />
-                              Verified
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-200 line-clamp-1">
-                          {creator.description || 'Creative content creator'}
-                        </p>
+                <Card className="bg-card border border-border rounded-lg overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow duration-300">
+                  {/* Thumbnail with hover overlay */}
+                  <div className="relative aspect-video bg-muted">
+                    <img 
+                      src={`https://picsum.photos/300/200?random=${index + 1}`}
+                      alt={`${creator.displayName || creator.name} thumbnail`}
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Dark gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                    
+                    {/* Creator info overlay */}
+                    <div className="absolute bottom-3 left-3 text-white">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h3 className="font-semibold text-sm">{creator.displayName || creator.name}</h3>
+                        {creator.isVerified && (
+                          <Badge className="bg-blue-500 text-white text-xs px-1 py-0">
+                            <Star className="w-3 h-3 mr-1 fill-current" />
+                            Verified
+                          </Badge>
+                        )}
                       </div>
-                      
-                      {/* Video count */}
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="secondary" className="bg-black/60 text-white text-xs">
-                          <Play className="w-3 h-3 mr-1" />
-                          {creator.videoCount || 0} videos
-                        </Badge>
+                      <p className="text-xs text-gray-200 line-clamp-1">
+                        {creator.description || 'Creative content creator'}
+                      </p>
+                    </div>
+                    
+                    {/* Video count badge */}
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="secondary" className="bg-black/60 text-white text-xs px-2 py-1">
+                        <Play className="w-3 h-3 mr-1" />
+                        {creator.videoCount || 0} videos
+                      </Badge>
+                    </div>
+                    
+                    {/* Hover play button - only shows on individual card hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="bg-cyan-500 rounded-full p-4 shadow-xl">
+                        <Play className="w-6 h-6 text-white fill-current" />
                       </div>
-                      
-                      {/* Hover play button - only shows on this card */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="bg-cyan-500 rounded-full p-4 shadow-xl">
-                          <Play className="w-6 h-6 text-white fill-current" />
-                        </div>
+                    </div>
+                  </div>
+                  
+                  {/* Card content */}
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{creator.rating || '4.8'}</span>
+                        <Users className="w-4 h-4 ml-2" />
+                        <span>{creator.followers || '1.2k'} followers</span>
                       </div>
                     </div>
                     
-                    {/* Card content */}
-                    <CardContent className="p-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                          <span>{creator.rating || '4.8'}</span>
-                          <Users className="w-3 h-3 ml-1" />
-                          <span>{creator.followers || '1.2k'} followers</span>
-                        </div>
-                      </div>
-                      
-                      <Link href={`/creator/${creator.username}`}>
-                        <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white">
-                          Visit Storefront
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                </div>
+                    <Link href={`/creator/${creator.username}`}>
+                      <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-medium">
+                        Visit Storefront
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
               </div>
             ))}
           </div>
@@ -146,13 +126,14 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
             <Button
               variant="outline"
               size="icon"
-              className={`absolute -left-6 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm ${
+              className={`absolute -left-6 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-2 ${
                 currentIndex === 0 
                   ? 'opacity-30 cursor-not-allowed' 
-                  : 'hover:bg-cyan-50 dark:hover:bg-cyan-900/20'
+                  : 'hover:bg-background hover:shadow-md'
               }`}
               onClick={goToPrevious}
               disabled={currentIndex === 0}
+              aria-label="Previous creators"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -160,13 +141,14 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
             <Button
               variant="outline"
               size="icon"
-              className={`absolute -right-6 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm ${
+              className={`absolute -right-6 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-2 ${
                 currentIndex === maxIndex 
                   ? 'opacity-30 cursor-not-allowed' 
-                  : 'hover:bg-cyan-50 dark:hover:bg-cyan-900/20'
+                  : 'hover:bg-background hover:shadow-md'
               }`}
               onClick={goToNext}
               disabled={currentIndex === maxIndex}
+              aria-label="Next creators"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -174,24 +156,25 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
         )}
       </div>
 
-      {/* Dot indicators */}
-      {showNavigation && (
-        <div className="flex justify-center space-x-2 mt-4">
-          {Array.from({ length: maxIndex + 1 }).map((_, index) => (
+      {/* Pagination dots */}
+      {showNavigation && totalPages > 1 && (
+        <div className="flex justify-center space-x-2 mt-6">
+          {Array.from({ length: totalPages }).map((_, pageIndex) => (
             <button
-              key={index}
-              className={`h-2 rounded-full transition-all ${
-                index === currentIndex 
+              key={pageIndex}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                pageIndex === currentPage
                   ? 'bg-cyan-500 w-8' 
                   : 'bg-gray-400 w-2 hover:bg-cyan-400'
               }`}
-              onClick={() => goToSlide(index)}
+              onClick={() => goToPage(pageIndex)}
+              aria-label={`Go to page ${pageIndex + 1}`}
             />
           ))}
         </div>
       )}
     </div>
   );
-};
+}
 
 export default FeaturedCreatorsCarousel;

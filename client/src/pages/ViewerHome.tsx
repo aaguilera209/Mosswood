@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
-// Mock featured creators data - expanded to demonstrate carousel
+// Mock featured creators data - expanded to demonstrate carousel scrolling
 const featuredCreators = [
   {
     username: 'maya',
@@ -63,6 +63,33 @@ const featuredCreators = [
     displayName: 'Marcus Johnson',
     description: 'Fitness training and wellness coaching',
     videoCount: 25,
+    rating: 4.9,
+    thumbnail: '/api/placeholder/300/200',
+    isVerified: false
+  },
+  {
+    username: 'elena',
+    displayName: 'Elena Rodriguez',
+    description: 'Culinary arts and recipe development',
+    videoCount: 31,
+    rating: 4.8,
+    thumbnail: '/api/placeholder/300/200',
+    isVerified: true
+  },
+  {
+    username: 'david',
+    displayName: 'David Kim',
+    description: 'Video editing and motion graphics',
+    videoCount: 19,
+    rating: 4.7,
+    thumbnail: '/api/placeholder/300/200',
+    isVerified: true
+  },
+  {
+    username: 'sophie',
+    displayName: 'Sophie Williams',
+    description: 'Interior design and home decor',
+    videoCount: 14,
     rating: 4.9,
     thumbnail: '/api/placeholder/300/200',
     isVerified: false
