@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Play, Star, Users, Clock } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { FeaturedCreatorsCarousel } from '@/components/FeaturedCreatorsCarousel';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
@@ -124,58 +125,20 @@ export default function ViewerHome() {
         </div>
 
         {/* Featured Creators Section */}
-        <section className="mb-16">
+        <section className="mb-16 group">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-foreground">Featured Creators</h2>
+            <div>
+              <h2 className="text-3xl font-bold text-foreground">Featured Creators</h2>
+              <p className="text-muted-foreground mt-2">Discover amazing talent from our community</p>
+            </div>
             <Link href="/explore">
-              <Button variant="outline">View All</Button>
+              <Button variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-colors">
+                View All
+              </Button>
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredCreators.map((creator) => (
-              <Card key={creator.username} className="group hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold text-lg">{creator.displayName}</h3>
-                      {creator.isVerified && (
-                        <Badge variant="verified">
-                          <Star className="w-3 h-3 mr-1" />
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-200">{creator.description}</p>
-                  </div>
-                  <div className="absolute top-4 right-4">
-                    <Badge variant="secondary" className="bg-black/50 text-white">
-                      <Play className="w-3 h-3 mr-1" />
-                      {creator.videoCount} videos
-                    </Badge>
-                  </div>
-                </div>
-                
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span>{creator.rating}</span>
-                      <Users className="w-4 h-4 ml-2" />
-                      <span>1.2k followers</span>
-                    </div>
-                  </div>
-                  
-                  <Link href={`/creator/${creator.username}`}>
-                    <Button className="w-full group-hover:bg-primary/90">
-                      Visit Storefront
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <FeaturedCreatorsCarousel creators={featuredCreators} />
         </section>
 
         {/* How It Works Section */}

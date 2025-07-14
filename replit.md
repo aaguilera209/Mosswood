@@ -125,6 +125,10 @@ Changelog:
 - July 12, 2025. Implemented Twitter-style blue verified badges (#1DA1F2) with checkmark icons
 - July 12, 2025. Updated light mode to use off-white backgrounds (#FAFAFA) with improved contrast and accessibility
 - July 12, 2025. Enhanced CSS variables and Tailwind config for new "Indie Film Festival Vibe" aesthetic
+- July 13, 2025. Implemented horizontal swipeable carousel for Featured Creators section with Netflix-style interface
+- July 13, 2025. Added drag-to-scroll, mouse wheel, touch, and keyboard navigation support to carousel
+- July 13, 2025. Implemented responsive design (3 cards desktop, 2 tablet, 1 mobile) with smooth animations
+- July 13, 2025. Added auto-play functionality, progress dots, and accessibility features for enhanced UX
 - July 11, 2025. Cleaned up Video Detail navigation: removed Dashboard link, added "Back to Maya's Page" button
 - July 11, 2025. Added comprehensive theme toggle (light/dark mode) across all pages
 - July 11, 2025. Implemented dynamic video routing: Video Detail page now loads correct video data based on URL parameter
