@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
-// Mock featured creators data
+// Mock featured creators data - expanded to demonstrate carousel
 const featuredCreators = [
   {
     username: 'maya',
@@ -36,6 +36,33 @@ const featuredCreators = [
     displayName: 'Sarah Thompson',
     description: 'Music production and sound design tutorials',
     videoCount: 15,
+    rating: 4.9,
+    thumbnail: '/api/placeholder/300/200',
+    isVerified: false
+  },
+  {
+    username: 'jamie',
+    displayName: 'Jamie Park',
+    description: 'Web development and coding tutorials',
+    videoCount: 22,
+    rating: 4.7,
+    thumbnail: '/api/placeholder/300/200',
+    isVerified: true
+  },
+  {
+    username: 'lily',
+    displayName: 'Lily Wang',
+    description: 'Fashion design and styling masterclasses',
+    videoCount: 18,
+    rating: 4.8,
+    thumbnail: '/api/placeholder/300/200',
+    isVerified: true
+  },
+  {
+    username: 'marcus',
+    displayName: 'Marcus Johnson',
+    description: 'Fitness training and wellness coaching',
+    videoCount: 25,
     rating: 4.9,
     thumbnail: '/api/placeholder/300/200',
     isVerified: false

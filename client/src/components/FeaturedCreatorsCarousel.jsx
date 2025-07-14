@@ -26,6 +26,9 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
   
   // Calculate maxIndex after cardsPerView is set
   const maxIndex = Math.max(0, creators.length - cardsPerView);
+  
+  // Show navigation if we have more creators than can fit in view
+  const showNavigation = creators.length > cardsPerView;
 
   useEffect(() => {
     const handleResize = () => {
@@ -51,7 +54,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
 
   // Auto-play functionality
   useEffect(() => {
-    if (isAutoPlaying && creators.length > cardsPerView) {
+    if (isAutoPlaying && showNavigation) {
       autoPlayRef.current = setTimeout(() => {
         setCurrentIndex(prev => (prev >= maxIndex ? 0 : prev + 1));
       }, 5000);
@@ -62,7 +65,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
         clearTimeout(autoPlayRef.current);
       }
     };
-  }, [currentIndex, isAutoPlaying, maxIndex, cardsPerView, creators.length]);
+  }, [currentIndex, isAutoPlaying, maxIndex, showNavigation]);
 
   const goToPrevious = () => {
     setIsAutoPlaying(false);
@@ -266,7 +269,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
       </div>
 
       {/* Navigation Arrows */}
-      {creators.length > cardsPerView && (
+      {showNavigation && (
         <>
           <Button
             variant="outline"
@@ -297,7 +300,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
       )}
 
       {/* Progress Indicator Dots */}
-      {creators.length > cardsPerView && totalDots > 1 && (
+      {showNavigation && totalDots > 1 && (
         <div className="flex justify-center space-x-2 mt-6">
           {Array.from({ length: totalDots }).map((_, index) => (
             <button
@@ -315,7 +318,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
       )}
 
       {/* Autoplay Indicator */}
-      {isAutoPlaying && creators.length > cardsPerView && (
+      {isAutoPlaying && showNavigation && (
         <div className="absolute top-4 left-4 z-20">
           <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" title="Auto-playing" />
         </div>
