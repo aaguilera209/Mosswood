@@ -1,0 +1,121 @@
+import React, { useState } from 'react';
+import Slider from 'react-slick';
+import './FeaturedCreatorsCarousel.css'; // You'll define styles here
+
+const creators = [
+  {
+    id: 1,
+    name: 'Maya Chen',
+    verified: true,
+    videos: 12,
+    rating: 4.9,
+    followers: '1.2k',
+    description: 'Digital art tutorials and creative process insights',
+    image: 'https://picsum.photos/400/300?random=1',
+  },
+  {
+    id: 2,
+    name: 'Alex Rivera',
+    verified: true,
+    videos: 8,
+    rating: 4.8,
+    followers: '1.2k',
+    description: 'Photography workshops and behind-the-scenes content',
+    image: 'https://picsum.photos/400/300?random=2',
+  },
+  {
+    id: 3,
+    name: 'Sarah Thompson',
+    verified: false,
+    videos: 15,
+    rating: 4.9,
+    followers: '1.2k',
+    description: 'Music production and sound design tutorials',
+    image: 'https://picsum.photos/400/300?random=3',
+  },
+  {
+    id: 4,
+    name: 'Chris Bailey',
+    verified: false,
+    videos: 9,
+    rating: 4.7,
+    followers: '980',
+    description: 'Cinematography tips and gear breakdowns',
+    image: 'https://picsum.photos/400/300?random=4',
+  },
+  {
+    id: 5,
+    name: 'Ella Gomez',
+    verified: true,
+    videos: 5,
+    rating: 5.0,
+    followers: '2.1k',
+    description: 'Vocal tutorials and performance coaching',
+    image: 'https://picsum.photos/400/300?random=5',
+  },
+  {
+    id: 6,
+    name: 'Derek Yu',
+    verified: true,
+    videos: 14,
+    rating: 4.6,
+    followers: '1.8k',
+    description: 'Game design and pixel art walkthroughs',
+    image: 'https://picsum.photos/400/300?random=6',
+  },
+];
+
+const FeaturedCreatorsCarousel = () => {
+  const [hoveredId, setHoveredId] = useState(null);
+
+  const settings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 3,
+    slidesToScroll: 1,
+    arrows: true,
+  };
+
+  return (
+    <div className="featured-carousel">
+      <h2>Featured Creators</h2>
+      <p className="subtitle">Discover amazing talent from our community</p>
+      <Slider {...settings}>
+        {creators.map((creator) => (
+          <div
+            key={creator.id}
+            className="creator-card"
+            onMouseEnter={() => setHoveredId(creator.id)}
+            onMouseLeave={() => setHoveredId(null)}
+          >
+            <div className="image-container">
+              <img src={creator.image} alt={`${creator.name} thumbnail`} />
+              {hoveredId === creator.id && (
+                <div className="play-button">
+                  <div className="circle">
+                    <span className="arrow">▶</span>
+                  </div>
+                </div>
+              )}
+              <div className="video-count">{creator.videos} videos</div>
+            </div>
+            <div className="creator-info">
+              <div className="creator-name">
+                {creator.name}
+                {creator.verified && <span className="verified-badge">✔</span>}
+              </div>
+              <div className="creator-description">{creator.description}</div>
+              <div className="meta">
+                ⭐ {creator.rating} · 👥 {creator.followers} followers
+              </div>
+              <button className="storefront-button">Visit Storefront</button>
+            </div>
+          </div>
+        ))}
+      </Slider>
+    </div>
+  );
+};
+
+export default FeaturedCreatorsCarousel;
