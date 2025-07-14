@@ -79,7 +79,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
 
   const goToSlide = (index) => {
     setIsAutoPlaying(false);
-    setCurrentIndex(index);
+    setCurrentIndex(Math.min(index, maxIndex));
   };
 
   // Mouse drag functionality
@@ -142,8 +142,8 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
     }
   };
 
-  // Progress dots calculation
-  const totalDots = Math.max(1, Math.ceil((creators.length - cardsPerView + 1)));
+  // Progress dots calculation - fix the math
+  const totalDots = Math.max(1, Math.ceil(creators.length / cardsPerView));
   const activeDot = Math.min(currentIndex, totalDots - 1);
 
   // Handle empty creators array
@@ -160,7 +160,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
       {/* Carousel Container with proper scrolling */}
       <div 
         ref={carouselRef}
-        className="relative overflow-x-auto overflow-y-visible cursor-grab active:cursor-grabbing focus:outline-none snap-x snap-mandatory scrollbar-hide md:overflow-visible"
+        className="relative overflow-hidden cursor-grab active:cursor-grabbing focus:outline-none mx-12"
         tabIndex={0}
         role="tablist"
         aria-live="polite"
@@ -176,13 +176,13 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
           className="flex transition-transform duration-500 ease-out"
           style={{
             transform: `translateX(-${currentIndex * (100 / cardsPerView)}%)`,
-            width: `${(creators.length / cardsPerView) * 100}%`
+            width: `${Math.ceil(creators.length / cardsPerView) * 100}%`
           }}
         >
           {creators.map((creator, index) => (
             <div
               key={creator.username || index}
-              className="flex-shrink-0 px-3 snap-start"
+              className="flex-shrink-0 px-2"
               style={{ width: `${100 / cardsPerView}%` }}
             >
               {/* Individual card with isolated hover effects using separate group */}
@@ -274,7 +274,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
           <Button
             variant="outline"
             size="icon"
-            className={`absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-gray-300/20 hover:border-cyan-500/50 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
+            className={`absolute -left-6 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-gray-300/20 hover:border-cyan-500/50 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
               currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 hover:bg-cyan-50 dark:hover:bg-cyan-900/20'
             }`}
             onClick={goToPrevious}
@@ -287,7 +287,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
           <Button
             variant="outline"
             size="icon"
-            className={`absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-gray-300/20 hover:border-cyan-500/50 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
+            className={`absolute -right-6 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-gray-300/20 hover:border-cyan-500/50 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
               currentIndex === maxIndex ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 hover:bg-cyan-50 dark:hover:bg-cyan-900/20'
             }`}
             onClick={goToNext}
