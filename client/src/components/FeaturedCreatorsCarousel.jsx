@@ -154,10 +154,10 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
 
   return (
     <div className="relative py-4 overflow-visible" role="region" aria-label="Featured Creators Carousel">
-      {/* Carousel Container */}
+      {/* Carousel Container with proper scrolling */}
       <div 
         ref={carouselRef}
-        className="relative overflow-hidden cursor-grab active:cursor-grabbing focus:outline-none snap-x snap-mandatory md:overflow-visible"
+        className="relative overflow-x-auto overflow-y-visible cursor-grab active:cursor-grabbing focus:outline-none snap-x snap-mandatory scrollbar-hide md:overflow-visible"
         tabIndex={0}
         role="tablist"
         aria-live="polite"
@@ -182,8 +182,8 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
               className="flex-shrink-0 px-3 snap-start"
               style={{ width: `${100 / cardsPerView}%` }}
             >
-              {/* Individual card with isolated hover effects */}
-              <div className="group hover:scale-[1.02] hover:z-20 transition-all duration-300 ease-in-out">
+              {/* Individual card with isolated hover effects using separate group */}
+              <div className="group/card hover:scale-[1.02] hover:z-20 transition-all duration-300 ease-in-out">
                 <Card 
                   className="relative cursor-pointer bg-card border border-border hover:border-cyan-400/30 hover:shadow-2xl overflow-hidden"
                   role="tabpanel"
@@ -194,7 +194,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                     <img 
                       src={creator.thumbnail || '/api/placeholder/300/200'} 
                       alt={`${creator.displayName || creator.name} thumbnail`}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'flex';
@@ -231,9 +231,9 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                       </Badge>
                     </div>
                     
-                    {/* Hover play button - ONLY on this specific card */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                    {/* Hover play button - ONLY on this specific card using group/card modifier */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 z-10">
+                      <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 transform scale-75 group-hover/card:scale-100 transition-transform duration-300">
                         <div className="bg-cyan-500 rounded-full p-3 shadow-xl">
                           <Play className="w-6 h-6 text-white fill-current" />
                         </div>
