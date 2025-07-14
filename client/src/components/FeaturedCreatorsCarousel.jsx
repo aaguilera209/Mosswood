@@ -154,7 +154,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
   }
 
   return (
-    <div className="relative py-4" role="region" aria-label="Featured Creators Carousel">
+    <div className="relative py-4 overflow-visible" role="region" aria-label="Featured Creators Carousel">
       {/* Carousel Container - Allow overflow for hover effects */}
       <div 
         ref={carouselRef}
@@ -184,18 +184,9 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
               style={{ width: `${100 / cardsPerView}%` }}
             >
               <Card 
-                className="group hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:z-20 relative cursor-pointer bg-card border border-border hover:border-cyan-400/50"
+                className="creator-card group transition-all duration-300 transform hover:scale-105 hover:z-10 relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:shadow-2xl"
                 role="tabpanel"
                 aria-label={`Creator: ${creator.displayName || creator.name}`}
-                style={{
-                  boxShadow: 'var(--group-hover-shadow, 0 4px 6px -1px rgb(0 0 0 / 0.1))',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.setProperty('--group-hover-shadow', '0 25px 50px -12px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(30 203 225 / 0.3)');
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.setProperty('--group-hover-shadow', '0 4px 6px -1px rgb(0 0 0 / 0.1)');
-                }}
               >
                 {/* Thumbnail */}
                 <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
@@ -257,7 +248,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                   </div>
                   
                   <Link href={`/creator/${creator.username || creator.slug}`}>
-                    <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-300 transform group-hover:scale-105 shadow-lg hover:shadow-xl">
+                    <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       Visit Storefront
                     </Button>
                   </Link>
