@@ -160,11 +160,11 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
   const activeDot = Math.min(currentIndex, totalDots - 1);
 
   return (
-    <div className="relative" role="region" aria-label="Featured Creators Carousel">
-      {/* Carousel Container */}
+    <div className="relative py-4" role="region" aria-label="Featured Creators Carousel">
+      {/* Carousel Container - Allow overflow for hover effects */}
       <div 
         ref={carouselRef}
-        className="relative overflow-hidden cursor-grab active:cursor-grabbing focus:outline-none"
+        className="relative overflow-x-hidden overflow-y-visible cursor-grab active:cursor-grabbing focus:outline-none"
         tabIndex={0}
         role="tablist"
         aria-live="polite"
@@ -190,9 +190,18 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
               style={{ width: `${100 / cardsPerView}%` }}
             >
               <Card 
-                className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 cursor-pointer"
+                className="group hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:z-20 relative cursor-pointer bg-card border border-border hover:border-cyan-400/50"
                 role="tabpanel"
                 aria-label={`Creator: ${creator.displayName}`}
+                style={{
+                  boxShadow: 'var(--group-hover-shadow, 0 4px 6px -1px rgb(0 0 0 / 0.1))',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.setProperty('--group-hover-shadow', '0 25px 50px -12px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(30 203 225 / 0.3)');
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.setProperty('--group-hover-shadow', '0 4px 6px -1px rgb(0 0 0 / 0.1)');
+                }}
               >
                 <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -200,8 +209,8 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
                     <div className="flex items-center space-x-2 mb-2">
                       <h3 className="font-semibold text-lg">{creator.displayName}</h3>
                       {creator.isVerified && (
-                        <Badge variant="verified">
-                          <Star className="w-3 h-3 mr-1" />
+                        <Badge className="bg-cyan-500 hover:bg-cyan-600 text-white">
+                          <Star className="w-3 h-3 mr-1 fill-current" />
                           Verified
                         </Badge>
                       )}
@@ -216,8 +225,10 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
                   </div>
                   
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <Play className="w-16 h-16 text-white opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="bg-cyan-500 rounded-full p-4 transform scale-0 group-hover:scale-100 transition-transform duration-300">
+                      <Play className="w-8 h-8 text-white fill-current" />
+                    </div>
                   </div>
                 </div>
                 
@@ -232,7 +243,7 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
                   </div>
                   
                   <Link href={`/creator/${creator.username}`}>
-                    <Button className="w-full group-hover:bg-primary/90 transition-all duration-300 transform group-hover:scale-105">
+                    <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-300 transform group-hover:scale-105 shadow-lg hover:shadow-xl">
                       Visit Storefront
                     </Button>
                   </Link>
@@ -250,9 +261,9 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
             variant="outline"
             size="icon"
             className={cn(
-              "absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background",
-              "transition-all duration-300 opacity-70 hover:opacity-100",
-              currentIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110"
+              "absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-cyan-500/20 hover:border-cyan-500",
+              "transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl",
+              currentIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
             )}
             onClick={goToPrevious}
             disabled={currentIndex === 0}
@@ -264,9 +275,9 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
             variant="outline"
             size="icon"
             className={cn(
-              "absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background",
-              "transition-all duration-300 opacity-70 hover:opacity-100",
-              currentIndex === maxIndex ? "opacity-30 cursor-not-allowed" : "hover:scale-110"
+              "absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-cyan-500/20 hover:border-cyan-500",
+              "transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl",
+              currentIndex === maxIndex ? "opacity-30 cursor-not-allowed" : "hover:scale-110 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
             )}
             onClick={goToNext}
             disabled={currentIndex === maxIndex}
@@ -285,8 +296,8 @@ export function FeaturedCreatorsCarousel({ creators }: FeaturedCreatorsCarouselP
               className={cn(
                 "w-2 h-2 rounded-full transition-all duration-300",
                 index === activeDot 
-                  ? "bg-primary w-8" 
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 w-8 shadow-lg" 
+                  : "bg-muted-foreground/30 hover:bg-cyan-500/50"
               )}
               onClick={() => goToSlide(index)}
               aria-label={`Go to slide ${index + 1}`}

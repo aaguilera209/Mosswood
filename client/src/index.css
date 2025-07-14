@@ -139,6 +139,33 @@
   .group:hover .group-hover\:opacity-0 {
     opacity: 0;
   }
+
+  /* Cinematic hover effects for carousel cards */
+  .carousel-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+  }
+
+  .carousel-card:hover {
+    transform: scale(1.02) translateY(-8px);
+    z-index: 20;
+    box-shadow: 
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(30, 203, 225, 0.3),
+      0 0 20px rgba(30, 203, 225, 0.2);
+  }
+
+  /* Smooth scroll snap for better mobile experience */
+  .scroll-container {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Custom focus styles for accessibility */
+  .carousel-focus:focus-visible {
+    outline: 2px solid rgb(30, 203, 225);
+    outline-offset: 2px;
+  }
 }
 
 
