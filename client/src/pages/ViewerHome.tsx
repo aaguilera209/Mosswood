@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Play, Star, Users, Clock } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { FeaturedCreatorsCarousel } from '@/components/FeaturedCreatorsCarousel';
+import FeaturedCreatorsCarousel from '@/components/FeaturedCreatorsCarousel.jsx';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
