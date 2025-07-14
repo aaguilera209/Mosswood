@@ -140,27 +140,9 @@
     opacity: 0;
   }
 
-  /* Hide scrollbar for carousel */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Ensure individual card hover effects don't affect siblings */
-  .group\/card:hover .group-hover\/card\:opacity-100 {
-    opacity: 1;
-  }
-  
-  .group\/card:hover .group-hover\/card\:scale-100 {
-    transform: scale(1);
-  }
-  
-  .group\/card:hover .group-hover\/card\:scale-105 {
-    transform: scale(1.05);
+  /* Basic carousel styles */
+  .carousel-container {
+    scroll-behavior: smooth;
   }
 
   /* Smooth scroll snap for better mobile experience */
