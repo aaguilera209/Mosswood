@@ -184,23 +184,24 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
               style={{ width: `${100 / cardsPerView}%` }}
             >
               <Card 
-                className="creator-card group relative cursor-pointer bg-card border border-border hover:border-cyan-400/50"
+                className="creator-card group relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:scale-105 hover:shadow-lg hover:z-10 transition-all duration-300"
                 role="tabpanel"
                 aria-label={`Creator: ${creator.displayName || creator.name}`}
               >
                 {/* Thumbnail */}
                 <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
-                  {creator.thumbnail ? (
-                    <img 
-                      src={creator.thumbnail} 
-                      alt={`${creator.displayName || creator.name} thumbnail`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
-                      <Play className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
+                  <img 
+                    src={creator.thumbnail || '/api/placeholder/300/200'} 
+                    alt={`${creator.displayName || creator.name} thumbnail`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center" style={{ display: 'none' }}>
+                    <Play className="w-12 h-12 text-gray-400" />
+                  </div>
                   
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   
