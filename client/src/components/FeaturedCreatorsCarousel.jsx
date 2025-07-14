@@ -180,11 +180,11 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
           {creators.map((creator, index) => (
             <div
               key={creator.username || index}
-              className="flex-shrink-0 px-3 transition-all duration-300"
+              className="flex-shrink-0 px-3"
               style={{ width: `${100 / cardsPerView}%` }}
             >
               <Card 
-                className="creator-card group transition-all duration-300 transform hover:scale-105 hover:z-10 relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:shadow-2xl"
+                className="creator-card group relative cursor-pointer bg-card border border-border hover:border-cyan-400/50"
                 role="tabpanel"
                 aria-label={`Creator: ${creator.displayName || creator.name}`}
               >

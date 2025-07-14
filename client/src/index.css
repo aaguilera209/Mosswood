@@ -140,19 +140,19 @@
     opacity: 0;
   }
 
-  /* Cinematic hover effects for carousel cards */
-  .carousel-card {
+  /* Individual card hover effects - no shared states */
+  .creator-card {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: center;
   }
 
-  .carousel-card:hover {
-    transform: scale(1.02) translateY(-8px);
-    z-index: 20;
+  .creator-card:hover {
+    transform: scale(1.05) translateY(-4px) !important;
+    z-index: 20 !important;
     box-shadow: 
       0 25px 50px -12px rgba(0, 0, 0, 0.25),
       0 0 0 1px rgba(30, 203, 225, 0.3),
-      0 0 20px rgba(30, 203, 225, 0.2);
+      0 0 20px rgba(30, 203, 225, 0.2) !important;
   }
 
   /* Smooth scroll snap for better mobile experience */
