@@ -73,7 +73,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                 <div className="group hover:scale-105 transition-transform duration-300">
                   <Card className="relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:shadow-xl overflow-hidden">
                     {/* Thumbnail */}
-                    <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
+                    <div className="aspect-[3/2] bg-muted rounded-t-lg relative overflow-hidden">
                       <img 
                         src={creator.thumbnail || '/api/placeholder/300/200'} 
                         alt={`${creator.displayName || creator.name} thumbnail`}
@@ -84,9 +84,9 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       
                       {/* Creator info */}
-                      <div className="absolute bottom-3 left-3 text-white">
+                      <div className="absolute bottom-2 left-3 text-white">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-sm">{creator.displayName || creator.name}</h3>
+                          <h3 className="font-semibold text-base">{creator.displayName || creator.name}</h3>
                           {creator.isVerified && (
                             <Badge className="bg-blue-500 text-white text-xs">
                               <Star className="w-3 h-3 mr-1 fill-current" />
@@ -94,13 +94,13 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-gray-200 line-clamp-1">
+                        <p className="text-sm text-gray-200 line-clamp-1">
                           {creator.description || 'Creative content creator'}
                         </p>
                       </div>
                       
                       {/* Video count */}
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute top-2 right-2">
                         <Badge variant="secondary" className="bg-black/60 text-white text-xs">
                           <Play className="w-3 h-3 mr-1" />
                           {creator.videoCount || 0} videos
@@ -109,15 +109,15 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                       
                       {/* Hover play button - only shows on this card */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="bg-cyan-500 rounded-full p-3 shadow-xl">
-                          <Play className="w-5 h-5 text-white fill-current" />
+                        <div className="bg-cyan-500 rounded-full p-4 shadow-xl">
+                          <Play className="w-6 h-6 text-white fill-current" />
                         </div>
                       </div>
                     </div>
                     
                     {/* Card content */}
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-3">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                           <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                           <span>{creator.rating || '4.8'}</span>
