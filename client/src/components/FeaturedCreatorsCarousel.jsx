@@ -106,7 +106,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
     setIsDragging(false);
   };
 
-  // Touch support
+  // Touch support for mobile swipe
   const handleTouchStart = (e) => {
     setDragStart(e.touches[0].clientX);
     setIsAutoPlaying(false);
@@ -130,7 +130,6 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
     e.preventDefault();
     setIsAutoPlaying(false);
     
-    // Support both horizontal and vertical wheel scrolling
     const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
     
     if (delta > 50 && currentIndex < maxIndex) {
@@ -140,7 +139,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
     }
   };
 
-  // Progress dots
+  // Progress dots calculation
   const totalDots = Math.max(1, Math.ceil((creators.length - cardsPerView + 1)));
   const activeDot = Math.min(currentIndex, totalDots - 1);
 
@@ -155,10 +154,10 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
 
   return (
     <div className="relative py-4 overflow-visible" role="region" aria-label="Featured Creators Carousel">
-      {/* Carousel Container - Allow overflow for hover effects */}
+      {/* Carousel Container */}
       <div 
         ref={carouselRef}
-        className="relative overflow-x-hidden overflow-y-visible cursor-grab active:cursor-grabbing focus:outline-none"
+        className="relative overflow-hidden cursor-grab active:cursor-grabbing focus:outline-none snap-x snap-mandatory md:overflow-visible"
         tabIndex={0}
         role="tablist"
         aria-live="polite"
@@ -180,22 +179,22 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
           {creators.map((creator, index) => (
             <div
               key={creator.username || index}
-              className="flex-shrink-0 px-3"
+              className="flex-shrink-0 px-3 snap-start"
               style={{ width: `${100 / cardsPerView}%` }}
             >
-              {/* Individual hover container for isolated effects */}
-              <div className="hover:scale-[1.02] hover:z-10 transition duration-200 ease-in-out">
+              {/* Individual card with isolated hover effects */}
+              <div className="group hover:scale-[1.02] hover:z-20 transition-all duration-300 ease-in-out">
                 <Card 
-                  className="creator-card group relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:shadow-xl"
+                  className="relative cursor-pointer bg-card border border-border hover:border-cyan-400/30 hover:shadow-2xl overflow-hidden"
                   role="tabpanel"
                   aria-label={`Creator: ${creator.displayName || creator.name}`}
                 >
-                  {/* Thumbnail */}
+                  {/* Thumbnail with isolated hover overlay */}
                   <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
                     <img 
                       src={creator.thumbnail || '/api/placeholder/300/200'} 
                       alt={`${creator.displayName || creator.name} thumbnail`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'flex';
@@ -205,36 +204,39 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                       <Play className="w-12 h-12 text-gray-400" />
                     </div>
                     
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    {/* Dark gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     
                     {/* Creator Info Overlay */}
-                    <div className="absolute bottom-4 left-4 text-white">
+                    <div className="absolute bottom-4 left-4 text-white z-10">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="font-semibold text-lg">{creator.displayName || creator.name}</h3>
                         {creator.isVerified && (
-                          <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-xs">
+                          <Badge className="bg-blue-500 text-white text-xs border-0">
                             <Star className="w-3 h-3 mr-1 fill-current" />
                             Verified
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-200 line-clamp-2">
+                      <p className="text-sm text-gray-200 line-clamp-2 opacity-90">
                         {creator.description || 'Creative content creator'}
                       </p>
                     </div>
                     
                     {/* Video Count Badge */}
-                    <div className="absolute top-4 right-4">
-                      <Badge variant="secondary" className="bg-black/50 text-white">
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge variant="secondary" className="bg-black/60 text-white border-0 backdrop-blur-sm">
                         <Play className="w-3 h-3 mr-1" />
                         {creator.videoCount || 0} videos
                       </Badge>
                     </div>
                     
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      <div className="bg-cyan-500 rounded-full p-4 transform scale-0 group-hover:scale-100 transition-transform duration-300">
-                        <Play className="w-8 h-8 text-white fill-current" />
+                    {/* Hover play button - ONLY on this specific card */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                      <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                        <div className="bg-cyan-500 rounded-full p-3 shadow-xl">
+                          <Play className="w-6 h-6 text-white fill-current" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -244,14 +246,14 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span>{creator.rating || '4.8'}</span>
+                        <span className="font-medium">{creator.rating || '4.8'}</span>
                         <Users className="w-4 h-4 ml-2" />
                         <span>{creator.followers || '1.2k'} followers</span>
                       </div>
                     </div>
                     
                     <Link href={`/creator/${creator.username || creator.slug}`}>
-                      <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                      <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-medium">
                         Visit Storefront
                       </Button>
                     </Link>
@@ -269,27 +271,27 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
           <Button
             variant="outline"
             size="icon"
-            className={`absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-cyan-500/20 hover:border-cyan-500 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-gray-300/20 hover:border-cyan-500/50 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
               currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 hover:bg-cyan-50 dark:hover:bg-cyan-900/20'
             }`}
             onClick={goToPrevious}
             disabled={currentIndex === 0}
             aria-label="Previous creators"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           
           <Button
             variant="outline"
             size="icon"
-            className={`absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-cyan-500/20 hover:border-cyan-500 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-background/90 backdrop-blur-sm border-2 border-gray-300/20 hover:border-cyan-500/50 transition-all duration-300 opacity-80 hover:opacity-100 shadow-lg hover:shadow-xl ${
               currentIndex === maxIndex ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 hover:bg-cyan-50 dark:hover:bg-cyan-900/20'
             }`}
             onClick={goToNext}
             disabled={currentIndex === maxIndex}
             aria-label="Next creators"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-5 h-5" />
           </Button>
         </>
       )}
@@ -300,10 +302,10 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
           {Array.from({ length: totalDots }).map((_, index) => (
             <button
               key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              className={`h-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 ${
                 index === activeDot 
                   ? 'bg-gradient-to-r from-cyan-500 to-teal-500 w-8 shadow-lg' 
-                  : 'bg-muted-foreground/30 hover:bg-cyan-500/50'
+                  : 'bg-muted-foreground/30 hover:bg-cyan-500/50 w-2'
               }`}
               onClick={() => goToSlide(index)}
               aria-label={`Go to slide ${index + 1}`}
@@ -314,13 +316,13 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
 
       {/* Autoplay Indicator */}
       {isAutoPlaying && creators.length > cardsPerView && (
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 z-20">
           <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" title="Auto-playing" />
         </div>
       )}
       
-      {/* Keyboard Hint (only show on focus) */}
-      <div className="sr-only focus-within:not-sr-only absolute top-4 right-4 bg-background/90 backdrop-blur-sm text-xs px-2 py-1 rounded">
+      {/* Keyboard Navigation Hint */}
+      <div className="sr-only focus-within:not-sr-only absolute top-4 right-4 bg-background/90 backdrop-blur-sm text-xs px-2 py-1 rounded border border-border z-20">
         Use ← → arrow keys to navigate
       </div>
     </div>
