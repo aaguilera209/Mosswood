@@ -8,13 +8,14 @@ import { ChevronLeft, ChevronRight, Play, Star, Users } from 'lucide-react';
 const FeaturedCreatorsCarousel = ({ creators = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  // Simple responsive setup
+  // Simple responsive setup - showing more cards for smaller size
   const getCardsPerView = () => {
-    if (typeof window === 'undefined') return 3;
+    if (typeof window === 'undefined') return 4;
     const width = window.innerWidth;
-    if (width < 768) return 1;
-    if (width < 1024) return 2;
-    return 3;
+    if (width < 640) return 1;
+    if (width < 768) return 2;
+    if (width < 1024) return 3;
+    return 4;
   };
 
   const [cardsPerView, setCardsPerView] = useState(getCardsPerView);
@@ -71,9 +72,9 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
               >
                 {/* Individual card with hover effects */}
                 <div className="group hover:scale-105 transition-transform duration-300">
-                  <Card className="relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:shadow-xl overflow-hidden">
+                  <Card className="relative cursor-pointer bg-card border border-border hover:border-cyan-400/50 hover:shadow-xl overflow-hidden max-w-xs">
                     {/* Thumbnail */}
-                    <div className="aspect-[3/2] bg-muted rounded-t-lg relative overflow-hidden">
+                    <div className="aspect-[4/3] bg-muted rounded-t-lg relative overflow-hidden">
                       <img 
                         src={creator.thumbnail || '/api/placeholder/300/200'} 
                         alt={`${creator.displayName || creator.name} thumbnail`}
@@ -86,7 +87,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                       {/* Creator info */}
                       <div className="absolute bottom-2 left-3 text-white">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-base">{creator.displayName || creator.name}</h3>
+                          <h3 className="font-semibold text-sm">{creator.displayName || creator.name}</h3>
                           {creator.isVerified && (
                             <Badge className="bg-blue-500 text-white text-xs">
                               <Star className="w-3 h-3 mr-1 fill-current" />
@@ -94,7 +95,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-200 line-clamp-1">
+                        <p className="text-xs text-gray-200 line-clamp-1">
                           {creator.description || 'Creative content creator'}
                         </p>
                       </div>
@@ -116,12 +117,12 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                     </div>
                     
                     {/* Card content */}
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <CardContent className="p-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                           <span>{creator.rating || '4.8'}</span>
-                          <Users className="w-4 h-4 ml-2" />
+                          <Users className="w-3 h-3 ml-1" />
                           <span>{creator.followers || '1.2k'} followers</span>
                         </div>
                       </div>
