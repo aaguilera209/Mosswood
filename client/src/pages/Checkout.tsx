@@ -21,6 +21,7 @@ export default function Checkout() {
         const sessionId = urlParams.get('sessionId');
 
         if (!sessionId) {
+          console.error('No sessionId found in URL params:', window.location.search);
           setError('No session ID provided');
           setLoading(false);
           return;
@@ -29,24 +30,42 @@ export default function Checkout() {
         // Load Stripe and redirect to checkout
         const stripe = await stripePromise;
         if (!stripe) {
+          console.error('Failed to load Stripe. Public key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY?.substring(0, 10) + '...');
           setError('Failed to load Stripe');
           setLoading(false);
           return;
         }
+        
+        console.log('Stripe loaded successfully, environment mode:', import.meta.env.MODE);
 
-        // Redirect to Stripe Checkout
-        const { error: stripeError } = await stripe.redirectToCheckout({
-          sessionId: sessionId,
-        });
-
-        if (stripeError) {
-          console.error('Stripe checkout error:', stripeError);
-          setError(stripeError.message || 'Failed to redirect to checkout');
-          setLoading(false);
+        console.log('Attempting to redirect to Stripe with sessionId:', sessionId);
+        
+        // Try direct redirect to Stripe Checkout URL as backup
+        try {
+          // Primary method: redirectToCheckout
+          const result = await stripe.redirectToCheckout({
+            sessionId: sessionId,
+          });
+          
+          if (result.error) {
+            console.error('Stripe checkout error:', result.error);
+            // Fallback: direct redirect to Stripe
+            window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
+          }
+        } catch (redirectError: any) {
+          console.error('redirectToCheckout failed, trying direct redirect:', redirectError);
+          // Direct redirect as fallback
+          window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
         }
       } catch (err: any) {
         console.error('Checkout error:', err);
-        setError('An unexpected error occurred');
+        console.error('Error details:', {
+          message: err.message,
+          stack: err.stack,
+          name: err.name,
+          type: typeof err
+        });
+        setError(`An unexpected error occurred: ${err.message || 'Unknown error'}`);
         setLoading(false);
       }
     };

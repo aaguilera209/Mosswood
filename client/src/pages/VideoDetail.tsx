@@ -87,11 +87,14 @@ export default function VideoDetail() {
       });
 
       const data = await response.json();
+      console.log('Checkout session response:', data);
 
       if (response.ok && data.sessionId) {
+        console.log('Redirecting to checkout with sessionId:', data.sessionId);
         // Redirect to checkout page with session ID
         setLocation(`/checkout?sessionId=${data.sessionId}`);
       } else {
+        console.error('Failed to create checkout session:', data);
         throw new Error(data.error || 'Failed to create checkout session');
       }
     } catch (error: any) {
