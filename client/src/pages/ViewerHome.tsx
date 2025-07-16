@@ -14,7 +14,7 @@ import { useLocation } from 'wouter';
 // Mock featured creators data - expanded to demonstrate carousel scrolling
 const featuredCreators = [
   {
-    username: 'maya',
+    username: 'maya-chen',
     displayName: 'Maya Chen',
     description: 'Digital art tutorials and creative process insights',
     videoCount: 12,
@@ -23,7 +23,7 @@ const featuredCreators = [
     isVerified: true
   },
   {
-    username: 'alex',
+    username: 'alex-rivera',
     displayName: 'Alex Rivera',
     description: 'Photography workshops and behind-the-scenes content',
     videoCount: 8,
@@ -32,7 +32,7 @@ const featuredCreators = [
     isVerified: true
   },
   {
-    username: 'sarah',
+    username: 'sarah-thompson',
     displayName: 'Sarah Thompson',
     description: 'Music production and sound design tutorials',
     videoCount: 15,
@@ -41,7 +41,7 @@ const featuredCreators = [
     isVerified: false
   },
   {
-    username: 'jamie',
+    username: 'jamie-park',
     displayName: 'Jamie Park',
     description: 'Web development and coding tutorials',
     videoCount: 22,
@@ -50,7 +50,7 @@ const featuredCreators = [
     isVerified: true
   },
   {
-    username: 'lily',
+    username: 'lily-wang',
     displayName: 'Lily Wang',
     description: 'Fashion design and styling masterclasses',
     videoCount: 18,
@@ -59,37 +59,10 @@ const featuredCreators = [
     isVerified: true
   },
   {
-    username: 'marcus',
+    username: 'marcus-johnson',
     displayName: 'Marcus Johnson',
     description: 'Fitness training and wellness coaching',
     videoCount: 25,
-    rating: 4.9,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: false
-  },
-  {
-    username: 'elena',
-    displayName: 'Elena Rodriguez',
-    description: 'Culinary arts and recipe development',
-    videoCount: 31,
-    rating: 4.8,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true
-  },
-  {
-    username: 'david',
-    displayName: 'David Kim',
-    description: 'Video editing and motion graphics',
-    videoCount: 19,
-    rating: 4.7,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true
-  },
-  {
-    username: 'sophie',
-    displayName: 'Sophie Williams',
-    description: 'Interior design and home decor',
-    videoCount: 14,
     rating: 4.9,
     thumbnail: '/api/placeholder/300/200',
     isVerified: false

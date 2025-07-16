@@ -8,7 +8,7 @@ import { Footer } from '@/components/Footer';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useRoute, Link } from 'wouter';
-import { getVideoById, getRelatedVideos, type Video } from '@/../../shared/videoData';
+import { getVideoById, getRelatedVideos, getCreatorByName, type Video } from '@/../../shared/videoData';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,7 @@ export default function VideoDetail() {
   const [match, params] = useRoute('/video/:id');
   const [videoData, setVideoData] = useState<Video | null>(null);
   const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
+  const [creatorUsername, setCreatorUsername] = useState<string>('');
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('default');
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
@@ -40,6 +41,12 @@ export default function VideoDetail() {
       if (video) {
         setVideoData(video);
         setRelatedVideos(getRelatedVideos(video.id));
+        
+        // Get creator username from creator name
+        const creator = getCreatorByName(video.creator);
+        if (creator) {
+          setCreatorUsername(creator.username);
+        }
       }
     }
   }, [params?.id]);
@@ -196,9 +203,9 @@ export default function VideoDetail() {
       {playbackMode !== 'fullscreen' && (
         <header className="border-b border-border px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href="/creator/maya" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
+            <Link href={`/creator/${creatorUsername}`} className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Maya's Page</span>
+              <span>Back to {videoData?.creator}'s Page</span>
             </Link>
             <div className="flex items-center space-x-4">
               <Logo showText={true} className="text-2xl" />

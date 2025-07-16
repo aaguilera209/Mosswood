@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,17 +9,30 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { mockVideos, mockCreator, type Video } from '@/../../shared/videoData';
+import { getVideosByCreator, getCreatorByUsername, type Video, type Creator } from '@/../../shared/videoData';
 
 export default function CreatorStorefront() {
   const { user, profile } = useAuth();
-
+  const params = useParams();
+  const [creator, setCreator] = useState<Creator | null>(null);
+  const [creatorVideos, setCreatorVideos] = useState<Video[]>([]);
+  
+  // Load creator data based on URL parameter
+  useEffect(() => {
+    if (params?.username) {
+      const creatorData = getCreatorByUsername(params.username);
+      if (creatorData) {
+        setCreator(creatorData);
+        setCreatorVideos(getVideosByCreator(creatorData.name));
+      }
+    }
+  }, [params?.username]);
   
   // Mock purchased videos - in real app, this would come from API
   const purchasedVideoIds = [1, 3]; // Mock user has purchased videos 1 and 3
   
   // Check if current user is the creator viewing their own page
-  const isOwnPage = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
+  const isOwnPage = profile?.role === 'creator' && creator && profile?.email === `${creator.username}@example.com`;
 
   const handleVideoAction = (video: Video) => {
     // Always navigate to video detail page for better UX
@@ -29,8 +43,30 @@ export default function CreatorStorefront() {
 
 
   const handleFollow = () => {
-    console.log('Following creator:', mockCreator.name);
+    console.log('Following creator:', creator?.name);
   };
+
+  // Show loading state or 404 if creator not found
+  if (!creator) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <Header />
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Creator Not Found</h1>
+            <p className="text-muted-foreground mb-6">The creator you're looking for doesn't exist.</p>
+            <Button 
+              onClick={() => window.location.href = '/explore'}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              Explore Other Creators
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -41,7 +77,7 @@ export default function CreatorStorefront() {
         {/* Banner Image */}
         <div 
           className="w-full h-80 md:h-96 bg-cover bg-center bg-gray-800"
-          style={{ backgroundImage: `url(${mockCreator.banner})` }}
+          style={{ backgroundImage: `url(${creator.banner})` }}
         >
           <div className="absolute inset-0 bg-black/40" />
         </div>
@@ -49,7 +85,7 @@ export default function CreatorStorefront() {
         {/* Creator Name Overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
           <h1 className="text-4xl md:text-6xl font-bold text-white text-center drop-shadow-lg">
-            {mockCreator.name}
+            {creator.name}
           </h1>
         </div>
       </div>
@@ -60,8 +96,8 @@ export default function CreatorStorefront() {
           {/* Avatar (overlapping banner) */}
           <div className="flex justify-center -mt-14 mb-6">
             <img
-              src={mockCreator.avatar}
-              alt={mockCreator.name}
+              src={creator.avatar}
+              alt={creator.name}
               className="w-[180px] h-[180px] rounded-full ring-4 ring-white bg-gray-800"
             />
           </div>
@@ -78,21 +114,21 @@ export default function CreatorStorefront() {
             {/* Social Media Links */}
             <div className="flex space-x-4">
               <a 
-                href={mockCreator.socialLinks.twitter} 
+                href={creator.socialLinks.twitter} 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Twitter"
               >
                 <FaTwitter className="w-5 h-5" />
               </a>
               <a 
-                href={mockCreator.socialLinks.youtube} 
+                href={creator.socialLinks.youtube} 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="YouTube"
               >
                 <FaYoutube className="w-5 h-5" />
               </a>
               <a 
-                href={mockCreator.socialLinks.website} 
+                href={creator.socialLinks.website} 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 aria-label="Website"
               >
@@ -104,7 +140,7 @@ export default function CreatorStorefront() {
           {/* Bio Section */}
           <div className="text-center mb-12">
             <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto">
-              {mockCreator.bio}
+              {creator.bio}
             </p>
           </div>
         </div>
@@ -118,7 +154,7 @@ export default function CreatorStorefront() {
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockVideos.map((video) => (
+            {creatorVideos.map((video) => (
               <Card 
                 key={video.id} 
                 className="group bg-card border-border hover:bg-muted transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer"
