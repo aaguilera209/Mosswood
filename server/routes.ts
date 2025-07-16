@@ -4,16 +4,17 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import Stripe from "stripe";
 import { getVideoById } from "../shared/videoData";
+import { createClient } from '@supabase/supabase-js';
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// In-memory purchase store
-const purchases: { [email: string]: string[] } = {};
+// Initialize Supabase client
+const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Frontend URL for redirects
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5000';
@@ -44,19 +45,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const session = event.data.object as Stripe.Checkout.Session;
       console.log('Payment successful for session:', session.id);
       
-      // Extract metadata from the session
-      const videoId = session.metadata?.videoId;
-      const userEmail = session.customer_details?.email;
-      
-      if (videoId && userEmail) {
-        // Record the purchase in our in-memory store
-        if (!purchases[userEmail]) {
-          purchases[userEmail] = [];
+      try {
+        // Extract metadata from the session
+        const videoId = session.metadata?.videoId;
+        const userEmail = session.customer_details?.email;
+        const amountTotal = session.amount_total; // Amount in cents
+        
+        if (!videoId || !userEmail || !amountTotal) {
+          console.error('Missing required purchase data:', { videoId, userEmail, amountTotal });
+          return res.status(400).json({ error: 'Missing purchase data' });
         }
-        if (!purchases[userEmail].includes(videoId)) {
-          purchases[userEmail].push(videoId);
-          console.log(`Recorded purchase: User ${userEmail} bought video ${videoId}`);
+        
+        // Find the user's profile by email
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .single();
+        
+        if (profileError || !profile) {
+          console.error('User profile not found:', profileError?.message);
+          return res.status(404).json({ error: 'User profile not found' });
         }
+        
+        // Record the purchase in Supabase
+        const { data: purchase, error: purchaseError } = await supabase
+          .from('purchases')
+          .insert({
+            profile_id: profile.id,
+            video_id: parseInt(videoId),
+            stripe_session_id: session.id,
+            amount: amountTotal
+          })
+          .select()
+          .single();
+        
+        if (purchaseError) {
+          console.error('Failed to record purchase:', purchaseError.message);
+          return res.status(500).json({ error: 'Failed to record purchase' });
+        }
+        
+        console.log('Purchase recorded successfully:', {
+          purchaseId: purchase.id,
+          profileId: profile.id,
+          videoId: parseInt(videoId),
+          amount: amountTotal
+        });
+        
+      } catch (error: any) {
+        console.error('Error processing webhook:', error.message);
+        return res.status(500).json({ error: 'Webhook processing failed' });
       }
     }
 
@@ -156,29 +194,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Record successful purchase
-  app.post("/api/record-purchase", async (req, res) => {
+  // Get user's purchases
+  app.get("/api/purchases", async (req, res) => {
     try {
-      const { email, videoId, paymentIntentId } = req.body;
+      const { email } = req.query;
       
-      // Verify payment was successful
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      
-      if (paymentIntent.status === 'succeeded') {
-        // Add to purchases
-        if (!purchases[email]) {
-          purchases[email] = [];
-        }
-        if (!purchases[email].includes(videoId)) {
-          purchases[email].push(videoId);
-        }
-        
-        res.json({ success: true, message: "Purchase recorded successfully" });
-      } else {
-        res.status(400).json({ success: false, message: "Payment not completed" });
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ error: 'Email is required' });
       }
+      
+      // Find user's profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (profileError || !profile) {
+        return res.status(404).json({ error: 'User profile not found' });
+      }
+      
+      // Get user's purchases
+      const { data: purchases, error: purchasesError } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('profile_id', profile.id)
+        .order('purchased_at', { ascending: false });
+      
+      if (purchasesError) {
+        return res.status(500).json({ error: 'Failed to fetch purchases' });
+      }
+      
+      res.json({ purchases });
     } catch (error: any) {
-      res.status(500).json({ message: "Error recording purchase: " + error.message });
+      res.status(500).json({ error: 'Error fetching purchases: ' + error.message });
     }
   });
 
@@ -187,11 +236,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, videoId } = req.body;
       
-      const hasPurchased = purchases[email]?.includes(videoId.toString()) || false;
+      if (!email || !videoId) {
+        return res.status(400).json({ error: 'Email and videoId are required' });
+      }
       
-      res.json({ hasPurchased });
+      // Find user's profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (profileError || !profile) {
+        return res.json({ hasPurchased: false });
+      }
+      
+      // Check if user has purchased this video
+      const { data: purchase, error: purchaseError } = await supabase
+        .from('purchases')
+        .select('id')
+        .eq('profile_id', profile.id)
+        .eq('video_id', parseInt(videoId))
+        .single();
+      
+      if (purchaseError) {
+        return res.json({ hasPurchased: false });
+      }
+      
+      res.json({ hasPurchased: !!purchase });
     } catch (error: any) {
-      res.status(500).json({ message: "Error checking purchase: " + error.message });
+      res.status(500).json({ error: 'Error checking purchase: ' + error.message });
     }
   });
 

@@ -1,191 +1,244 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Play, Search, Calendar, Clock, Filter } from 'lucide-react';
+import { Play, Calendar, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'wouter';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { getVideoById } from '../../../shared/videoData';
 
-// Mock purchased videos data - in real app, this would come from API
-// Temporarily empty to demonstrate the enhanced empty state
-const mockPurchasedVideos = [];
+interface Purchase {
+  id: string;
+  profile_id: string;
+  video_id: number;
+  stripe_session_id: string;
+  amount: number;
+  purchased_at: string;
+}
+
+interface PurchasedVideo {
+  id: number;
+  title: string;
+  creator: string;
+  thumbnail: string;
+  duration: string;
+  price: number;
+  purchaseDate: string;
+  amount: number;
+}
 
 function MyLibraryContent() {
-  const { user, profile, becomeCreator } = useAuth();
-  const { toast } = useToast();
+  const { user, profile } = useAuth();
   const [, setLocation] = useLocation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const categories = ['all', 'Art & Design', 'Photography', 'Music', 'Business'];
-  
-  const filteredVideos = mockPurchasedVideos.filter(video => {
-    const matchesSearch = video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         video.creator.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || video.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  // Fetch user's purchases
+  const { data: purchasesData, error: purchasesError, isLoading } = useQuery({
+    queryKey: ['purchases', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return { purchases: [] };
+      
+      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user.email)}`);
+      return response.json();
+    },
+    enabled: !!user?.email,
   });
 
-  const totalValue = mockPurchasedVideos.reduce((sum, video) => sum + video.price, 0);
+  const purchases: Purchase[] = purchasesData?.purchases || [];
 
-  const handleBecomeCreator = async () => {
-    // For testing without authentication, simulate the flow
-    if (!user) {
-      toast({
-        title: "Demo: You're now a creator!",
-        description: "In a real app, you'd need to sign in first. Redirecting to dashboard...",
-      });
-      setLocation('/dashboard');
-      return;
-    }
+  // Transform purchases to include video details
+  const purchasedVideos: PurchasedVideo[] = purchases.map(purchase => {
+    const videoData = getVideoById(purchase.video_id);
+    return {
+      id: purchase.video_id,
+      title: videoData?.title || 'Unknown Video',
+      creator: videoData?.creator || 'Unknown Creator',
+      thumbnail: videoData?.thumbnail || '',
+      duration: videoData?.duration || '0m',
+      price: videoData?.price || 0,
+      purchaseDate: new Date(purchase.purchased_at).toLocaleDateString(),
+      amount: purchase.amount / 100 // Convert cents to dollars
+    };
+  });
 
-    try {
-      await becomeCreator();
-      toast({
-        title: "You're now a creator!",
-        description: "Your dashboard is ready.",
-      });
-      setLocation('/dashboard');
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to become a creator.",
-        variant: "destructive",
-      });
-    }
+  const handleVideoClick = (videoId: number) => {
+    setLocation(`/video/${videoId}`);
   };
+
+  const handleBecomeCreator = () => {
+    setLocation('/dashboard');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">My Library</h1>
+            <p className="text-muted-foreground">Your purchased videos and learning progress</p>
+          </div>
+          
+          <div className="text-center py-16">
+            <div className="w-8 h-8 mx-auto mb-4 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="text-muted-foreground">Loading your library...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (purchasesError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">My Library</h1>
+            <p className="text-muted-foreground">Your purchased videos and learning progress</p>
+          </div>
+          
+          <div className="text-center py-16">
+            <div className="w-24 h-24 mx-auto mb-4 bg-destructive/10 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-12 h-12 text-destructive" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground mb-2">Unable to load library</h2>
+            <p className="text-muted-foreground mb-8">
+              There was an error loading your purchased videos. Please try again later.
+            </p>
+            <Button 
+              onClick={() => window.location.reload()}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header Section */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">My Library</h1>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <p className="text-muted-foreground">
-              {mockPurchasedVideos.length} videos purchased • ${totalValue.toFixed(2)} total value
-            </p>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search your library..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category === 'all' ? 'All Categories' : category}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">My Library</h1>
+          <p className="text-muted-foreground">Your purchased videos and learning progress</p>
         </div>
 
-        {/* Videos Grid */}
-        {filteredVideos.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredVideos.map((video) => (
-              <Card key={video.id} className="group hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <Badge variant="secondary" className="bg-green-600 text-white mb-2">
-                      <Play className="w-3 h-3 mr-1" />
-                      Owned
-                    </Badge>
-                    <h3 className="font-semibold text-lg mb-1">{video.title}</h3>
-                    <p className="text-sm text-gray-200">by {video.creator}</p>
-                  </div>
-                  <div className="absolute top-4 right-4">
-                    <Badge variant="secondary" className="bg-black/50 text-white">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {video.duration}
-                    </Badge>
-                  </div>
-                  <div className="absolute top-4 left-4">
-                    <Badge variant="secondary" className="bg-primary text-primary-foreground">
-                      {video.category}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>Purchased {new Date(video.purchaseDate).toLocaleDateString()}</span>
-                    </div>
-                    <span className="font-semibold">${video.price}</span>
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <Link href={`/video/${video.id}`} className="flex-1">
-                      <Button className="w-full group-hover:bg-primary/90">
-                        <Play className="w-4 h-4 mr-2" />
-                        Watch Now
-                      </Button>
-                    </Link>
-                    <Link href={`/creator/${video.creatorUsername}`}>
-                      <Button variant="outline" size="icon">
-                        <span className="text-xs">👤</span>
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
+        {purchasedVideos.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-              <Play className="w-12 h-12 text-muted-foreground" />
+            <div className="mb-8">
+              <div className="w-24 h-24 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                <Play className="w-12 h-12 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground mb-2">No videos purchased yet</h2>
+              <p className="text-muted-foreground mb-8">
+                Discover amazing content from talented creators and start learning today.
+              </p>
             </div>
-            <h2 className="text-2xl font-semibold text-foreground mb-4">
-              {searchTerm || selectedCategory !== 'all' ? 'No videos found' : 'Your video library is empty'}
-            </h2>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              {searchTerm || selectedCategory !== 'all' 
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Browse creators or become a creator yourself!'
-              }
-            </p>
-            {(!searchTerm && selectedCategory === 'all') && (
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <Link href="/explore">
-                  <Button size="lg" className="bg-primary hover:bg-primary/90">
-                    Explore Creators
-                  </Button>
-                </Link>
-                <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={() => setLocation('/explore')}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                Explore Videos
+              </Button>
+              
+              {profile?.role === 'viewer' && (
+                <Button 
+                  onClick={handleBecomeCreator}
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10"
+                >
                   Become a Creator
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="mb-6">
+              <p className="text-sm text-muted-foreground">
+                {purchasedVideos.length} video{purchasedVideos.length !== 1 ? 's' : ''} purchased
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {purchasedVideos.map((video) => (
+                <Card 
+                  key={video.id} 
+                  className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] border-border bg-card"
+                  onClick={() => handleVideoClick(video.id)}
+                >
+                  <div className="relative">
+                    <img 
+                      src={video.thumbnail} 
+                      alt={video.title}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <Badge className="bg-green-500 text-white">
+                        Purchased
+                      </Badge>
+                    </div>
+                    <div className="absolute bottom-2 right-2">
+                      <Badge variant="secondary" className="bg-black/70 text-white">
+                        {video.duration}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
+                      {video.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      by {video.creator}
+                    </p>
+                    
+                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>Purchased {video.purchaseDate}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground">
+                        ${video.amount.toFixed(2)}
+                      </span>
+                      <Button 
+                        size="sm" 
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      >
+                        <Play className="w-4 h-4 mr-1" />
+                        Watch
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
-      </main>
-      
+      </div>
       <Footer />
     </div>
   );
 }
 
 export default function MyLibrary() {
-  return <MyLibraryContent />;
+  return (
+    <ProtectedRoute>
+      <MyLibraryContent />
+    </ProtectedRoute>
+  );
 }
