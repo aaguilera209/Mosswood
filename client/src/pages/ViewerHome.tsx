@@ -178,22 +178,8 @@ export default function ViewerHome() {
           </div>
         </div>
 
-        {/* Featured Creators Section */}
-        <section className="mb-16 group">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-foreground">Featured Creators</h2>
-              <p className="text-muted-foreground mt-2">Discover amazing talent from our community</p>
-            </div>
-            <Link href="/explore">
-              <Button variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-colors">
-                View All
-              </Button>
-            </Link>
-          </div>
-          
-          <FeaturedCreatorsCarousel creators={featuredCreators} />
-        </section>
+        {/* Featured Creators Carousel */}
+        <FeaturedCreatorsCarousel creators={featuredCreators} />
 
         {/* How It Works Section */}
         <section className="bg-muted/50 rounded-lg p-12 text-center">

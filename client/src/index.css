@@ -4,14 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import slick carousel styles */
-@import "slick-carousel/slick/slick.css";
-@import "slick-carousel/slick/slick-theme.css";
-
 :root {
   /* Light Mode - Indie Film Festival Aesthetic */
-  --background: hsl(0, 0%, 98%); /* #FAFAFA off-white */
-  --foreground: hsl(0, 0%, 10%); /* #1A1A1A dark gray */
+  --background: hsl(0, 0%, 98%);
+  /* #FAFAFA off-white */
+  --foreground: hsl(0, 0%, 10%);
+  /* #1A1A1A dark gray */
   --muted: hsl(0, 0%, 96%);
   --muted-foreground: hsl(0, 0%, 45%);
   --popover: hsl(0, 0%, 100%);
@@ -84,12 +82,14 @@
 }
 
 @layer utilities {
+
   /* Carousel Animations */
   @keyframes fade-in {
     from {
       opacity: 0;
       transform: translateY(20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -144,16 +144,48 @@
     opacity: 0;
   }
 
+  /* Swiper carousel custom styles */
+  .featured-creators-swiper {
+    padding: 0 50px;
+  }
+  
+  .featured-creators-swiper .swiper-button-prev,
+  .featured-creators-swiper .swiper-button-next {
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin-top: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .featured-creators-swiper .swiper-button-prev:hover,
+  .featured-creators-swiper .swiper-button-next:hover {
+    background: hsl(var(--muted));
+  }
+  
+  .featured-creators-swiper .swiper-pagination-bullet {
+    background: hsl(var(--muted-foreground));
+    opacity: 0.5;
+  }
+  
+  .featured-creators-swiper .swiper-pagination-bullet-active {
+    background: hsl(var(--primary));
+    opacity: 1;
+  }
+
   /* Carousel specific styles */
   .carousel-container {
     scroll-behavior: smooth;
   }
-  
+
   /* Ensure hover effects are isolated to individual cards */
   .group:hover .group-hover\:opacity-100 {
     opacity: 1;
   }
-  
+
   /* Prevent layout shifts during hover */
   .group {
     transform: translateZ(0);
@@ -171,5 +203,3 @@
     outline-offset: 2px;
   }
 }
-
-
