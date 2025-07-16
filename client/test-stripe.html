@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stripe Test</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h1>Stripe Redirect Test</h1>
+    <button onclick="testStripeRedirect()">Test Stripe Redirect</button>
+    <div id="result"></div>
+    
+    <script>
+        const stripe = Stripe('pk_test_51RjnF0BLH1BRO7tyDyIxSk84FYA9ysv0QxBoonawDRZQfsfzTneuwhV6n4adku1uoV4jnCZDaazqDY7dy3fnmQh100a4rU3CZh');
+        
+        async function testStripeRedirect() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Create a test session
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({videoId: '1'})
+                });
+                
+                const data = await response.json();
+                console.log('Session created:', data);
+                
+                if (data.sessionId) {
+                    console.log('Stripe object:', stripe);
+                    console.log('redirectToCheckout type:', typeof stripe.redirectToCheckout);
+                    
+                    const result = await stripe.redirectToCheckout({
+                        sessionId: data.sessionId
+                    });
+                    
+                    console.log('Redirect result:', result);
+                    resultDiv.innerHTML = 'Redirect completed: ' + JSON.stringify(result);
+                } else {
+                    resultDiv.innerHTML = 'Failed to create session: ' + JSON.stringify(data);
+                }
+            } catch (error) {
+                console.error('Test error:', error);
+                resultDiv.innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -6,7 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
 // Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
+const publicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+console.log('Stripe public key check:', {
+  exists: !!publicKey,
+  isTestKey: publicKey?.startsWith('pk_test_'),
+  keyPrefix: publicKey?.substring(0, 15)
+});
+
+if (!publicKey) {
+  console.error('VITE_STRIPE_PUBLIC_KEY environment variable is missing');
+}
+
+const stripePromise = loadStripe(publicKey!);
 
 export default function Checkout() {
   const [, setLocation] = useLocation();
@@ -40,22 +51,31 @@ export default function Checkout() {
 
         console.log('Attempting to redirect to Stripe with sessionId:', sessionId);
         
-        // Try direct redirect to Stripe Checkout URL as backup
+        // Test Stripe object properties
+        console.log('Stripe object properties:', Object.keys(stripe));
+        console.log('Has redirectToCheckout:', typeof stripe.redirectToCheckout);
+        
+        // Redirect to Stripe Checkout
         try {
-          // Primary method: redirectToCheckout
+          console.log('Calling redirectToCheckout...');
           const result = await stripe.redirectToCheckout({
             sessionId: sessionId,
           });
           
-          if (result.error) {
+          console.log('redirectToCheckout result:', result);
+          
+          // If there's an error, show it instead of trying invalid fallback
+          if (result?.error) {
             console.error('Stripe checkout error:', result.error);
-            // Fallback: direct redirect to Stripe
-            window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
+            throw new Error(result.error.message || 'Stripe redirect failed');
           }
+          
+          // If we reach here without redirect, something went wrong
+          console.warn('redirectToCheckout completed without redirect or error');
+          
         } catch (redirectError: any) {
-          console.error('redirectToCheckout failed, trying direct redirect:', redirectError);
-          // Direct redirect as fallback
-          window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
+          console.error('Exception in redirectToCheckout:', redirectError);
+          throw redirectError;
         }
       } catch (err: any) {
         console.error('Checkout error:', err);
