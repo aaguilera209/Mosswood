@@ -134,7 +134,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the current domain from the request
       const host = req.get('host');
-      const protocol = req.secure ? 'https' : 'http';
+      // Force HTTPS for Stripe checkout (required by Stripe)
+      const protocol = 'https';
       const baseUrl = `${protocol}://${host}`;
       
       console.log('Creating checkout session with baseUrl:', baseUrl);
@@ -148,8 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'usd',
               product_data: {
                 name: video.title,
-                description: video.description,
-                images: [video.thumbnail],
+                description: video.description.substring(0, 200), // Truncate description
               },
               unit_amount: Math.round(video.price * 100), // Convert to cents
             },
@@ -161,17 +161,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancel_url: `${baseUrl}/payment-cancel`,
         metadata: {
           videoId: videoId.toString(),
-          videoTitle: video.title,
+          videoTitle: video.title.substring(0, 50), // Truncate title
         },
+        // Add billing address collection for testing
+        billing_address_collection: 'auto',
       });
 
       console.log('Checkout session created successfully:', {
         sessionId: session.id,
         successUrl: session.success_url,
-        cancelUrl: session.cancel_url
+        cancelUrl: session.cancel_url,
+        url: session.url,
+        status: session.status,
+        paymentStatus: session.payment_status
       });
 
-      res.json({ sessionId: session.id });
+      // Log the full session object to debug
+      console.log('Full session object keys:', Object.keys(session));
+      console.log('Session URL present:', !!session.url);
+
+      res.json({ 
+        sessionId: session.id,
+        url: session.url 
+      });
     } catch (error: any) {
       console.error('Error creating checkout session:', error);
       res.status(500).json({ error: 'Failed to create checkout session' });

@@ -98,8 +98,9 @@ export default function VideoDetail() {
 
       if (response.ok && data.sessionId) {
         console.log('Redirecting to checkout with sessionId:', data.sessionId);
-        // Open Stripe checkout directly in new tab to avoid iframe restrictions
-        const checkoutUrl = `https://checkout.stripe.com/c/pay/${data.sessionId}`;
+        // Use session URL if provided, otherwise fallback to constructed URL
+        const checkoutUrl = data.url || `https://checkout.stripe.com/c/pay/${data.sessionId}`;
+        console.log('Opening checkout URL:', checkoutUrl);
         window.open(checkoutUrl, '_blank');
         
         // Show success message
