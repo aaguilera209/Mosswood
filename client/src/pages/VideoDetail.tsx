@@ -55,6 +55,16 @@ export default function VideoDetail() {
   const recentPurchase = urlParams.get('purchased') === 'true';
   const purchasedVideoId = urlParams.get('videoId');
   const hasRecentPurchase = recentPurchase && purchasedVideoId && parseInt(purchasedVideoId) === videoData?.id;
+  
+  // Debug logging
+  console.log('Purchase check debug:', {
+    videoId: videoData?.id,
+    hasPurchased,
+    hasRecentPurchase,
+    recentPurchase,
+    purchasedVideoId,
+    urlParams: Object.fromEntries(urlParams.entries())
+  });
   const isOwnVideo = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
   // Load video data based on URL parameter

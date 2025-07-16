@@ -39,7 +39,10 @@ function MyLibraryContent() {
   const { data: purchasesData, error: purchasesError, isLoading } = useQuery({
     queryKey: ['purchases', user?.email],
     queryFn: async () => {
-      if (!user?.email) return { purchases: [] };
+      if (!user?.email) {
+        console.log('No user email available for purchases');
+        return { purchases: [] };
+      }
       
       console.log('Fetching purchases for user:', user.email);
       const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user.email)}`);
@@ -48,6 +51,8 @@ function MyLibraryContent() {
       return data;
     },
     enabled: !!user?.email,
+    retry: 1,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const purchases: Purchase[] = purchasesData?.purchases || [];

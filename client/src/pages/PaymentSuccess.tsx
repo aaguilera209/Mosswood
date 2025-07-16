@@ -16,7 +16,7 @@ interface SessionDetails {
 }
 
 export default function PaymentSuccess() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,11 +128,16 @@ export default function PaymentSuccess() {
               </div>
 
               <div className="space-y-3">
-                <Button asChild className="w-full">
-                  <Link href={`/video/${sessionDetails.metadata.videoId}?purchased=true&videoId=${sessionDetails.metadata.videoId}`}>
-                    <Play className="w-4 h-4 mr-2" />
-                    Watch Now
-                  </Link>
+                <Button 
+                  onClick={() => {
+                    const videoUrl = `/video/${sessionDetails.metadata.videoId}?purchased=true&videoId=${sessionDetails.metadata.videoId}`;
+                    console.log('Navigating to video with URL:', videoUrl);
+                    setLocation(videoUrl);
+                  }}
+                  className="w-full"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Watch Now
                 </Button>
                 
                 <Button variant="outline" asChild className="w-full">
