@@ -444,12 +444,20 @@ export default function VideoDetail() {
                   <span>by {videoData.creator}</span>
                 </div>
                 
-                <Button
-                  onClick={handlePurchase}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-2 w-fit"
-                >
-                  Buy for ${videoData.price.toFixed(2)}
-                </Button>
+                {!hasPurchased && videoData.price > 0 && (
+                  <Button
+                    onClick={handleStripeCheckout}
+                    disabled={isProcessingPayment}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-2 w-fit flex items-center space-x-2"
+                  >
+                    {isProcessingPayment && (
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    )}
+                    <span>
+                      {isProcessingPayment ? 'Processing...' : `Buy for $${videoData.price.toFixed(2)}`}
+                    </span>
+                  </Button>
+                )}
               </div>
             </div>
 
