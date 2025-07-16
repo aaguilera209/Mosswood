@@ -16,8 +16,10 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 
-// Frontend URL for redirects
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5000';
+// Frontend URL for redirects - use Replit domain or localhost
+const FRONTEND_URL = process.env.REPLIT_DOMAIN 
+  ? `https://${process.env.REPLIT_DOMAIN}` 
+  : 'http://localhost:5000';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe webhook endpoint (must be before body parser)
@@ -130,6 +132,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'This video is free' });
       }
 
+      // Get the current domain from the request
+      const host = req.get('host');
+      const protocol = req.secure ? 'https' : 'http';
+      const baseUrl = `${protocol}://${host}`;
+      
+      console.log('Creating checkout session with baseUrl:', baseUrl);
+
       // Create Stripe Checkout session
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -148,12 +157,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${FRONTEND_URL}/payment-cancel`,
+        success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/payment-cancel`,
         metadata: {
           videoId: videoId.toString(),
           videoTitle: video.title,
         },
+      });
+
+      console.log('Checkout session created successfully:', {
+        sessionId: session.id,
+        successUrl: session.success_url,
+        cancelUrl: session.cancel_url
       });
 
       res.json({ sessionId: session.id });

@@ -51,18 +51,33 @@ export default function Checkout() {
 
         console.log('Attempting to redirect to Stripe with sessionId:', sessionId);
         
-        // Open Stripe checkout in new window (fixes iframe security restriction)
+        // Use window.top to break out of iframe/frame restrictions in Replit
+        console.log('Redirecting to Stripe checkout with sessionId:', sessionId);
+        
         const checkoutUrl = `https://checkout.stripe.com/c/pay/${sessionId}`;
-        console.log('Opening Stripe checkout in new window:', checkoutUrl);
+        console.log('Opening Stripe checkout URL:', checkoutUrl);
         
-        // Open in new tab/window to bypass iframe restrictions
-        const checkoutWindow = window.open(checkoutUrl, '_blank', 'width=800,height=600');
-        
-        if (!checkoutWindow) {
-          throw new Error('Popup blocked. Please allow popups for this site and try again.');
+        // Try multiple approaches to break out of iframe restrictions
+        try {
+          // Method 1: Try window.top first
+          if (window.top && window.top !== window) {
+            window.top.location.href = checkoutUrl;
+          } else {
+            // Method 2: Try parent window
+            if (window.parent && window.parent !== window) {
+              window.parent.location.href = checkoutUrl;
+            } else {
+              // Method 3: Use current window
+              window.location.href = checkoutUrl;
+            }
+          }
+        } catch (e) {
+          // Method 4: If all else fails, open in new window
+          console.log('Frame redirect failed, opening in new window:', e);
+          window.open(checkoutUrl, '_blank');
         }
         
-        // Show success message - user will complete payment in new window
+        // This should not be reached if redirect is successful
         setLoading(false);
       } catch (err: any) {
         console.error('Checkout error:', err);

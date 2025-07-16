@@ -98,8 +98,15 @@ export default function VideoDetail() {
 
       if (response.ok && data.sessionId) {
         console.log('Redirecting to checkout with sessionId:', data.sessionId);
-        // Redirect to checkout page with session ID
-        setLocation(`/checkout?sessionId=${data.sessionId}`);
+        // Open Stripe checkout directly in new tab to avoid iframe restrictions
+        const checkoutUrl = `https://checkout.stripe.com/c/pay/${data.sessionId}`;
+        window.open(checkoutUrl, '_blank');
+        
+        // Show success message
+        toast({
+          title: "Checkout Opened",
+          description: "Complete your payment in the new tab. You'll be redirected back when done.",
+        });
       } else {
         console.error('Failed to create checkout session:', data);
         throw new Error(data.error || 'Failed to create checkout session');
