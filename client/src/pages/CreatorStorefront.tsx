@@ -6,14 +6,13 @@ import { Play, ExternalLink, Lock, Star, DollarSign } from 'lucide-react';
 import { FaTwitter, FaYoutube, FaGlobe } from 'react-icons/fa';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { PaymentModal } from '@/components/PaymentModal';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { mockVideos, mockCreator, type Video } from '@/../../shared/videoData';
 
 export default function CreatorStorefront() {
   const { user, profile } = useAuth();
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
   
   // Mock purchased videos - in real app, this would come from API
   const purchasedVideoIds = [1, 3]; // Mock user has purchased videos 1 and 3
@@ -22,24 +21,12 @@ export default function CreatorStorefront() {
   const isOwnPage = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
   const handleVideoAction = (video: Video) => {
-    const isPurchased = purchasedVideoIds.includes(video.id);
-    
-    if (isPurchased || video.isFree || isOwnPage) {
-      // Navigate to video detail page
-      window.location.href = `/video/${video.id}`;
-    } else {
-      // Show payment modal for purchase
-      setSelectedVideo(video);
-      setPaymentModalOpen(true);
-    }
+    // Always navigate to video detail page for better UX
+    // The video detail page will handle purchase flow
+    window.location.href = `/video/${video.id}`;
   };
 
-  const handlePaymentSuccess = () => {
-    setPaymentModalOpen(false);
-    if (selectedVideo) {
-      window.location.href = `/video/${selectedVideo.id}`;
-    }
-  };
+
 
   const handleFollow = () => {
     console.log('Following creator:', mockCreator.name);
@@ -190,7 +177,7 @@ export default function CreatorStorefront() {
                           const isPurchased = purchasedVideoIds.includes(video.id);
                           if (isOwnPage) return 'Edit';
                           if (isPurchased || video.price === 0) return 'Watch';
-                          return 'Buy';
+                          return 'View Details';
                         })()}
                       </Button>
                     </div>
@@ -204,17 +191,7 @@ export default function CreatorStorefront() {
 
       <Footer />
       
-      {/* Payment Modal */}
-      {selectedVideo && (
-        <PaymentModal
-          isOpen={paymentModalOpen}
-          onClose={() => setPaymentModalOpen(false)}
-          onSuccess={handlePaymentSuccess}
-          videoTitle={selectedVideo.title}
-          videoPrice={selectedVideo.price}
-          videoId={selectedVideo.id}
-        />
-      )}
+
     </div>
   );
 }

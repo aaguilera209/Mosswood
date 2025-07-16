@@ -217,17 +217,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, videoTitle, videoPric
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold">Complete Purchase</DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-lg font-semibold">Complete Purchase</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
