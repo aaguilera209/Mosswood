@@ -51,32 +51,22 @@ export default function Checkout() {
 
         console.log('Attempting to redirect to Stripe with sessionId:', sessionId);
         
-        // Test Stripe object properties
-        console.log('Stripe object properties:', Object.keys(stripe));
-        console.log('Has redirectToCheckout:', typeof stripe.redirectToCheckout);
+        // Open Stripe checkout in new window (fixes iframe security restriction)
+        const checkoutUrl = `https://checkout.stripe.com/c/pay/${sessionId}`;
+        console.log('Opening Stripe checkout in new window:', checkoutUrl);
         
-        // Redirect to Stripe Checkout
-        try {
-          console.log('Calling redirectToCheckout...');
-          const result = await stripe.redirectToCheckout({
-            sessionId: sessionId,
-          });
-          
-          console.log('redirectToCheckout result:', result);
-          
-          // If there's an error, show it instead of trying invalid fallback
-          if (result?.error) {
-            console.error('Stripe checkout error:', result.error);
-            throw new Error(result.error.message || 'Stripe redirect failed');
-          }
-          
-          // If we reach here without redirect, something went wrong
-          console.warn('redirectToCheckout completed without redirect or error');
-          
-        } catch (redirectError: any) {
-          console.error('Exception in redirectToCheckout:', redirectError);
-          throw redirectError;
+        // Open in new tab/window to bypass iframe restrictions
+        const checkoutWindow = window.open(checkoutUrl, '_blank', 'width=800,height=600');
+        
+        if (!checkoutWindow) {
+          throw new Error('Popup blocked. Please allow popups for this site and try again.');
         }
+        
+        // Show success message and redirect back
+        setLoading(false);
+        setTimeout(() => {
+          setLocation('/payment-success?session_id=' + sessionId);
+        }, 1000);
       } catch (err: any) {
         console.error('Checkout error:', err);
         console.error('Error details:', {
@@ -98,12 +88,12 @@ export default function Checkout() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
           <CardHeader className="text-center">
-            <CardTitle>Redirecting to Checkout</CardTitle>
+            <CardTitle>Opening Secure Checkout</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground">
-              Please wait while we redirect you to secure checkout...
+              Opening checkout in a new window...
             </p>
           </CardContent>
         </Card>
@@ -133,5 +123,34 @@ export default function Checkout() {
     );
   }
 
-  return null;
+  // Success state - checkout opened in new window
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader className="text-center">
+          <CardTitle className="text-green-600">✓ Checkout Opened</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <p className="text-muted-foreground">
+            Complete your payment in the new window. You'll be redirected back here when done.
+          </p>
+          <div className="space-y-2">
+            <Button 
+              onClick={() => setLocation('/payment-success')}
+              className="w-full"
+            >
+              I've Completed Payment
+            </Button>
+            <Button 
+              onClick={() => setLocation('/')}
+              variant="outline"
+              className="w-full"
+            >
+              Return Home
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

@@ -31,12 +31,15 @@
                     console.log('Stripe object:', stripe);
                     console.log('redirectToCheckout type:', typeof stripe.redirectToCheckout);
                     
-                    const result = await stripe.redirectToCheckout({
-                        sessionId: data.sessionId
-                    });
+                    // Use popup instead of redirect (fixes iframe restrictions)
+                    const checkoutUrl = `https://checkout.stripe.com/c/pay/${data.sessionId}`;
+                    const checkoutWindow = window.open(checkoutUrl, '_blank', 'width=800,height=600');
                     
-                    console.log('Redirect result:', result);
-                    resultDiv.innerHTML = 'Redirect completed: ' + JSON.stringify(result);
+                    if (checkoutWindow) {
+                        resultDiv.innerHTML = '✓ Checkout opened in new window - complete payment there!';
+                    } else {
+                        resultDiv.innerHTML = 'Error: Popup blocked. Please allow popups and try again.';
+                    }
                 } else {
                     resultDiv.innerHTML = 'Failed to create session: ' + JSON.stringify(data);
                 }
