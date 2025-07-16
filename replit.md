@@ -139,6 +139,8 @@ Changelog:
 - July 16, 2025. Improved UX flow: Buy buttons now navigate to video detail page first, then show purchase option. Fixed PaymentModal double X issue by removing duplicate close button. Updated CreatorStorefront buttons to "View Details" for better clarity
 - July 16, 2025. **FIXED: Stripe checkout integration** - Resolved iframe security restrictions by opening Stripe checkout in new window instead of redirecting current frame. Checkout now works properly in Replit environment
 - July 16, 2025. **SETUP: Supabase database** - Successfully created profiles table with role-based access control, Row Level Security policies, and automatic profile creation trigger. Database ready for user authentication and payment records
+- July 16, 2025. **COMPLETED: Purchase tracking system** - Implemented complete purchase recording with Supabase integration: purchases table created, webhook records successful payments, MyLibrary displays real purchase history with proper error handling
+- July 16, 2025. **FIXED: User signup RLS policies** - Resolved signup failures by updating Row Level Security policies to allow proper user registration and profile creation
 - July 11, 2025. Cleaned up Video Detail navigation: removed Dashboard link, added "Back to Maya's Page" button
 - July 11, 2025. Added comprehensive theme toggle (light/dark mode) across all pages
 - July 11, 2025. Implemented dynamic video routing: Video Detail page now loads correct video data based on URL parameter
