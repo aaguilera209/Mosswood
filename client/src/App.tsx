@@ -15,6 +15,9 @@ import VideoDetail from "@/pages/VideoDetail";
 import ViewerHome from "@/pages/ViewerHome";
 import MyLibrary from "@/pages/MyLibrary";
 import ExplorePage from "@/pages/ExplorePage";
+import Checkout from "@/pages/Checkout";
+import PaymentSuccess from "@/pages/PaymentSuccess";
+import PaymentCancel from "@/pages/PaymentCancel";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +32,9 @@ function Router() {
       <Route path="/video/:id" component={VideoDetail} />
       <Route path="/library" component={MyLibrary} />
       <Route path="/explore" component={ExplorePage} />
+      <Route path="/checkout" component={Checkout} />
+      <Route path="/payment-success" component={PaymentSuccess} />
+      <Route path="/payment-cancel" component={PaymentCancel} />
       <Route component={NotFound} />
     </Switch>
   );

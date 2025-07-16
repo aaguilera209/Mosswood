@@ -1,0 +1,38 @@
+  
+Create Stripe Checkout integration for our Mosswood app:
+1. In the backend (e.g. server/index.ts):
+   - Install `stripe` npm package.
+   - Add a new POST endpoint `/api/create-checkout-session`:
+     • Accepts JSON body `{ videoId: string }`.
+     • Looks up the video price.
+     • Calls `stripe.checkout.sessions.create({ payment_method_types: ['card'], line_items: [{ price_data: { currency: 'usd', product_data: { name: video.title }, unit_amount: video.price }, quantity: 1 }], mode: 'payment', success_url: `${FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${FRONTEND_URL}/payment-cancel` })`.
+     • Returns `{ sessionId }`.
+
+2. In your React `/src/pages/checkout.tsx`:
+   - Install `@stripe/stripe-js`.
+   - Read `sessionId` from the URL query.
+   - Initialize `const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)`.
+   - On mount, call `stripe.redirectToCheckout({ sessionId })`.
+
+3. Update `VideoDetail.tsx` “Buy” button:
+   - On click, call `fetch('/api/create-checkout-session', { method: 'POST', body: JSON.stringify({ videoId }) })`.
+   - Parse `{ sessionId }` from response.
+   - `navigate(`/checkout?sessionId=${sessionId}`)`.
+
+4. Create simple `/src/pages/payment-success.tsx` and `/src/pages/payment-cancel.tsx`:
+   - Display confirmation or cancellation message.
+   - On success page, optionally fetch session details via `/api/checkout-session?sessionId=`.
+
+5. Add `/api/webhooks` POST route:
+   - Parse `Stripe-Signature` header.
+   - `const event = stripe.webhooks.constructEvent(payload, sig, WEBHOOK_SECRET)`.
+   - If `event.type === 'checkout.session.completed'`, extract `session` and mark the video purchase in your database.
+
+6. Update `.env`:
+   - `STRIPE_SECRET_KEY=sk_test_…`
+   - `VITE_STRIPE_PUBLISHABLE_KEY=pk_test_…`
+   - `STRIPE_WEBHOOK_SECRET=whsec_…`
+   - `FRONTEND_URL=https://your-app-url`
+
+Generate all of the above code with proper imports, error handling, and inline comments. Ensure the code is TypeScript-ready and follows our project’s conventions (Vite, React, Tailwind).  
+

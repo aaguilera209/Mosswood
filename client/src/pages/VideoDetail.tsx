@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Play, Pause, Volume2, Monitor, Maximize, Users, Settings, Lock, ArrowLeft, DollarSign } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Logo } from '@/components/Logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useRoute, Link } from 'wouter';
 import { getVideoById, getRelatedVideos, type Video } from '@/../../shared/videoData';
-import { PaymentModal } from '@/components/PaymentModal';
+import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,9 +23,10 @@ export default function VideoDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [volume, setVolume] = useState(100);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   // Mock purchased videos - in real app, this would come from API
   const purchasedVideoIds = [1, 3];
@@ -50,7 +53,7 @@ export default function VideoDetail() {
     return false;
   };
 
-  const handleWatchAction = () => {
+  const handleWatchAction = async () => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -63,17 +66,44 @@ export default function VideoDetail() {
     if (canWatchVideo()) {
       setIsPlaying(!isPlaying);
     } else {
-      setIsPaymentModalOpen(true);
+      // Start Stripe Checkout flow
+      await handleStripeCheckout();
     }
   };
 
-  const handlePaymentSuccess = () => {
-    setIsPaymentModalOpen(false);
-    toast({
-      title: "Purchase successful!",
-      description: "You can now watch the video.",
-    });
-    // In real app, refresh purchase status from API
+  const handleStripeCheckout = async () => {
+    if (!videoData || videoData.price === 0) return;
+
+    setIsProcessingPayment(true);
+    
+    try {
+      // Call backend to create checkout session
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoId: videoData.id.toString() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.sessionId) {
+        // Redirect to checkout page with session ID
+        setLocation(`/checkout?sessionId=${data.sessionId}`);
+      } else {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+    } catch (error: any) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "Failed to start payment process. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   // If video not found, show error
@@ -203,9 +233,12 @@ export default function VideoDetail() {
                   </div>
                 ) : (
                   // Purchase Button for non-purchased videos
-                  <div className="bg-primary hover:bg-primary/90 transition-colors rounded-lg px-6 py-3">
+                  <div className={`${isProcessingPayment ? 'bg-primary/70' : 'bg-primary hover:bg-primary/90'} transition-colors rounded-lg px-6 py-3 flex items-center space-x-2`}>
+                    {isProcessingPayment && (
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    )}
                     <span className="text-white font-semibold">
-                      {videoData.price === 0 ? 'Watch Free' : `Buy for $${videoData.price.toFixed(2)}`}
+                      {isProcessingPayment ? 'Processing...' : videoData.price === 0 ? 'Watch Free' : `Buy for $${videoData.price.toFixed(2)}`}
                     </span>
                   </div>
                 )}
@@ -505,15 +538,7 @@ export default function VideoDetail() {
         </footer>
       )}
 
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        onSuccess={handlePaymentSuccess}
-        videoTitle={videoData.title}
-        videoPrice={videoData.price}
-        videoId={videoData.id}
-      />
+
     </div>
   );
 }
