@@ -12,6 +12,8 @@ import { getVideoById, getRelatedVideos, getCreatorByName, type Video } from '@/
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 type PlaybackMode = 'default' | 'theater' | 'fullscreen';
 
@@ -29,9 +31,30 @@ export default function VideoDetail() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
-  // Mock purchased videos - in real app, this would come from API
-  const purchasedVideoIds = [1, 3];
-  const hasPurchased = videoData ? purchasedVideoIds.includes(videoData.id) : false;
+  // Fetch user's purchases to check if they own this video
+  const { data: purchasesData } = useQuery({
+    queryKey: ['purchases', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return { purchases: [] };
+      
+      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user.email)}`);
+      const data = await response.json();
+      return data;
+    },
+    enabled: !!user?.email,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const purchases = purchasesData?.purchases || [];
+  
+  // Check if user has purchased this video
+  const hasPurchased = videoData ? purchases.some((p: any) => p.video_id === videoData.id) : false;
+  
+  // Also check URL parameters for recent purchases (to handle immediate post-purchase access)
+  const urlParams = new URLSearchParams(window.location.search);
+  const recentPurchase = urlParams.get('purchased') === 'true';
+  const purchasedVideoId = urlParams.get('videoId');
+  const hasRecentPurchase = recentPurchase && purchasedVideoId && parseInt(purchasedVideoId) === videoData?.id;
   const isOwnVideo = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
   // Load video data based on URL parameter
@@ -56,7 +79,8 @@ export default function VideoDetail() {
     if (!videoData) return false;
     if (videoData.price === 0) return true; // Free videos
     if (isOwnVideo) return true; // Creator's own videos
-    if (hasPurchased) return true; // Purchased videos
+    if (hasPurchased) return true; // Purchased videos from database
+    if (hasRecentPurchase) return true; // Recent purchase from URL
     return false;
   };
 

@@ -190,6 +190,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's purchases
+  app.get("/api/purchases", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.query;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+      
+      console.log('Fetching purchases for email:', email);
+      
+      // Check if we have Supabase service key
+      if (!process.env.SUPABASE_SERVICE_KEY || !supabase) {
+        console.log('No service key available, returning empty purchases');
+        return res.json({ purchases: [] });
+      }
+      
+      // Find the user's profile by email
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (profileError || !profile) {
+        console.log('Profile not found for email:', email);
+        return res.json({ purchases: [] });
+      }
+      
+      // Get purchases for this user
+      const { data: purchases, error: purchasesError } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('profile_id', profile.id)
+        .order('purchased_at', { ascending: false });
+      
+      if (purchasesError) {
+        console.error('Error fetching purchases:', purchasesError.message);
+        return res.status(500).json({ error: 'Failed to fetch purchases' });
+      }
+      
+      console.log('Found purchases:', purchases?.length || 0);
+      res.json({ purchases: purchases || [] });
+      
+    } catch (error: any) {
+      console.error('Error in purchases API:', error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Get checkout session details
   app.get("/api/checkout-session", async (req: Request, res: Response) => {
     try {
