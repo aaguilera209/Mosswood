@@ -11,10 +11,10 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Initialize Supabase client
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Initialize Supabase client (optional for testing)
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+const supabase = supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 
 // Frontend URL for redirects
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5000';
@@ -54,6 +54,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!videoId || !userEmail || !amountTotal) {
           console.error('Missing required purchase data:', { videoId, userEmail, amountTotal });
           return res.status(400).json({ error: 'Missing purchase data' });
+        }
+        
+        if (!supabase) {
+          console.log('Supabase not configured - purchase recording skipped');
+          console.log('Purchase would be recorded:', {
+            videoId: parseInt(videoId),
+            userEmail,
+            amount: amountTotal
+          });
+          return res.json({ received: true, note: 'Purchase recording skipped - service key needed' });
         }
         
         // Find the user's profile by email
@@ -203,6 +213,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Email is required' });
       }
       
+      if (!supabase) {
+        return res.json({ purchases: [] });
+      }
+      
       // Find user's profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -238,6 +252,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!email || !videoId) {
         return res.status(400).json({ error: 'Email and videoId are required' });
+      }
+      
+      if (!supabase) {
+        return res.json({ hasPurchased: false });
       }
       
       // Find user's profile
