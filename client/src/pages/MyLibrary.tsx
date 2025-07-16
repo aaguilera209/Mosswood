@@ -41,8 +41,11 @@ function MyLibraryContent() {
     queryFn: async () => {
       if (!user?.email) return { purchases: [] };
       
+      console.log('Fetching purchases for user:', user.email);
       const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user.email)}`);
-      return response.json();
+      const data = await response.json();
+      console.log('Purchases response:', data);
+      return data;
     },
     enabled: !!user?.email,
   });

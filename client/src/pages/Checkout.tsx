@@ -62,11 +62,8 @@ export default function Checkout() {
           throw new Error('Popup blocked. Please allow popups for this site and try again.');
         }
         
-        // Show success message and redirect back
+        // Show success message - user will complete payment in new window
         setLoading(false);
-        setTimeout(() => {
-          setLocation('/payment-success?session_id=' + sessionId);
-        }, 1000);
       } catch (err: any) {
         console.error('Checkout error:', err);
         console.error('Error details:', {
@@ -135,12 +132,9 @@ export default function Checkout() {
             Complete your payment in the new window. You'll be redirected back here when done.
           </p>
           <div className="space-y-2">
-            <Button 
-              onClick={() => setLocation('/payment-success')}
-              className="w-full"
-            >
-              I've Completed Payment
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              After completing payment, you'll be automatically redirected back to the app.
+            </p>
             <Button 
               onClick={() => setLocation('/')}
               variant="outline"

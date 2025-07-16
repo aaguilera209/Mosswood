@@ -16,7 +16,7 @@ export const mockVideos: Video[] = [
     duration: "12:34",
     price: 9.99,
     thumbnail: "https://placehold.co/400x200",
-    creator: "Maya Lee",
+    creator: "Maya Chen",
     description: "A comprehensive breakdown of how I approached this challenging scene, including lighting setup, camera angles, and post-production techniques. Learn the professional methods I use to create cinematic shots on any budget."
   },
   {
@@ -25,7 +25,7 @@ export const mockVideos: Video[] = [
     duration: "08:15",
     price: 0,
     thumbnail: "https://placehold.co/400x200",
-    creator: "Maya Lee",
+    creator: "Maya Chen",
     description: "An intimate look at my creative workflow from concept to completion, sharing insights on how I develop and execute visual stories. Perfect for aspiring filmmakers looking to establish their own creative process."
   },
   {
@@ -34,7 +34,7 @@ export const mockVideos: Video[] = [
     duration: "15:22",
     price: 4.99,
     thumbnail: "https://placehold.co/400x200",
-    creator: "Maya Lee",
+    creator: "Maya Chen",
     description: "Behind-the-scenes footage from my latest documentary project, showing the challenges and breakthroughs during production. See what really happens when the cameras aren't rolling."
   },
   {
@@ -43,7 +43,7 @@ export const mockVideos: Video[] = [
     duration: "06:45",
     price: 0,
     thumbnail: "https://placehold.co/400x200",
-    creator: "Maya Lee",
+    creator: "Alex Rivera",
     description: "What really happens behind the camera during professional shoots - the good, the bad, and the unexpected moments. A raw and honest look at professional video production."
   },
   {
@@ -52,7 +52,7 @@ export const mockVideos: Video[] = [
     duration: "18:30",
     price: 12.99,
     thumbnail: "https://placehold.co/400x200",
-    creator: "Maya Lee",
+    creator: "Alex Rivera",
     description: "Complete tour of my current gear setup and honest reviews of the equipment I use for different types of projects. Includes budget alternatives and must-have accessories."
   },
   {
@@ -61,7 +61,7 @@ export const mockVideos: Video[] = [
     duration: "09:12",
     price: 5.99,
     thumbnail: "https://placehold.co/400x200",
-    creator: "Maya Lee",
+    creator: "Sarah Thompson",
     description: "My systematic approach to finding and securing perfect filming locations. Learn how to negotiate with property owners and make any location work for your vision."
   }
 ];
