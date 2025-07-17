@@ -45,6 +45,9 @@ function MyLibraryContent() {
     effectiveEmail
   });
 
+  // Add a simple test to verify the component is loading
+  console.log('MyLibrary component mounted at:', new Date().toISOString());
+
   // Fetch user's purchases
   const { data: purchasesData, error: purchasesError, isLoading } = useQuery({
     queryKey: ['purchases', effectiveEmail],
@@ -102,6 +105,7 @@ function MyLibraryContent() {
   };
 
   if (isLoading) {
+    console.log('MyLibrary: Still loading..., isLoading =', isLoading);
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -113,7 +117,7 @@ function MyLibraryContent() {
           
           <div className="text-center py-16">
             <div className="w-8 h-8 mx-auto mb-4 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <p className="text-muted-foreground">Loading your library...</p>
+            <p className="text-muted-foreground">Loading your library... (Debug: Check browser console)</p>
           </div>
         </div>
         <Footer />
