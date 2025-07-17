@@ -66,8 +66,32 @@ export function StripeConnectSetup() {
     },
     onSuccess: (data) => {
       if (data.onboarding_url) {
-        // Redirect to Stripe onboarding
-        window.location.href = data.onboarding_url;
+        // Open Stripe onboarding in new window to avoid iframe restrictions
+        const newWindow = window.open(data.onboarding_url, '_blank', 'width=800,height=800,scrollbars=yes,resizable=yes');
+        
+        if (newWindow) {
+          toast({
+            title: "Opening Stripe Setup",
+            description: "Complete your payment setup in the new window, then return here.",
+          });
+          
+          // Check if window was closed (user completed or cancelled)
+          const checkClosed = setInterval(() => {
+            if (newWindow.closed) {
+              clearInterval(checkClosed);
+              // Refresh the account status when they return
+              queryClient.invalidateQueries({ queryKey: ['stripe-account-status'] });
+            }
+          }, 1000);
+        } else {
+          // Fallback if popup was blocked
+          toast({
+            title: "Popup Blocked",
+            description: "Please allow popups and try again, or copy this URL to complete setup.",
+            variant: "destructive",
+          });
+          console.log('Stripe onboarding URL:', data.onboarding_url);
+        }
       } else {
         toast({
           title: "Setup Complete",
