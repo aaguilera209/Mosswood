@@ -269,9 +269,7 @@ function MyLibraryContent() {
 }
 
 export default function MyLibrary() {
-  return (
-    <ProtectedRoute>
-      <MyLibraryContent />
-    </ProtectedRoute>
-  );
+  // Temporarily bypass ProtectedRoute for debugging
+  console.log('MyLibrary wrapper component mounted');
+  return <MyLibraryContent />;
 }
