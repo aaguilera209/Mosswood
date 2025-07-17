@@ -171,6 +171,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Database migration endpoint for Stripe Connect fields
+  app.post("/api/migrate-stripe-fields", async (req: Request, res: Response) => {
+    if (!supabase) {
+      return res.status(500).json({ error: "Supabase not configured" });
+    }
+
+    try {
+      // Check if columns already exist by trying to select them
+      const { error: checkError } = await supabase
+        .from('profiles')
+        .select('stripe_account_id, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled')
+        .limit(1);
+
+      if (!checkError) {
+        return res.json({ message: "Migration already completed - Stripe fields exist" });
+      }
+
+      // If we get here, the fields don't exist, so we need to add them manually
+      // Since we can't run ALTER TABLE directly through the REST API, 
+      // we'll inform the user to run it manually
+      return res.json({ 
+        message: "Migration needed - please run the SQL migration manually",
+        sql: `
+          ALTER TABLE profiles 
+          ADD COLUMN IF NOT EXISTS stripe_account_id TEXT,
+          ADD COLUMN IF NOT EXISTS stripe_onboarding_complete BOOLEAN DEFAULT FALSE,
+          ADD COLUMN IF NOT EXISTS stripe_charges_enabled BOOLEAN DEFAULT FALSE,
+          ADD COLUMN IF NOT EXISTS stripe_payouts_enabled BOOLEAN DEFAULT FALSE;
+          
+          CREATE INDEX IF NOT EXISTS idx_profiles_stripe_account_id ON profiles(stripe_account_id);
+        `
+      });
+
+    } catch (error: any) {
+      console.error('Migration check error:', error);
+      res.status(500).json({ error: "Migration check failed", details: error.message });
+    }
+  });
+
   // Stripe webhook endpoint (must be before body parser)
   app.post("/api/webhooks", express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'] as string;
