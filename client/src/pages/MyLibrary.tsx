@@ -50,16 +50,33 @@ function MyLibraryContent() {
     queryKey: ['purchases', effectiveEmail],
     queryFn: async () => {
       console.log('Fetching purchases for email:', effectiveEmail);
-      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(effectiveEmail)}`);
-      const data = await response.json();
-      console.log('Purchases response:', data);
-      return data;
+      try {
+        const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(effectiveEmail)}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log('Purchases response:', data);
+        return data;
+      } catch (error) {
+        console.error('Purchase fetch error:', error);
+        throw error;
+      }
     },
     retry: 1,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   const purchases: Purchase[] = purchasesData?.purchases || [];
+
+  console.log('MyLibrary state debug:', {
+    isLoading,
+    purchasesError: purchasesError?.message,
+    purchasesData,
+    purchases,
+    purchasesLength: purchases.length
+  });
 
   // Transform purchases to include video details
   const purchasedVideos: PurchasedVideo[] = purchases.map(purchase => {
