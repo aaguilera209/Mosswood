@@ -24,13 +24,7 @@ export function StripeConnectSetup() {
   const queryClient = useQueryClient();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
 
-  // Debug logging
-  console.log('StripeConnectSetup Debug:', {
-    user: !!user,
-    profile: profile,
-    userRole: profile?.role,
-    isCreator: profile?.role === 'creator'
-  });
+
 
   // Check URL parameters for onboarding status
   const urlParams = new URLSearchParams(window.location.search);
@@ -44,8 +38,7 @@ export function StripeConnectSetup() {
       const response = await apiRequest('GET', '/api/stripe-account-status');
       return response.json();
     },
-    enabled: true, // Always enable for debugging
-    // enabled: !!user && profile?.role === 'creator',
+    enabled: !!user && profile?.role === 'creator',
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -130,10 +123,9 @@ export function StripeConnectSetup() {
     createAccountMutation.mutate();
   };
 
-  // Temporarily disable role check for debugging
-  // if (profile?.role !== 'creator') {
-  //   return null;
-  // }
+  if (profile?.role !== 'creator') {
+    return null;
+  }
 
   if (isLoading) {
     return (
