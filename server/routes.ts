@@ -81,11 +81,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create account link for onboarding
+      // Create account link for onboarding with better return URLs
+      const isReplit = FRONTEND_URL.includes('replit.dev') || FRONTEND_URL.includes('replit.app');
+      const baseUrl = isReplit ? FRONTEND_URL : FRONTEND_URL;
+      
       const accountLink = await stripe.accountLinks.create({
         account: stripeAccountId,
-        refresh_url: `${FRONTEND_URL}/dashboard?stripe_refresh=true`,
-        return_url: `${FRONTEND_URL}/dashboard?stripe_setup=complete`,
+        refresh_url: `${baseUrl}/dashboard?stripe_refresh=true`,
+        return_url: `${baseUrl}/dashboard?stripe_setup=complete`,
         type: 'account_onboarding',
       });
 
@@ -634,5 +637,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // Update user role (for testing)
+  app.post("/api/update-role", async (req, res) => {
+    try {
+      const { email, role } = req.body;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('email', email)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      console.log(`Updated ${email} role to: ${role}`);
+      res.json({ success: true, profile: data });
+    } catch (error: any) {
+      console.error('Role update error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
