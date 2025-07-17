@@ -29,6 +29,148 @@ const FRONTEND_URL = process.env.REPLIT_DOMAIN
   : 'http://localhost:5000';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Stripe Connect Express account creation endpoint
+  app.post("/api/create-connect-account", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const user = req.user as any;
+      
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      // Check if user is a creator
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, stripe_account_id, stripe_onboarding_complete')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      if (profile.role !== 'creator') {
+        return res.status(403).json({ error: "Only creators can set up Stripe accounts" });
+      }
+
+      let stripeAccountId = profile.stripe_account_id;
+
+      // Create Stripe Express account if it doesn't exist
+      if (!stripeAccountId) {
+        const account = await stripe.accounts.create({
+          type: 'express',
+          email: user.email,
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+        });
+
+        stripeAccountId = account.id;
+
+        // Store the account ID in Supabase
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ stripe_account_id: stripeAccountId })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('Failed to store Stripe account ID:', updateError);
+          return res.status(500).json({ error: "Failed to store account information" });
+        }
+      }
+
+      // Create account link for onboarding
+      const accountLink = await stripe.accountLinks.create({
+        account: stripeAccountId,
+        refresh_url: `${FRONTEND_URL}/dashboard?stripe_refresh=true`,
+        return_url: `${FRONTEND_URL}/dashboard?stripe_setup=complete`,
+        type: 'account_onboarding',
+      });
+
+      res.json({ 
+        onboarding_url: accountLink.url,
+        stripe_account_id: stripeAccountId 
+      });
+
+    } catch (error: any) {
+      console.error('Stripe Connect account creation error:', error);
+      res.status(500).json({ 
+        error: "Failed to create Stripe account", 
+        details: error.message 
+      });
+    }
+  });
+
+  // Check Stripe Connect account status
+  app.get("/api/stripe-account-status", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const user = req.user as any;
+      
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('stripe_account_id, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      if (!profile.stripe_account_id) {
+        return res.json({ 
+          has_account: false,
+          onboarding_complete: false,
+          charges_enabled: false,
+          payouts_enabled: false
+        });
+      }
+
+      // Fetch account details from Stripe
+      const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+
+      const accountStatus = {
+        has_account: true,
+        onboarding_complete: account.details_submitted,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        requirements: account.requirements?.currently_due || [],
+        stripe_account_id: profile.stripe_account_id
+      };
+
+      // Update local database with current status
+      await supabase
+        .from('profiles')
+        .update({
+          stripe_onboarding_complete: accountStatus.onboarding_complete,
+          stripe_charges_enabled: accountStatus.charges_enabled,
+          stripe_payouts_enabled: accountStatus.payouts_enabled
+        })
+        .eq('id', user.id);
+
+      res.json(accountStatus);
+
+    } catch (error: any) {
+      console.error('Stripe account status error:', error);
+      res.status(500).json({ 
+        error: "Failed to fetch account status", 
+        details: error.message 
+      });
+    }
+  });
+
   // Stripe webhook endpoint (must be before body parser)
   app.post("/api/webhooks", express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'] as string;

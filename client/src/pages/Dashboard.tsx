@@ -8,6 +8,7 @@ import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { VideoUploadModal } from '@/components/VideoUploadModal';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { StripeConnectSetup } from '@/components/StripeConnectSetup';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
@@ -329,6 +330,9 @@ function DashboardContent() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Stripe Connect Setup */}
+            <StripeConnectSetup />
 
             {/* Recent Performance */}
             <div className="grid md:grid-cols-2 gap-6">
