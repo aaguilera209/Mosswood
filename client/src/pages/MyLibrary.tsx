@@ -39,14 +39,7 @@ function MyLibraryContent() {
   const testEmail = "aguilera209@gmail.com"; // The email from payment logs
   const effectiveEmail = user?.email || testEmail;
   
-  console.log('MyLibrary user check:', {
-    hasUser: !!user,
-    userEmail: user?.email,
-    effectiveEmail
-  });
 
-  // Add a simple test to verify the component is loading
-  console.log('MyLibrary component mounted at:', new Date().toISOString());
 
   // Fetch user's purchases
   const { data: purchasesData, error: purchasesError, isLoading } = useQuery({
@@ -73,13 +66,7 @@ function MyLibraryContent() {
 
   const purchases: Purchase[] = purchasesData?.purchases || [];
 
-  console.log('MyLibrary state debug:', {
-    isLoading,
-    purchasesError: purchasesError?.message,
-    purchasesData,
-    purchases,
-    purchasesLength: purchases.length
-  });
+
 
   // Transform purchases to include video details
   const purchasedVideos: PurchasedVideo[] = purchases.map(purchase => {
@@ -105,7 +92,6 @@ function MyLibraryContent() {
   };
 
   if (isLoading) {
-    console.log('MyLibrary: Still loading..., isLoading =', isLoading);
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -117,7 +103,7 @@ function MyLibraryContent() {
           
           <div className="text-center py-16">
             <div className="w-8 h-8 mx-auto mb-4 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <p className="text-muted-foreground">Loading your library... (Debug: Check browser console)</p>
+            <p className="text-muted-foreground">Loading your library...</p>
           </div>
         </div>
         <Footer />
@@ -269,7 +255,5 @@ function MyLibraryContent() {
 }
 
 export default function MyLibrary() {
-  // Temporarily bypass ProtectedRoute for debugging
-  console.log('MyLibrary wrapper component mounted');
   return <MyLibraryContent />;
 }

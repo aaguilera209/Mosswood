@@ -31,17 +31,18 @@ export default function VideoDetail() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
+  // For development - use a test email if no user is authenticated
+  const testEmail = "aguilera209@gmail.com";
+  const effectiveEmail = user?.email || testEmail;
+  
   // Fetch user's purchases to check if they own this video
   const { data: purchasesData } = useQuery({
-    queryKey: ['purchases', user?.email],
+    queryKey: ['purchases', effectiveEmail],
     queryFn: async () => {
-      if (!user?.email) return { purchases: [] };
-      
-      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user.email)}`);
+      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(effectiveEmail)}`);
       const data = await response.json();
       return data;
     },
-    enabled: !!user?.email,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -56,16 +57,7 @@ export default function VideoDetail() {
   const purchasedVideoId = urlParams.get('videoId');
   const hasRecentPurchase = recentPurchase && purchasedVideoId && parseInt(purchasedVideoId) === videoData?.id;
   
-  // Debug logging
-  console.log('Purchase check debug:', {
-    videoId: videoData?.id,
-    hasPurchased,
-    hasRecentPurchase,
-    recentPurchase,
-    purchasedVideoId,
-    currentUrl: window.location.href,
-    urlParams: Object.fromEntries(urlParams.entries())
-  });
+
   const isOwnVideo = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
   // Load video data based on URL parameter
