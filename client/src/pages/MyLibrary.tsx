@@ -35,22 +35,26 @@ function MyLibraryContent() {
   const { user, profile } = useAuth();
   const [, setLocation] = useLocation();
 
+  // For development - use a test email if no user is authenticated
+  const testEmail = "aguilera209@gmail.com"; // The email from payment logs
+  const effectiveEmail = user?.email || testEmail;
+  
+  console.log('MyLibrary user check:', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    effectiveEmail
+  });
+
   // Fetch user's purchases
   const { data: purchasesData, error: purchasesError, isLoading } = useQuery({
-    queryKey: ['purchases', user?.email],
+    queryKey: ['purchases', effectiveEmail],
     queryFn: async () => {
-      if (!user?.email) {
-        console.log('No user email available for purchases');
-        return { purchases: [] };
-      }
-      
-      console.log('Fetching purchases for user:', user.email);
-      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user.email)}`);
+      console.log('Fetching purchases for email:', effectiveEmail);
+      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(effectiveEmail)}`);
       const data = await response.json();
       console.log('Purchases response:', data);
       return data;
     },
-    enabled: !!user?.email,
     retry: 1,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

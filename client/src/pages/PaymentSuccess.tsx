@@ -132,7 +132,7 @@ export default function PaymentSuccess() {
                   onClick={() => {
                     const videoUrl = `/video/${sessionDetails.metadata.videoId}?purchased=true&videoId=${sessionDetails.metadata.videoId}`;
                     console.log('Navigating to video with URL:', videoUrl);
-                    setLocation(videoUrl);
+                    window.location.href = videoUrl;
                   }}
                   className="w-full"
                 >

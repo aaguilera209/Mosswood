@@ -63,6 +63,7 @@ export default function VideoDetail() {
     hasRecentPurchase,
     recentPurchase,
     purchasedVideoId,
+    currentUrl: window.location.href,
     urlParams: Object.fromEntries(urlParams.entries())
   });
   const isOwnVideo = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
