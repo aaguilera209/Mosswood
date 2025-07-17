@@ -278,16 +278,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, videoId, amount } = req.body;
       
-      // Find the user's profile by email
-      const { data: profile, error: profileError } = await supabase
+      // Find the user's profile by email, or create one if it doesn't exist
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
         .single();
 
       if (profileError || !profile) {
-        console.error('Profile not found for email:', email, profileError);
-        return res.status(404).json({ error: 'User profile not found' });
+        console.log('Profile not found for email:', email, 'Creating new profile...');
+        
+        // Create a new profile
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            email: email,
+            role: 'viewer'
+          })
+          .select()
+          .single();
+          
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          return res.status(500).json({ error: 'Failed to create user profile' });
+        }
+        
+        profile = newProfile;
+        console.log('Created new profile:', profile);
       }
 
       // Record the purchase
