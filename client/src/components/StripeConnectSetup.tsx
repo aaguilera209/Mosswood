@@ -38,7 +38,7 @@ export function StripeConnectSetup() {
       const response = await apiRequest('GET', '/api/stripe-account-status');
       return response.json();
     },
-    enabled: !!user, // Temporarily enable for all users to debug
+    enabled: !!user && profile?.role === 'creator',
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -123,13 +123,9 @@ export function StripeConnectSetup() {
     createAccountMutation.mutate();
   };
 
-  // Debug: temporarily show for testing
-  console.log('Auth check:', { user: !!user, profile, role: profile?.role });
-  
-  // Temporarily bypass role check to debug
-  // if (profile?.role !== 'creator') {
-  //   return null;
-  // }
+  if (profile?.role !== 'creator') {
+    return null;
+  }
 
   if (isLoading) {
     return (
