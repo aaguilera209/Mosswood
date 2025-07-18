@@ -172,24 +172,56 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       const sanitizedTitle = formData.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
       const fileExtension = formData.file!.name.split('.').pop();
       const fileName = `${timestamp}_${sanitizedTitle}.${fileExtension}`;
-      const filePath = `videos/${user.id}/${fileName}`;
+      
+      // Try simplified path first to test if folder structure is the issue
+      const filePath = `${user.id}/${fileName}`;
 
       console.log('Upload path:', filePath);
       console.log('Starting Supabase storage upload...');
 
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // First, let's test if the bucket exists
+      console.log('Testing bucket access...');
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', buckets, 'Bucket error:', bucketError);
+
+      // Upload to Supabase Storage with timeout
+      console.log('Attempting upload with timeout...');
+      
+      const uploadPromise = supabase.storage
         .from('videos')
         .upload(filePath, formData.file!, {
           cacheControl: '3600',
           upsert: false,
         });
 
+      // Add a timeout to prevent indefinite hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000);
+      });
+
+      const { data: uploadData, error: uploadError } = await Promise.race([
+        uploadPromise,
+        timeoutPromise
+      ]) as any;
+
       console.log('Supabase upload response:', { uploadData, uploadError });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error(`Upload failed: ${uploadError.message}`);
+        console.error('Upload error details:', {
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          error: uploadError.error,
+          details: uploadError
+        });
+        
+        // Provide more specific error messages
+        if (uploadError.message.includes('new row violates row-level security')) {
+          throw new Error('Permission denied: Please check your Supabase storage policies');
+        } else if (uploadError.message.includes('bucket')) {
+          throw new Error('Storage bucket not found: Please create the "videos" bucket in Supabase');
+        } else {
+          throw new Error(`Upload failed: ${uploadError.message}`);
+        }
       }
 
       console.log('File uploaded successfully to Supabase storage');
