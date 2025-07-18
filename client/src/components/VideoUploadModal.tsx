@@ -195,64 +195,51 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       // Use backend upload instead of direct frontend upload
       console.log('Starting backend video file upload...');
       
-      try {
-        // Convert file to base64 for backend upload
-        const fileReader = new FileReader();
-        const fileBase64 = await new Promise<string>((resolve, reject) => {
-          fileReader.onload = () => {
-            const result = fileReader.result as string;
-            // Remove data:video/mp4;base64, prefix
-            const base64 = result.split(',')[1];
-            resolve(base64);
-          };
-          fileReader.onerror = reject;
-          fileReader.readAsDataURL(formData.file!);
-        });
-
-        console.log('File converted to base64, uploading via backend...');
-        
-        const uploadResponse = await Promise.race([
-          apiRequest('POST', '/api/upload-video', {
-            fileName,
-            fileData: fileBase64,
-            contentType: formData.file!.type,
-            userId: user.id
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Backend upload timeout after 30 seconds')), 30000)
-          )
-        ]);
-        
-        console.log('Backend upload response status:', uploadResponse.status);
-        
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
-          console.error('Backend upload error:', errorData);
-          throw new Error(errorData.error || 'Backend upload failed');
-        }
-
-        const uploadResult = await uploadResponse.json();
-        console.log('Backend upload completed:', uploadResult);
-        
-        const videoUrl = uploadResult.publicUrl;
-        console.log('Video URL from backend:', videoUrl);
-
-        console.log('File uploaded successfully via backend');
-        setUploadProgress(50);
+      let videoUrl: string;
       
-      } catch (uploadError: any) {
-        console.error('Upload process failed:', uploadError);
-        console.error('Error details:', {
-          message: uploadError?.message || 'No message',
-          name: uploadError?.name || 'No name',
-          stack: uploadError?.stack || 'No stack',
-          cause: uploadError?.cause || 'No cause',
-          toString: uploadError?.toString() || 'No toString',
-          keys: Object.keys(uploadError || {}),
-          uploadError: uploadError
-        });
-        throw uploadError;
+      // Convert file to base64 for backend upload
+      const fileReader = new FileReader();
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        fileReader.onload = () => {
+          const result = fileReader.result as string;
+          // Remove data:video/mp4;base64, prefix
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        fileReader.onerror = reject;
+        fileReader.readAsDataURL(formData.file!);
+      });
+
+      console.log('File converted to base64, uploading via backend...');
+      
+      const uploadResponse = await Promise.race([
+        apiRequest('POST', '/api/upload-video', {
+          fileName,
+          fileData: fileBase64,
+          contentType: formData.file!.type,
+          userId: user.id
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Backend upload timeout after 30 seconds')), 30000)
+        )
+      ]);
+      
+      console.log('Backend upload response status:', uploadResponse.status);
+      
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        console.error('Backend upload error:', errorData);
+        throw new Error(errorData.error || 'Backend upload failed');
       }
+
+      const uploadResult = await uploadResponse.json();
+      console.log('Backend upload completed:', uploadResult);
+      
+      videoUrl = uploadResult.publicUrl;
+      console.log('Video URL from backend:', videoUrl);
+
+      console.log('File uploaded successfully via backend');
+      setUploadProgress(50);
 
       // Parse tags from comma-separated string
       const tagsArray = formData.tags
