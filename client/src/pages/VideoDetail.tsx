@@ -17,6 +17,16 @@ import { apiRequest } from '@/lib/queryClient';
 
 type PlaybackMode = 'default' | 'theater' | 'fullscreen';
 
+// Helper function to format duration from seconds to MM:SS
+const formatDuration = (seconds: number | null | undefined): string => {
+  if (!seconds || seconds <= 0) return '--:--';
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
 export default function VideoDetail() {
   const [match, params] = useRoute('/video/:id');
   const [videoData, setVideoData] = useState<Video | null>(null);
@@ -245,9 +255,9 @@ export default function VideoDetail() {
       {playbackMode !== 'fullscreen' && (
         <header className="border-b border-border px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href={`/creator/${creatorUsername}`} className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
+            <Link href="/dashboard" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to {videoData?.creator}'s Page</span>
+              <span>Back to Dashboard</span>
             </Link>
             <div className="flex items-center space-x-4">
               <Logo showText={true} className="text-2xl" />
@@ -270,11 +280,17 @@ export default function VideoDetail() {
           >
             {/* Video Poster/Thumbnail */}
             <div className={`${getVideoClasses()} bg-gray-900 flex items-center justify-center relative`}>
-              <img
-                src={videoData.thumbnail}
-                alt={videoData.title}
-                className="w-full h-full object-cover"
-              />
+              {videoData.thumbnail_url ? (
+                <img
+                  src={videoData.thumbnail_url}
+                  alt={videoData.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                  <Play className="w-16 h-16 text-gray-400" />
+                </div>
+              )}
               
               {/* Overlay for purchased vs non-purchased */}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -290,7 +306,7 @@ export default function VideoDetail() {
                       <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                     )}
                     <span className="text-white font-semibold">
-                      {isProcessingPayment ? 'Processing...' : videoData.price === 0 ? 'Watch Free' : `Buy for $${videoData.price.toFixed(2)}`}
+                      {isProcessingPayment ? 'Processing...' : videoData.is_free ? 'Watch Free' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
                     </span>
                   </div>
                 )}
@@ -364,7 +380,7 @@ export default function VideoDetail() {
                     
                     {/* Time Display */}
                     <span className="text-white text-sm font-medium">
-                      0:00 / {videoData.duration}
+                      0:00 / {formatDuration(videoData.duration)}
                     </span>
                   </div>
                   
@@ -491,12 +507,12 @@ export default function VideoDetail() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-4 text-gray-300">
                   <span className="text-amber-400 font-semibold">
-                    Duration: {videoData.duration}
+                    Duration: {formatDuration(videoData.duration)}
                   </span>
-                  <span>by {videoData.creator}</span>
+                  <span>by Creator</span>
                 </div>
                 
-                {!hasPurchased && videoData.price > 0 && (
+                {!hasPurchased && !videoData.is_free && videoData.price > 0 && (
                   <Button
                     onClick={handleStripeCheckout}
                     disabled={isProcessingPayment}
@@ -506,7 +522,7 @@ export default function VideoDetail() {
                       <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                     )}
                     <span>
-                      {isProcessingPayment ? 'Processing...' : `Buy for $${videoData.price.toFixed(2)}`}
+                      {isProcessingPayment ? 'Processing...' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
                     </span>
                   </Button>
                 )}
@@ -524,7 +540,7 @@ export default function VideoDetail() {
             {/* More from Creator Section */}
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-white">
-                More from {videoData.creator}
+                More from Creator
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

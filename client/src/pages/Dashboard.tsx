@@ -241,7 +241,11 @@ function DashboardContent() {
     setIsUploadModalOpen(false);
   };
 
-  const handleVideoClick = (videoId: number) => {
+  const handleVideoClick = (videoId: number, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setLocation(`/video/${videoId}`);
   };
 
@@ -488,7 +492,7 @@ function DashboardContent() {
                       {/* Video Thumbnail */}
                       <div 
                         className="relative aspect-video bg-gray-900 dark:bg-gray-800 rounded-t-lg overflow-hidden cursor-pointer"
-                        onClick={() => handleVideoClick(video.id)}
+                        onClick={(e) => handleVideoClick(video.id, e)}
                       >
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Play className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -519,16 +523,28 @@ function DashboardContent() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem onClick={() => handleVideoClick(video.id)}>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleVideoClick(video.id);
+                              }}>
                                 <Play className="w-4 h-4 mr-2" />
                                 Watch Video
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={handleEditVideo}>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleEditVideo();
+                              }}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit Video
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => handleDeleteVideo(video.id, video.title)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteVideo(video.id, video.title);
+                                }}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
@@ -541,7 +557,7 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent 
                       className="p-4 cursor-pointer"
-                      onClick={() => handleVideoClick(video.id)}
+                      onClick={(e) => handleVideoClick(video.id, e)}
                     >
                       <CardTitle className="text-base mb-2 line-clamp-2">
                         {video.title}
