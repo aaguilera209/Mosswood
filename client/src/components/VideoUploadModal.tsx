@@ -182,28 +182,15 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       // Skip bucket test and go straight to upload
       console.log('Attempting direct upload with timeout...');
       
-      // Test Supabase client connection first
-      console.log('Testing Supabase connection...');
-      try {
-        const { data: session } = await supabase.auth.getSession();
-        console.log('Auth session:', session ? 'Valid' : 'Invalid');
-        
-        // Test basic storage access
-        console.log('Testing storage client...');
-        const storage = supabase.storage;
-        console.log('Storage client exists:', !!storage);
-        
-        // Try to get bucket info without listing (which was hanging)
-        console.log('Testing bucket access...');
-        const { data: bucketData, error: bucketError } = await Promise.race([
-          supabase.storage.from('videos').list('', { limit: 1 }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Bucket test timeout')), 5000))
-        ]);
-        
-        console.log('Bucket test result:', { bucketData, bucketError });
-      } catch (connectionError) {
-        console.error('Connection test failed:', connectionError);
-      }
+      // Test environment variables first
+      console.log('Environment check:', {
+        hasSupabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
+        hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+        urlStart: import.meta.env.VITE_SUPABASE_URL?.substring(0, 20)
+      });
+      
+      // Skip all connection tests and go directly to upload attempt
+      console.log('Bypassing connection tests - attempting direct upload...');
       
       // Now try the actual upload with aggressive timeout
       console.log('Starting video file upload...');
@@ -217,7 +204,7 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
               upsert: false,
             }),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000)
+            setTimeout(() => reject(new Error('Upload timeout after 15 seconds')), 15000)
           )
         ]);
         
