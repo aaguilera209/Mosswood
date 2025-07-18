@@ -179,13 +179,28 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       console.log('Upload path:', filePath);
       console.log('Starting Supabase storage upload...');
 
-      // First, let's test if the bucket exists
-      console.log('Testing bucket access...');
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      console.log('Available buckets:', buckets, 'Bucket error:', bucketError);
-
-      // Upload to Supabase Storage with timeout
-      console.log('Attempting upload with timeout...');
+      // Skip bucket test and go straight to upload
+      console.log('Attempting direct upload with timeout...');
+      
+      // First try a simple test upload to verify connection
+      console.log('Testing basic upload capability...');
+      const testFile = new Blob(['test'], { type: 'text/plain' });
+      const testPath = `${user.id}/test-${timestamp}.txt`;
+      
+      try {
+        const testUpload = await supabase.storage
+          .from('videos')
+          .upload(testPath, testFile, { upsert: false });
+        console.log('Test upload result:', testUpload);
+        
+        // If test succeeds, delete it and proceed with video
+        if (!testUpload.error) {
+          await supabase.storage.from('videos').remove([testPath]);
+          console.log('Test file cleaned up, proceeding with video upload...');
+        }
+      } catch (testError) {
+        console.error('Test upload failed:', testError);
+      }
       
       const uploadPromise = supabase.storage
         .from('videos')
@@ -196,13 +211,18 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
 
       // Add a timeout to prevent indefinite hanging
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000);
+        setTimeout(() => reject(new Error('Upload timeout after 60 seconds')), 60000);
       });
 
-      const { data: uploadData, error: uploadError } = await Promise.race([
-        uploadPromise,
-        timeoutPromise
-      ]) as any;
+      let uploadResult;
+      try {
+        uploadResult = await Promise.race([uploadPromise, timeoutPromise]);
+      } catch (error: any) {
+        console.error('Upload promise failed:', error);
+        throw error;
+      }
+
+      const { data: uploadData, error: uploadError } = uploadResult as any;
 
       console.log('Supabase upload response:', { uploadData, uploadError });
 
