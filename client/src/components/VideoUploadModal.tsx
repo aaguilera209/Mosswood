@@ -4,13 +4,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Upload, X, CheckCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Upload, X, CheckCircle, FileVideo, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { apiRequest } from '@/lib/queryClient';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface VideoUploadFormData {
   file: File | null;
   title: string;
   description: string;
+  tags: string;
   isFree: boolean;
   price: number;
 }
@@ -22,15 +28,20 @@ interface VideoUploadModalProps {
 
 export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<VideoUploadFormData>({
     file: null,
     title: '',
     description: '',
+    tags: '',
     isFree: false, // Default to paid
     price: 0,
   });
   const [priceInput, setPriceInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -43,6 +54,10 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, description: e.target.value }));
+  };
+
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, tags: e.target.value }));
   };
 
   const handleFreeToggle = (checked: boolean) => {
@@ -85,62 +100,145 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       file: null,
       title: '',
       description: '',
+      tags: '',
       isFree: false,
       price: 0,
     });
     setPriceInput('');
+    setUploadProgress(0);
+    setValidationErrors([]);
+  };
+
+  const validateForm = (): boolean => {
+    const errors: string[] = [];
+    
+    if (!formData.file) {
+      errors.push('Please select a video file');
+    } else {
+      // Check file type
+      const allowedTypes = ['video/mp4', 'video/mov', 'video/webm', 'video/quicktime'];
+      if (!allowedTypes.includes(formData.file.type)) {
+        errors.push('Please select a valid video file (.mp4, .mov, or .webm)');
+      }
+      
+      // Check file size (500MB limit)
+      const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+      if (formData.file.size > maxSize) {
+        errors.push('Video file must be smaller than 500MB');
+      }
+    }
+    
+    if (!formData.title.trim()) {
+      errors.push('Please enter a title');
+    }
+    
+    if (!formData.isFree && formData.price <= 0) {
+      errors.push('Please set a valid price or mark as free');
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.file || !formData.title) {
+    if (!validateForm()) {
+      return;
+    }
+
+    if (!user) {
       toast({
-        title: "Missing Information",
-        description: "Please select a video file and enter a title",
+        title: "Authentication Required",
+        description: "Please log in to upload videos",
         variant: "destructive",
       });
       return;
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
     
     try {
-      // TODO: Replace with actual Supabase upload logic
-      // TODO: Upload video file to Supabase Storage
-      // TODO: Save video metadata (title, description, price) to Supabase database
-      console.log('Video Upload Form Data:', {
-        fileName: formData.file.name,
-        fileSize: formData.file.size,
-        fileType: formData.file.type,
-        title: formData.title,
-        description: formData.description,
-        isFree: formData.isFree,
-        price: formData.price,
-      });
+      // Generate unique filename
+      const timestamp = Date.now();
+      const sanitizedTitle = formData.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const fileExtension = formData.file!.name.split('.').pop();
+      const fileName = `${timestamp}_${sanitizedTitle}.${fileExtension}`;
+      const filePath = `videos/${user.id}/${fileName}`;
 
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(filePath, formData.file!, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      setUploadProgress(50);
+
+      // Get public URL for the uploaded video
+      const { data: publicUrlData } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filePath);
+
+      const videoUrl = publicUrlData.publicUrl;
+
+      // Parse tags from comma-separated string
+      const tagsArray = formData.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+
+      // Save video metadata to database
+      const videoData = {
+        creator_id: user.id,
+        title: formData.title,
+        description: formData.description || null,
+        price: formData.isFree ? 0 : Math.round(formData.price * 100), // Convert to cents
+        is_free: formData.isFree,
+        tags: tagsArray,
+        video_url: videoUrl,
+        file_size: formData.file!.size,
+      };
+
+      const response = await apiRequest('POST', '/api/videos', videoData);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save video metadata');
+      }
+
+      setUploadProgress(100);
 
       // Show success toast
       toast({
         title: "Video Uploaded Successfully!",
-        description: "Your video is being processed and will be available shortly.",
+        description: "Your video is now available in your dashboard.",
       });
+
+      // Invalidate videos query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
 
       // Close modal and reset form
       resetForm();
       onClose();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
       toast({
         title: "Upload Failed",
-        description: "There was an error uploading your video. Please try again.",
+        description: error.message || "There was an error uploading your video. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -178,6 +276,36 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+              <div className="flex">
+                <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
+                <div className="text-sm text-red-700 dark:text-red-300">
+                  <ul className="list-disc list-inside space-y-1">
+                    {validationErrors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Progress */}
+          {isUploading && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+              <div className="flex items-center space-x-3">
+                <FileVideo className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Uploading video...
+                  </p>
+                  <Progress value={uploadProgress} className="mt-2" />
+                </div>
+              </div>
+            </div>
+          )}
           {/* Video Title */}
           <div className="space-y-2">
             <Label htmlFor="video-title" className="text-gray-900 dark:text-white">
@@ -207,6 +335,25 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
               disabled={isUploading}
               className="min-h-[100px] resize-none"
             />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label htmlFor="video-tags" className="text-gray-900 dark:text-white">
+              Tags
+            </Label>
+            <Input
+              id="video-tags"
+              type="text"
+              placeholder="e.g., tutorial, tech, creativity"
+              value={formData.tags}
+              onChange={handleTagsChange}
+              disabled={isUploading}
+              className="w-full"
+            />
+            <p className="text-sm text-muted-foreground">
+              Separate tags with commas to help viewers find your content
+            </p>
           </div>
 
           {/* Pricing Section */}

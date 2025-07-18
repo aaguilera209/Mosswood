@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import Stripe from "stripe";
 import { getVideoById } from "../shared/videoData";
 import { createClient } from '@supabase/supabase-js';
+import { insertVideoSchema, type InsertVideo } from "../shared/schema";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -29,6 +30,89 @@ const FRONTEND_URL = process.env.REPLIT_DOMAIN
   : 'http://localhost:5000';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Video upload endpoint
+  app.post("/api/videos", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      // Validate request body
+      const result = insertVideoSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: "Invalid video data", 
+          details: result.error.issues 
+        });
+      }
+
+      const videoData = result.data;
+
+      // Insert video into database
+      const { data: video, error } = await supabase
+        .from('videos')
+        .insert([videoData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        return res.status(500).json({ 
+          error: "Failed to save video", 
+          details: error.message 
+        });
+      }
+
+      res.json({ 
+        message: "Video uploaded successfully", 
+        video 
+      });
+    } catch (error: any) {
+      console.error('Video upload error:', error);
+      res.status(500).json({ 
+        error: "Internal server error", 
+        details: error.message 
+      });
+    }
+  });
+
+  // Get videos for a creator
+  app.get("/api/videos", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const creatorId = req.query.creator_id as string;
+      
+      if (!creatorId) {
+        return res.status(400).json({ error: "creator_id parameter required" });
+      }
+
+      const { data: videos, error } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('creator_id', creatorId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        return res.status(500).json({ 
+          error: "Failed to fetch videos", 
+          details: error.message 
+        });
+      }
+
+      res.json({ videos });
+    } catch (error: any) {
+      console.error('Videos fetch error:', error);
+      res.status(500).json({ 
+        error: "Internal server error", 
+        details: error.message 
+      });
+    }
+  });
+
   // Stripe Connect Express account creation endpoint
   app.post("/api/create-connect-account", async (req: Request, res: Response) => {
     try {
