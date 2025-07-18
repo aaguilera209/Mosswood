@@ -245,6 +245,15 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       
       } catch (uploadError: any) {
         console.error('Upload process failed:', uploadError);
+        console.error('Error details:', {
+          message: uploadError?.message || 'No message',
+          name: uploadError?.name || 'No name',
+          stack: uploadError?.stack || 'No stack',
+          cause: uploadError?.cause || 'No cause',
+          toString: uploadError?.toString() || 'No toString',
+          keys: Object.keys(uploadError || {}),
+          uploadError: uploadError
+        });
         throw uploadError;
       }
 
