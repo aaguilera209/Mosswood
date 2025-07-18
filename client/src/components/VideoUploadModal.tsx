@@ -182,79 +182,84 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       // Skip bucket test and go straight to upload
       console.log('Attempting direct upload with timeout...');
       
-      // First try a simple test upload to verify connection
-      console.log('Testing basic upload capability...');
-      const testFile = new Blob(['test'], { type: 'text/plain' });
-      const testPath = `${user.id}/test-${timestamp}.txt`;
+      // Test Supabase client connection first
+      console.log('Testing Supabase connection...');
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        console.log('Auth session:', session ? 'Valid' : 'Invalid');
+        
+        // Test basic storage access
+        console.log('Testing storage client...');
+        const storage = supabase.storage;
+        console.log('Storage client exists:', !!storage);
+        
+        // Try to get bucket info without listing (which was hanging)
+        console.log('Testing bucket access...');
+        const { data: bucketData, error: bucketError } = await Promise.race([
+          supabase.storage.from('videos').list('', { limit: 1 }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Bucket test timeout')), 5000))
+        ]);
+        
+        console.log('Bucket test result:', { bucketData, bucketError });
+      } catch (connectionError) {
+        console.error('Connection test failed:', connectionError);
+      }
+      
+      // Now try the actual upload with aggressive timeout
+      console.log('Starting video file upload...');
       
       try {
-        const testUpload = await supabase.storage
+        const uploadResult = await Promise.race([
+          supabase.storage
+            .from('videos')
+            .upload(filePath, formData.file!, {
+              cacheControl: '3600',
+              upsert: false,
+            }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000)
+          )
+        ]);
+        
+        console.log('Upload completed:', uploadResult);
+        const { data: uploadData, error: uploadError } = uploadResult as any;
+
+        console.log('Supabase upload response:', { uploadData, uploadError });
+
+        if (uploadError) {
+          console.error('Upload error details:', {
+            message: uploadError.message,
+            statusCode: uploadError.statusCode,
+            error: uploadError.error,
+            details: uploadError
+          });
+          
+          // Provide more specific error messages
+          if (uploadError.message.includes('new row violates row-level security')) {
+            throw new Error('Permission denied: Please check your Supabase storage policies');
+          } else if (uploadError.message.includes('bucket')) {
+            throw new Error('Storage bucket not found: Please create the "videos" bucket in Supabase');
+          } else {
+            throw new Error(`Upload failed: ${uploadError.message}`);
+          }
+        }
+
+        console.log('File uploaded successfully to Supabase storage');
+        setUploadProgress(50);
+
+        // Get public URL for the uploaded video
+        console.log('Getting public URL for uploaded file...');
+        const { data: publicUrlData } = supabase.storage
           .from('videos')
-          .upload(testPath, testFile, { upsert: false });
-        console.log('Test upload result:', testUpload);
-        
-        // If test succeeds, delete it and proceed with video
-        if (!testUpload.error) {
-          await supabase.storage.from('videos').remove([testPath]);
-          console.log('Test file cleaned up, proceeding with video upload...');
-        }
-      } catch (testError) {
-        console.error('Test upload failed:', testError);
-      }
+          .getPublicUrl(filePath);
+
+        const videoUrl = publicUrlData.publicUrl;
+        console.log('Public URL generated:', videoUrl);
       
-      const uploadPromise = supabase.storage
-        .from('videos')
-        .upload(filePath, formData.file!, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      // Add a timeout to prevent indefinite hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Upload timeout after 60 seconds')), 60000);
-      });
-
-      let uploadResult;
-      try {
-        uploadResult = await Promise.race([uploadPromise, timeoutPromise]);
-      } catch (error: any) {
-        console.error('Upload promise failed:', error);
-        throw error;
+      } catch (uploadError: any) {
+        console.error('Upload process failed:', uploadError);
+        throw uploadError;
       }
-
-      const { data: uploadData, error: uploadError } = uploadResult as any;
-
-      console.log('Supabase upload response:', { uploadData, uploadError });
-
-      if (uploadError) {
-        console.error('Upload error details:', {
-          message: uploadError.message,
-          statusCode: uploadError.statusCode,
-          error: uploadError.error,
-          details: uploadError
-        });
-        
-        // Provide more specific error messages
-        if (uploadError.message.includes('new row violates row-level security')) {
-          throw new Error('Permission denied: Please check your Supabase storage policies');
-        } else if (uploadError.message.includes('bucket')) {
-          throw new Error('Storage bucket not found: Please create the "videos" bucket in Supabase');
-        } else {
-          throw new Error(`Upload failed: ${uploadError.message}`);
-        }
-      }
-
-      console.log('File uploaded successfully to Supabase storage');
-      setUploadProgress(50);
-
-      // Get public URL for the uploaded video
-      console.log('Getting public URL for uploaded file...');
-      const { data: publicUrlData } = supabase.storage
-        .from('videos')
-        .getPublicUrl(filePath);
-
-      const videoUrl = publicUrlData.publicUrl;
-      console.log('Public URL generated:', videoUrl);
 
       // Parse tags from comma-separated string
       const tagsArray = formData.tags
