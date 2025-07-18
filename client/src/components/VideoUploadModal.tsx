@@ -192,56 +192,53 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       // Skip all connection tests and go directly to upload attempt
       console.log('Bypassing connection tests - attempting direct upload...');
       
-      // Now try the actual upload with aggressive timeout
-      console.log('Starting video file upload...');
+      // Use backend upload instead of direct frontend upload
+      console.log('Starting backend video file upload...');
       
       try {
-        const uploadResult = await Promise.race([
-          supabase.storage
-            .from('videos')
-            .upload(filePath, formData.file!, {
-              cacheControl: '3600',
-              upsert: false,
-            }),
+        // Convert file to base64 for backend upload
+        const fileReader = new FileReader();
+        const fileBase64 = await new Promise<string>((resolve, reject) => {
+          fileReader.onload = () => {
+            const result = fileReader.result as string;
+            // Remove data:video/mp4;base64, prefix
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          fileReader.onerror = reject;
+          fileReader.readAsDataURL(formData.file!);
+        });
+
+        console.log('File converted to base64, uploading via backend...');
+        
+        const uploadResponse = await Promise.race([
+          apiRequest('POST', '/api/upload-video', {
+            fileName,
+            fileData: fileBase64,
+            contentType: formData.file!.type,
+            userId: user.id
+          }),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Upload timeout after 15 seconds')), 15000)
+            setTimeout(() => reject(new Error('Backend upload timeout after 30 seconds')), 30000)
           )
         ]);
         
-        console.log('Upload completed:', uploadResult);
-        const { data: uploadData, error: uploadError } = uploadResult as any;
-
-        console.log('Supabase upload response:', { uploadData, uploadError });
-
-        if (uploadError) {
-          console.error('Upload error details:', {
-            message: uploadError.message,
-            statusCode: uploadError.statusCode,
-            error: uploadError.error,
-            details: uploadError
-          });
-          
-          // Provide more specific error messages
-          if (uploadError.message.includes('new row violates row-level security')) {
-            throw new Error('Permission denied: Please check your Supabase storage policies');
-          } else if (uploadError.message.includes('bucket')) {
-            throw new Error('Storage bucket not found: Please create the "videos" bucket in Supabase');
-          } else {
-            throw new Error(`Upload failed: ${uploadError.message}`);
-          }
+        console.log('Backend upload response status:', uploadResponse.status);
+        
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          console.error('Backend upload error:', errorData);
+          throw new Error(errorData.error || 'Backend upload failed');
         }
 
-        console.log('File uploaded successfully to Supabase storage');
+        const uploadResult = await uploadResponse.json();
+        console.log('Backend upload completed:', uploadResult);
+        
+        const videoUrl = uploadResult.publicUrl;
+        console.log('Video URL from backend:', videoUrl);
+
+        console.log('File uploaded successfully via backend');
         setUploadProgress(50);
-
-        // Get public URL for the uploaded video
-        console.log('Getting public URL for uploaded file...');
-        const { data: publicUrlData } = supabase.storage
-          .from('videos')
-          .getPublicUrl(filePath);
-
-        const videoUrl = publicUrlData.publicUrl;
-        console.log('Public URL generated:', videoUrl);
       
       } catch (uploadError: any) {
         console.error('Upload process failed:', uploadError);

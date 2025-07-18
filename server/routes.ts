@@ -30,7 +30,55 @@ const FRONTEND_URL = process.env.REPLIT_DOMAIN
   : 'http://localhost:5000';
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Video upload endpoint
+  // Backend video file upload endpoint
+  app.post("/api/upload-video", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { fileName, fileData, contentType, userId } = req.body;
+      
+      if (!fileName || !fileData || !userId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Convert base64 to buffer
+      const buffer = Buffer.from(fileData, 'base64');
+      const filePath = `${userId}/${fileName}`;
+
+      console.log('Backend upload attempt:', { fileName, filePath, size: buffer.length });
+
+      const { data, error } = await supabase.storage
+        .from('videos')
+        .upload(filePath, buffer, {
+          contentType,
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return res.status(500).json({ error: `Upload failed: ${error.message}` });
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filePath);
+
+      res.json({ 
+        success: true, 
+        path: data.path,
+        publicUrl: publicUrlData.publicUrl 
+      });
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Video metadata upload endpoint
   app.post("/api/videos", async (req: Request, res: Response) => {
     try {
       if (!supabase) {
