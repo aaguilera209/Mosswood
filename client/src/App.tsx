@@ -18,6 +18,7 @@ import ExplorePage from "@/pages/ExplorePage";
 import Checkout from "@/pages/Checkout";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import PaymentCancel from "@/pages/PaymentCancel";
+import EditVideoComingSoon from "@/pages/EditVideoComingSoon";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/edit-video-coming-soon" component={EditVideoComingSoon} />
       <Route path="/creator/:username" component={CreatorStorefront} />
       <Route path="/video/:id" component={VideoDetail} />
       <Route path="/library" component={MyLibrary} />

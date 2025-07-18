@@ -124,6 +124,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get a single video by ID
+  app.get("/api/video/:id", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const videoId = parseInt(req.params.id);
+      
+      if (isNaN(videoId)) {
+        return res.status(400).json({ error: "Invalid video ID" });
+      }
+
+      const { data: video, error } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', videoId)
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        return res.status(404).json({ 
+          error: "Video not found", 
+          details: error.message 
+        });
+      }
+
+      res.json({ video });
+    } catch (error: any) {
+      console.error('Video fetch error:', error);
+      res.status(500).json({ 
+        error: "Internal server error", 
+        details: error.message 
+      });
+    }
+  });
+
   // Get videos for a creator
   app.get("/api/videos", async (req: Request, res: Response) => {
     try {

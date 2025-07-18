@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Upload, Plus, Play, MoreHorizontal, LogOut, BarChart3, Users, DollarSign, TrendingUp, Clock, Eye, ShoppingCart, Gift, Calendar, Mail, MapPin, Repeat, ArrowUp, ArrowDown, Edit, Trash2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -194,6 +195,8 @@ function DashboardContent() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [deleteVideoId, setDeleteVideoId] = useState<number | null>(null);
+  const [deleteVideoTitle, setDeleteVideoTitle] = useState<string>('');
   const queryClient = useQueryClient();
 
   // Fetch real videos from API
@@ -242,24 +245,26 @@ function DashboardContent() {
     setLocation(`/video/${videoId}`);
   };
 
-  const handleDeleteVideo = async (videoId: number, videoTitle: string) => {
-    if (!confirm(`Are you sure you want to delete "${videoTitle}"?`)) {
-      return;
-    }
+  const handleDeleteVideoConfirm = async () => {
+    if (!deleteVideoId) return;
 
     try {
-      const response = await apiRequest('DELETE', `/api/videos/${videoId}`);
+      const response = await apiRequest('DELETE', `/api/videos/${deleteVideoId}`);
       if (!response.ok) {
         throw new Error('Failed to delete video');
       }
 
       toast({
         title: "Video Deleted",
-        description: `"${videoTitle}" has been deleted successfully.`,
+        description: `"${deleteVideoTitle}" has been deleted successfully.`,
       });
 
       // Refresh videos list
       queryClient.invalidateQueries({ queryKey: ['videos'] });
+      
+      // Close modal
+      setDeleteVideoId(null);
+      setDeleteVideoTitle('');
     } catch (error: any) {
       toast({
         title: "Delete Failed",
@@ -269,12 +274,13 @@ function DashboardContent() {
     }
   };
 
-  const handleEditVideo = (videoId: number) => {
-    // For now, show a toast. Later we could implement an edit modal
-    toast({
-      title: "Edit Video",
-      description: "Video editing functionality coming soon!",
-    });
+  const handleDeleteVideo = (videoId: number, videoTitle: string) => {
+    setDeleteVideoId(videoId);
+    setDeleteVideoTitle(videoTitle);
+  };
+
+  const handleEditVideo = () => {
+    setLocation('/edit-video-coming-soon');
   };
 
   return (
@@ -517,7 +523,7 @@ function DashboardContent() {
                                 <Play className="w-4 h-4 mr-2" />
                                 Watch Video
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditVideo(video.id)}>
+                              <DropdownMenuItem onClick={handleEditVideo}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit Video
                               </DropdownMenuItem>
@@ -846,6 +852,29 @@ function DashboardContent() {
         isOpen={isUploadModalOpen} 
         onClose={handleCloseUploadModal} 
       />
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={!!deleteVideoId} onOpenChange={(open) => !open && setDeleteVideoId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Video</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteVideoTitle}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteVideoId(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteVideoConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Video
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

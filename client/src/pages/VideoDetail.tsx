@@ -60,22 +60,29 @@ export default function VideoDetail() {
 
   const isOwnVideo = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
-  // Load video data based on URL parameter
-  useEffect(() => {
-    if (params?.id) {
-      const video = getVideoById(parseInt(params.id));
-      if (video) {
-        setVideoData(video);
-        setRelatedVideos(getRelatedVideos(video.id));
-        
-        // Get creator username from creator name
-        const creator = getCreatorByName(video.creator);
-        if (creator) {
-          setCreatorUsername(creator.username);
-        }
+  // Fetch real video data from API
+  const { data: videoApiData, isLoading: videoLoading, error: videoError } = useQuery({
+    queryKey: ['video', params?.id],
+    queryFn: async () => {
+      if (!params?.id) return null;
+      const response = await apiRequest('GET', `/api/video/${params.id}`);
+      if (!response.ok) {
+        throw new Error('Video not found');
       }
+      return response.json();
+    },
+    enabled: !!params?.id
+  });
+
+  // Update local state when API data changes
+  useEffect(() => {
+    if (videoApiData?.video) {
+      setVideoData(videoApiData.video);
+      // For now, use empty array for related videos since we don't have that API yet
+      setRelatedVideos([]);
+      setCreatorUsername('creator'); // Will be set properly when we have creator info
     }
-  }, [params?.id]);
+  }, [videoApiData]);
 
   // Show video access controls based on user status
   const canWatchVideo = () => {
