@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Plus, Play, MoreHorizontal, LogOut, BarChart3, Users, DollarSign, TrendingUp, Clock, Eye, ShoppingCart, Gift, Calendar, Mail, MapPin, Repeat, ArrowUp, ArrowDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Upload, Plus, Play, MoreHorizontal, LogOut, BarChart3, Users, DollarSign, TrendingUp, Clock, Eye, ShoppingCart, Gift, Calendar, Mail, MapPin, Repeat, ArrowUp, ArrowDown, Edit, Trash2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { VideoUploadModal } from '@/components/VideoUploadModal';
@@ -12,7 +13,8 @@ import { StripeConnectSetup } from '@/components/StripeConnectSetup';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 // Mock video data with enhanced analytics - TODO: Replace with actual data from backend
 const mockVideos = [
@@ -192,6 +194,7 @@ function DashboardContent() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch real videos from API
   const { data: videosData, isLoading: videosLoading, error: videosError } = useQuery({
@@ -233,6 +236,45 @@ function DashboardContent() {
 
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
+  };
+
+  const handleVideoClick = (videoId: number) => {
+    setLocation(`/video/${videoId}`);
+  };
+
+  const handleDeleteVideo = async (videoId: number, videoTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${videoTitle}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest('DELETE', `/api/videos/${videoId}`);
+      if (!response.ok) {
+        throw new Error('Failed to delete video');
+      }
+
+      toast({
+        title: "Video Deleted",
+        description: `"${videoTitle}" has been deleted successfully.`,
+      });
+
+      // Refresh videos list
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete video. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditVideo = (videoId: number) => {
+    // For now, show a toast. Later we could implement an edit modal
+    toast({
+      title: "Edit Video",
+      description: "Video editing functionality coming soon!",
+    });
   };
 
   return (
@@ -438,7 +480,10 @@ function DashboardContent() {
                   <Card key={video.id} className="group hover:shadow-lg transition-shadow duration-200">
                     <CardHeader className="p-0">
                       {/* Video Thumbnail */}
-                      <div className="relative aspect-video bg-gray-900 dark:bg-gray-800 rounded-t-lg overflow-hidden">
+                      <div 
+                        className="relative aspect-video bg-gray-900 dark:bg-gray-800 rounded-t-lg overflow-hidden cursor-pointer"
+                        onClick={() => handleVideoClick(video.id)}
+                      >
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Play className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
@@ -456,17 +501,42 @@ function DashboardContent() {
                         </div>
                         {/* More Options Button */}
                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => handleVideoClick(video.id)}>
+                                <Play className="w-4 h-4 mr-2" />
+                                Watch Video
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditVideo(video.id)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Video
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteVideo(video.id, video.title)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete Video
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-4">
+                    <CardContent 
+                      className="p-4 cursor-pointer"
+                      onClick={() => handleVideoClick(video.id)}
+                    >
                       <CardTitle className="text-base mb-2 line-clamp-2">
                         {video.title}
                       </CardTitle>

@@ -144,6 +144,8 @@ Changelog:
 - July 16, 2025. **FIXED: User signup RLS policies** - Resolved signup failures by updating Row Level Security policies to allow proper user registration and profile creation
 - July 17, 2025. **COMPLETED: End-to-end purchase system** - Fixed frontend React Query issues preventing MyLibrary page from loading, resolved video access verification, and established complete purchase flow: Stripe checkout → payment recording → video unlock → library display
 - July 17, 2025. **COMPLETED: Stripe Connect Express onboarding** - Built and tested complete creator payment setup system with backend APIs, frontend components, database migration, and dashboard integration. Includes smart redirect/popup handling for development vs production environments
+- July 18, 2025. **RESOLVED: Video upload authentication issue** - Fixed critical upload failures by implementing backend upload solution with service key authentication, bypassing frontend RLS limitations and 413 request size limits
+- July 18, 2025. **COMPLETED: Video management functionality** - Implemented clickable video cards for playback navigation, dropdown menu with edit/delete options, and delete endpoint with storage cleanup for complete video management workflow
 - July 11, 2025. Cleaned up Video Detail navigation: removed Dashboard link, added "Back to Maya's Page" button
 - July 11, 2025. Added comprehensive theme toggle (light/dark mode) across all pages
 - July 11, 2025. Implemented dynamic video routing: Video Detail page now loads correct video data based on URL parameter

@@ -161,6 +161,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a video
+  app.delete("/api/videos/:id", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const videoId = parseInt(req.params.id);
+      
+      if (isNaN(videoId)) {
+        return res.status(400).json({ error: "Invalid video ID" });
+      }
+
+      // First get the video to check if it exists and get the file path
+      const { data: video, error: fetchError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', videoId)
+        .single();
+
+      if (fetchError) {
+        console.error('Database fetch error:', fetchError);
+        return res.status(404).json({ 
+          error: "Video not found", 
+          details: fetchError.message 
+        });
+      }
+
+      // Delete from database first
+      const { error: deleteError } = await supabase
+        .from('videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (deleteError) {
+        console.error('Database delete error:', deleteError);
+        return res.status(500).json({ 
+          error: "Failed to delete video", 
+          details: deleteError.message 
+        });
+      }
+
+      // Try to delete the video file from storage (optional - don't fail if this fails)
+      if (video.video_url) {
+        try {
+          const urlParts = video.video_url.split('/');
+          const filePath = urlParts.slice(-2).join('/'); // Get "userId/filename"
+          
+          const { error: storageError } = await supabase.storage
+            .from('videos')
+            .remove([filePath]);
+            
+          if (storageError) {
+            console.warn('Storage delete warning:', storageError);
+            // Don't fail the request if storage delete fails
+          }
+        } catch (storageError) {
+          console.warn('Storage delete error:', storageError);
+          // Don't fail the request if storage delete fails
+        }
+      }
+
+      res.json({ 
+        message: "Video deleted successfully",
+        deletedVideoId: videoId
+      });
+    } catch (error: any) {
+      console.error('Video delete error:', error);
+      res.status(500).json({ 
+        error: "Internal server error", 
+        details: error.message 
+      });
+    }
+  });
+
   // Stripe Connect Express account creation endpoint
   app.post("/api/create-connect-account", async (req: Request, res: Response) => {
     try {
