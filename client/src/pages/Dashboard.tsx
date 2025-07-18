@@ -12,6 +12,7 @@ import { StripeConnectSetup } from '@/components/StripeConnectSetup';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 
 // Mock video data with enhanced analytics - TODO: Replace with actual data from backend
 const mockVideos = [
@@ -187,11 +188,27 @@ const mockAnalytics = {
 };
 
 function DashboardContent() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const hasVideos = mockVideos.length > 0;
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Fetch real videos from API
+  const { data: videosData, isLoading: videosLoading, error: videosError } = useQuery({
+    queryKey: ['videos', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { videos: [] };
+      const response = await fetch(`/api/videos?creator_id=${user.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch videos');
+      }
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  const videos = videosData?.videos || [];
+  const hasVideos = videos.length > 0;
 
   const handleLogout = async () => {
     try {
@@ -403,9 +420,21 @@ function DashboardContent() {
             </div>
 
             {/* Videos Grid */}
-            {hasVideos ? (
+            {videosLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockVideos.map((video) => (
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <div className="aspect-video bg-gray-300 dark:bg-gray-700 rounded-t-lg"></div>
+                    <CardHeader>
+                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            ) : hasVideos ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {videos.map((video) => (
                   <Card key={video.id} className="group hover:shadow-lg transition-shadow duration-200">
                     <CardHeader className="p-0">
                       {/* Video Thumbnail */}
@@ -414,17 +443,15 @@ function DashboardContent() {
                           <Play className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                         {/* Duration Badge */}
-                        <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                          {video.duration}
-                        </div>
+                        {video.duration && (
+                          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                            {video.duration}
+                          </div>
+                        )}
                         {/* Status Badge */}
                         <div className="absolute top-2 left-2">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            video.status === 'Published' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                          }`}>
-                            {video.status}
+                          <span className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs px-2 py-1 rounded-full font-medium">
+                            Published
                           </span>
                         </div>
                         {/* More Options Button */}
@@ -440,25 +467,35 @@ function DashboardContent() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-4">
-                      <div className="space-y-2">
-                        <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                          {video.title}
-                        </h3>
-                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                          <span>
-                            {video.status === 'Published' && video.views > 0 
-                              ? `${video.views.toLocaleString()} views`
-                              : video.status === 'Draft'
-                              ? 'Draft'
-                              : 'No views yet'
-                            }
-                          </span>
-                          {video.publishedAt && (
-                            <span>
-                              {new Date(video.publishedAt).toLocaleDateString()}
-                            </span>
-                          )}
+                      <CardTitle className="text-base mb-2 line-clamp-2">
+                        {video.title}
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2 mb-3">
+                        {video.description || 'No description provided'}
+                      </CardDescription>
+                      <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          {video.is_free ? 'Free' : `$${(video.price / 100).toFixed(2)}`}
                         </div>
+                        <div className="flex items-center">
+                          <Upload className="w-4 h-4 mr-1" />
+                          {new Date(video.created_at).toLocaleDateString()}
+                        </div>
+                        {video.tags && video.tags.length > 0 && (
+                          <div className="col-span-2 flex flex-wrap gap-1">
+                            {video.tags.slice(0, 3).map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {video.tags.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{video.tags.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

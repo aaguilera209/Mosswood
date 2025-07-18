@@ -160,12 +160,22 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
     setUploadProgress(0);
     
     try {
+      console.log('Starting video upload process...');
+      console.log('File details:', {
+        name: formData.file!.name,
+        size: formData.file!.size,
+        type: formData.file!.type
+      });
+
       // Generate unique filename
       const timestamp = Date.now();
       const sanitizedTitle = formData.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
       const fileExtension = formData.file!.name.split('.').pop();
       const fileName = `${timestamp}_${sanitizedTitle}.${fileExtension}`;
       const filePath = `videos/${user.id}/${fileName}`;
+
+      console.log('Upload path:', filePath);
+      console.log('Starting Supabase storage upload...');
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -175,19 +185,24 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
           upsert: false,
         });
 
+      console.log('Supabase upload response:', { uploadData, uploadError });
+
       if (uploadError) {
         console.error('Upload error:', uploadError);
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
+      console.log('File uploaded successfully to Supabase storage');
       setUploadProgress(50);
 
       // Get public URL for the uploaded video
+      console.log('Getting public URL for uploaded file...');
       const { data: publicUrlData } = supabase.storage
         .from('videos')
         .getPublicUrl(filePath);
 
       const videoUrl = publicUrlData.publicUrl;
+      console.log('Public URL generated:', videoUrl);
 
       // Parse tags from comma-separated string
       const tagsArray = formData.tags
@@ -207,12 +222,16 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
         file_size: formData.file!.size,
       };
 
+      console.log('Sending video metadata to API:', videoData);
       const response = await apiRequest('POST', '/api/videos', videoData);
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('API error response:', errorData);
         throw new Error(errorData.message || 'Failed to save video metadata');
       }
+
+      console.log('Video metadata saved successfully!');
 
       setUploadProgress(100);
 
