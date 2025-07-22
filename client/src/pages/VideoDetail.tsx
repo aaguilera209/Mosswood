@@ -37,6 +37,11 @@ export default function VideoDetail() {
   const [showControls, setShowControls] = useState(false);
   const [volume, setVolume] = useState(100);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [buffered, setBuffered] = useState(0);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [videoPlaybackError, setVideoPlaybackError] = useState<string | null>(null);
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -71,7 +76,7 @@ export default function VideoDetail() {
   const isOwnVideo = profile?.role === 'creator' && profile?.email === 'maya@example.com'; // Mock check
 
   // Fetch real video data from API
-  const { data: videoApiData, isLoading: videoLoading, error: videoError } = useQuery({
+  const { data: videoApiData, isLoading: videoLoading, error: videoFetchError } = useQuery({
     queryKey: ['video', params?.id],
     queryFn: async () => {
       if (!params?.id) return null;
@@ -193,7 +198,7 @@ export default function VideoDetail() {
   }
 
   // If video not found after loading, show error
-  if (videoError || !videoData) {
+  if (videoFetchError || !videoData) {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Header />
@@ -230,14 +235,73 @@ export default function VideoDetail() {
 
   const handleVideoClick = () => {
     if (canWatchVideo()) {
-      togglePlayPause();
+      if (videoElement) {
+        if (isPlaying) {
+          videoElement.pause();
+        } else {
+          videoElement.play();
+        }
+      }
     } else {
       handleWatchAction();
     }
   };
 
+  const handleVideoRef = (video: HTMLVideoElement | null) => {
+    if (video) {
+      setVideoElement(video);
+      
+      // Video event listeners
+      const handleLoadStart = () => setIsVideoLoading(true);
+      const handleLoadedData = () => setIsVideoLoading(false);
+      const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+      const handleProgress = () => {
+        if (video.buffered.length > 0) {
+          setBuffered(video.buffered.end(video.buffered.length - 1));
+        }
+      };
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
+      const handleError = () => {
+        setVideoPlaybackError('Failed to load video. Please try again later.');
+        setIsVideoLoading(false);
+      };
+
+      video.addEventListener('loadstart', handleLoadStart);
+      video.addEventListener('loadeddata', handleLoadedData);
+      video.addEventListener('timeupdate', handleTimeUpdate);
+      video.addEventListener('progress', handleProgress);
+      video.addEventListener('play', handlePlay);
+      video.addEventListener('pause', handlePause);
+      video.addEventListener('error', handleError);
+
+      // Set volume
+      video.volume = volume / 100;
+
+      return () => {
+        video.removeEventListener('loadstart', handleLoadStart);
+        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+        video.removeEventListener('progress', handleProgress);
+        video.removeEventListener('play', handlePlay);
+        video.removeEventListener('pause', handlePause);
+        video.removeEventListener('error', handleError);
+      };
+    }
+  };
+
+  const handleSeek = (time: number) => {
+    if (videoElement) {
+      videoElement.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume);
+    if (videoElement) {
+      videoElement.volume = newVolume / 100;
+    }
   };
 
   const getVideoContainerClasses = () => {
@@ -302,49 +366,137 @@ export default function VideoDetail() {
             onMouseLeave={() => setShowControls(false)}
             onClick={handleVideoClick}
           >
-            {/* Video Poster/Thumbnail */}
-            <div className={`${getVideoClasses()} bg-gray-900 flex items-center justify-center relative`}>
-              {videoData.thumbnail_url ? (
-                <img
-                  src={videoData.thumbnail_url}
-                  alt={videoData.title}
-                  className="w-full h-full object-cover"
-                />
+            {/* HTML5 Video Player or Access Control */}
+            <div className={`${getVideoClasses()} bg-gray-900 flex items-center justify-center relative overflow-hidden`}>
+              {canWatchVideo() ? (
+                <>
+                  {/* Actual HTML5 Video Element */}
+                  <video
+                    ref={handleVideoRef}
+                    className="w-full h-full object-contain"
+                    poster={videoData.thumbnail_url || undefined}
+                    controls={false} // We'll use custom controls
+                    preload="metadata"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <source src={videoData.video_url} type="video/mp4" />
+                    <source src={videoData.video_url} type="video/webm" />
+                    <source src={videoData.video_url} type="video/quicktime" />
+                    Your browser does not support the video tag.
+                  </video>
+                  
+                  {/* Video Loading State */}
+                  {isVideoLoading && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                        <p>Loading video...</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Video Error State */}
+                  {videoPlaybackError && (
+                    <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                      <div className="text-center text-white p-6">
+                        <div className="mb-4">
+                          <svg className="w-16 h-16 mx-auto text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">Video Unavailable</h3>
+                        <p className="text-gray-300 mb-4">{videoPlaybackError}</p>
+                        <Button 
+                          onClick={() => {
+                            setVideoPlaybackError(null);
+                            setIsVideoLoading(true);
+                            if (videoElement) {
+                              videoElement.load();
+                            }
+                          }}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          Try Again
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Play Button Overlay (shown when video is paused and not loading) */}
+                  {!isPlaying && !isVideoLoading && !videoPlaybackError && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="bg-white/90 hover:bg-white transition-colors rounded-full p-4 cursor-pointer">
+                        <Play className="w-8 h-8 text-black ml-1" />
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                  <Play className="w-16 h-16 text-gray-400" />
-                </div>
+                <>
+                  {/* Thumbnail/Poster for locked videos */}
+                  {videoData.thumbnail_url ? (
+                    <img
+                      src={videoData.thumbnail_url}
+                      alt={videoData.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                      <Play className="w-16 h-16 text-gray-400" />
+                    </div>
+                  )}
+                  
+                  {/* Lock Screen Overlay */}
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <div className="text-center text-white p-6">
+                      <div className="mb-4">
+                        <Lock className="w-16 h-16 mx-auto text-amber-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">
+                        {videoData.price === 0 ? 'Sign in to Watch' : 'Purchase Required'}
+                      </h3>
+                      <p className="text-gray-300 mb-6">
+                        {videoData.price === 0 
+                          ? 'This free video requires you to sign in to watch.'
+                          : `Purchase this video for $${(videoData.price / 100).toFixed(2)} to start watching.`
+                        }
+                      </p>
+                      <div className={`${isProcessingPayment ? 'bg-primary/70' : 'bg-primary hover:bg-primary/90'} transition-colors rounded-lg px-6 py-3 flex items-center space-x-2 cursor-pointer`}>
+                        {isProcessingPayment && (
+                          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        )}
+                        <span className="text-white font-semibold">
+                          {isProcessingPayment ? 'Processing...' : videoData.price === 0 ? 'Watch Free' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
-              
-              {/* Overlay for purchased vs non-purchased */}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                {hasPurchased ? (
-                  // Play Button for purchased videos
-                  <div className="bg-white/90 hover:bg-white transition-colors rounded-full p-4">
-                    <Play className="w-8 h-8 text-black ml-1" />
-                  </div>
-                ) : (
-                  // Purchase Button for non-purchased videos
-                  <div className={`${isProcessingPayment ? 'bg-primary/70' : 'bg-primary hover:bg-primary/90'} transition-colors rounded-lg px-6 py-3 flex items-center space-x-2`}>
-                    {isProcessingPayment && (
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    )}
-                    <span className="text-white font-semibold">
-                      {isProcessingPayment ? 'Processing...' : videoData.price === 0 ? 'Watch Free' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
             
-            {/* YouTube-style Video Controls Overlay - only show for purchased videos */}
-            {hasPurchased && (
+            {/* Custom Video Controls Overlay - only show for accessible videos */}
+            {canWatchVideo() && videoElement && (
               <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || playbackMode === 'fullscreen' ? 'opacity-100' : 'opacity-0'}`}>
               
               {/* Progress Bar - positioned at bottom edge */}
               <div className="absolute bottom-12 left-0 right-0 px-3">
-                <div className="w-full bg-white/30 h-1 rounded-full cursor-pointer group">
-                  <div className="bg-red-600 h-1 rounded-full w-1/2 relative">
+                <div 
+                  className="w-full bg-white/30 h-1 rounded-full cursor-pointer group"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const newTime = (clickX / rect.width) * (videoData?.duration || 0);
+                    handleSeek(newTime);
+                  }}
+                >
+                  <div 
+                    className="bg-red-600 h-1 rounded-full relative transition-all"
+                    style={{ 
+                      width: videoData?.duration ? `${(currentTime / videoData.duration) * 100}%` : '0%' 
+                    }}
+                  >
                     <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
@@ -359,7 +511,7 @@ export default function VideoDetail() {
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
-                        togglePlayPause();
+                        handleVideoClick();
                       }}
                       size="sm"
                       className="bg-transparent hover:bg-white/20 text-white p-1 h-8 w-8"
@@ -404,7 +556,7 @@ export default function VideoDetail() {
                     
                     {/* Time Display */}
                     <span className="text-white text-sm font-medium">
-                      0:00 / {formatDuration(videoData.duration)}
+                      {formatDuration(currentTime)} / {formatDuration(videoData.duration)}
                     </span>
                   </div>
                   
