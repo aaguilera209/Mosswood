@@ -8,10 +8,10 @@
   /* Light Mode - Indie Film Festival Aesthetic */
   --background: hsl(0, 0%, 98%);
   /* #FAFAFA off-white */
-  --foreground: hsl(0, 0%, 10%);
-  /* #1A1A1A dark gray */
+  --foreground: hsl(0, 0%, 5%);
+  /* Much darker for better contrast */
   --muted: hsl(0, 0%, 96%);
-  --muted-foreground: hsl(0, 0%, 45%);
+  --muted-foreground: hsl(0, 0%, 35%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(0, 0%, 10%);
   --card: hsl(0, 0%, 100%);

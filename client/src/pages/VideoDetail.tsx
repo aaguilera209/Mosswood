@@ -168,8 +168,32 @@ export default function VideoDetail() {
     }
   };
 
-  // If video not found, show error
-  if (!videoData) {
+  // Show loading state while fetching data
+  if (videoLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <header className="border-b border-border px-6 py-4">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <Link href="/dashboard" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </Link>
+            <div className="flex items-center space-x-4">
+              <Logo showText={true} className="text-2xl" />
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+        <div className="flex items-center justify-center min-h-[70vh]">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading" />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // If video not found after loading, show error
+  if (videoError || !videoData) {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Header />
@@ -306,7 +330,7 @@ export default function VideoDetail() {
                       <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                     )}
                     <span className="text-white font-semibold">
-                      {isProcessingPayment ? 'Processing...' : videoData.is_free ? 'Watch Free' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
+                      {isProcessingPayment ? 'Processing...' : videoData.price === 0 ? 'Watch Free' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
                     </span>
                   </div>
                 )}
@@ -500,19 +524,19 @@ export default function VideoDetail() {
           <div className="max-w-4xl mx-auto mt-8 space-y-8">
             {/* Video Information */}
             <div className="space-y-4">
-              <h1 className="text-3xl md:text-4xl font-bold text-white">
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground dark:text-white">
                 {videoData.title}
               </h1>
               
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center space-x-4 text-gray-300">
+                <div className="flex items-center space-x-4 text-muted-foreground dark:text-gray-300">
                   <span className="text-amber-400 font-semibold">
                     Duration: {formatDuration(videoData.duration)}
                   </span>
                   <span>by Creator</span>
                 </div>
                 
-                {!hasPurchased && !videoData.is_free && videoData.price > 0 && (
+                {!hasPurchased && videoData.price > 0 && (
                   <Button
                     onClick={handleStripeCheckout}
                     disabled={isProcessingPayment}
@@ -531,15 +555,15 @@ export default function VideoDetail() {
 
             {/* Description Section */}
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white">Description</h2>
-              <p className="text-gray-300 text-lg leading-relaxed">
+              <h2 className="text-2xl font-bold text-foreground dark:text-white">Description</h2>
+              <p className="text-muted-foreground dark:text-gray-300 text-lg leading-relaxed">
                 {videoData.description}
               </p>
             </div>
 
             {/* More from Creator Section */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-foreground dark:text-white">
                 More from Creator
               </h2>
               
