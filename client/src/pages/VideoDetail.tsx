@@ -305,9 +305,10 @@ export default function VideoDetail() {
   };
 
   const handleVolumeChange = (newVolume: number) => {
-    setVolume(newVolume);
+    const clampedVolume = Math.max(0, Math.min(100, newVolume));
+    setVolume(clampedVolume);
     if (videoElement) {
-      videoElement.volume = newVolume / 100;
+      videoElement.volume = clampedVolume / 100;
     }
   };
 
@@ -491,11 +492,38 @@ export default function VideoDetail() {
                 <div 
                   className="w-full bg-white/30 h-1 rounded-full cursor-pointer group"
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     const rect = e.currentTarget.getBoundingClientRect();
                     const clickX = e.clientX - rect.left;
-                    const newTime = (clickX / rect.width) * (videoData?.duration || 0);
+                    const newTime = (clickX / rect.width) * (videoDuration || videoData?.duration || 0);
                     handleSeek(newTime);
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const startElement = e.currentTarget;
+                    let isDragging = true;
+                    
+                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                      if (isDragging && startElement) {
+                        moveEvent.preventDefault();
+                        const rect = startElement.getBoundingClientRect();
+                        const clickX = moveEvent.clientX - rect.left;
+                        const newTime = (clickX / rect.width) * (videoDuration || videoData?.duration || 0);
+                        handleSeek(newTime);
+                      }
+                    };
+                    
+                    const handleMouseUp = (upEvent: MouseEvent) => {
+                      upEvent.preventDefault();
+                      isDragging = false;
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
                   }}
                 >
                   <div 
@@ -572,7 +600,8 @@ export default function VideoDetail() {
                               moveEvent.preventDefault();
                               const rect = startElement.getBoundingClientRect();
                               const clickX = moveEvent.clientX - rect.left;
-                              const newVolume = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+                              const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+                              const newVolume = percentage * 100;
                               handleVolumeChange(newVolume);
                             }
                           };
