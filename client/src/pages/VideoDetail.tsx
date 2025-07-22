@@ -95,7 +95,12 @@ export default function VideoDetail() {
       setVideoData(videoApiData.video);
       // For now, use empty array for related videos since we don't have that API yet
       setRelatedVideos([]);
-      setCreatorUsername('creator'); // Will be set properly when we have creator info
+      
+      // Fetch creator profile to get the actual creator name
+      if (videoApiData.video.creator_id) {
+        // For now, use a placeholder - in production this would be a proper API call
+        setCreatorUsername('Maya'); // This will be dynamic when we have creator profiles
+      }
     }
   }, [videoApiData]);
 
@@ -348,7 +353,7 @@ export default function VideoDetail() {
         </header>
       )}
 
-      <div className={`${playbackMode === 'theater' ? 'bg-gray-900 dark:bg-gray-900' : 'bg-background'} ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
+      <div className={`${playbackMode === 'theater' ? 'bg-gray-900' : 'bg-background'} ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
 
 
         {/* Video Player Section */}
@@ -548,11 +553,14 @@ export default function VideoDetail() {
                         }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
+                          const startElement = e.currentTarget;
                           const handleMouseMove = (moveEvent: MouseEvent) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const clickX = moveEvent.clientX - rect.left;
-                            const newVolume = Math.round((clickX / rect.width) * 100);
-                            handleVolumeChange(Math.max(0, Math.min(100, newVolume)));
+                            if (startElement) {
+                              const rect = startElement.getBoundingClientRect();
+                              const clickX = moveEvent.clientX - rect.left;
+                              const newVolume = Math.round((clickX / rect.width) * 100);
+                              handleVolumeChange(Math.max(0, Math.min(100, newVolume)));
+                            }
                           };
                           const handleMouseUp = () => {
                             document.removeEventListener('mousemove', handleMouseMove);
@@ -571,9 +579,9 @@ export default function VideoDetail() {
                       </div>
                     </div>
                     
-                    {/* Time Display */}
+                    {/* Time Display - YouTube Style */}
                     <span className="text-white text-sm font-medium">
-                      {formatDuration(currentTime)} / {formatDuration(videoData.duration)}
+                      {formatDuration(currentTime)} / {formatDuration(videoData?.duration)}
                     </span>
                   </div>
                   
@@ -700,9 +708,9 @@ export default function VideoDetail() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-4 text-muted-foreground dark:text-gray-300">
                   <span className="text-amber-400 font-semibold">
-                    Duration: {formatDuration(videoData.duration)}
+                    Duration: {formatDuration(videoData?.duration)}
                   </span>
-                  <span>by Creator</span>
+                  <span>by {creatorUsername || 'Creator'}</span>
                 </div>
                 
                 {!hasPurchased && videoData.price > 0 && (
