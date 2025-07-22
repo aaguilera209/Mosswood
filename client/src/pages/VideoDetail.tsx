@@ -42,6 +42,7 @@ export default function VideoDetail() {
   const [buffered, setBuffered] = useState(0);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [videoPlaybackError, setVideoPlaybackError] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -258,7 +259,15 @@ export default function VideoDetail() {
       
       // Video event listeners
       const handleLoadStart = () => setIsVideoLoading(true);
-      const handleLoadedData = () => setIsVideoLoading(false);
+      const handleLoadedData = () => {
+        setIsVideoLoading(false);
+        // Always get duration from actual video metadata for accuracy
+        if (video.duration && !isNaN(video.duration) && video.duration > 0) {
+          const realDuration = Math.floor(video.duration);
+          setVideoDuration(realDuration);
+          console.log('Video duration loaded:', realDuration, 'seconds');
+        }
+      };
       const handleTimeUpdate = () => setCurrentTime(video.currentTime);
       const handleProgress = () => {
         if (video.buffered.length > 0) {
@@ -581,7 +590,7 @@ export default function VideoDetail() {
                     
                     {/* Time Display - YouTube Style */}
                     <span className="text-white text-sm font-medium">
-                      {formatDuration(currentTime)} / {formatDuration(videoData?.duration)}
+                      {formatDuration(currentTime)} / {formatDuration(videoDuration || videoData?.duration)}
                     </span>
                   </div>
                   
@@ -698,7 +707,7 @@ export default function VideoDetail() {
 
         {/* Video Info and Content - hidden in fullscreen */}
         {playbackMode !== 'fullscreen' && (
-          <div className="max-w-4xl mx-auto mt-8 space-y-8">
+          <div className={`max-w-4xl mx-auto mt-8 space-y-8 ${playbackMode === 'theater' ? 'bg-background text-foreground' : ''}`}>
             {/* Video Information */}
             <div className="space-y-4">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground dark:text-white">
@@ -708,7 +717,7 @@ export default function VideoDetail() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-4 text-muted-foreground dark:text-gray-300">
                   <span className="text-amber-400 font-semibold">
-                    Duration: {formatDuration(videoData?.duration)}
+                    Duration: {formatDuration(videoDuration || videoData?.duration)}
                   </span>
                   <span>by {creatorUsername || 'Creator'}</span>
                 </div>
