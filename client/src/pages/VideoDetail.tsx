@@ -19,10 +19,10 @@ type PlaybackMode = 'default' | 'theater' | 'fullscreen';
 
 // Helper function to format duration from seconds to MM:SS
 const formatDuration = (seconds: number | null | undefined): string => {
-  if (!seconds || seconds <= 0) return '--:--';
+  if (!seconds || seconds <= 0 || isNaN(seconds)) return '0:00';
   
   const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const remainingSeconds = Math.floor(seconds % 60); // Remove decimals
   
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
@@ -248,7 +248,7 @@ export default function VideoDetail() {
   };
 
   const handleVideoRef = (video: HTMLVideoElement | null) => {
-    if (video) {
+    if (video && video !== videoElement) {
       setVideoElement(video);
       
       // Video event listeners
@@ -278,15 +278,8 @@ export default function VideoDetail() {
       // Set volume
       video.volume = volume / 100;
 
-      return () => {
-        video.removeEventListener('loadstart', handleLoadStart);
-        video.removeEventListener('loadeddata', handleLoadedData);
-        video.removeEventListener('timeupdate', handleTimeUpdate);
-        video.removeEventListener('progress', handleProgress);
-        video.removeEventListener('play', handlePlay);
-        video.removeEventListener('pause', handlePause);
-        video.removeEventListener('error', handleError);
-      };
+      // Store cleanup function to be called later if needed
+      // (Note: Not returned to avoid React ref callback warning)
     }
   };
 
@@ -355,7 +348,7 @@ export default function VideoDetail() {
         </header>
       )}
 
-      <div className={`${playbackMode === 'theater' ? 'bg-gray-900' : ''} ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
+      <div className={`${playbackMode === 'theater' ? 'bg-gray-900 dark:bg-gray-900' : 'bg-background'} ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
 
 
         {/* Video Player Section */}
@@ -544,9 +537,33 @@ export default function VideoDetail() {
                       >
                         <Volume2 className="w-4 h-4" />
                       </Button>
-                      <div className="w-16 bg-white/30 h-1 rounded-full cursor-pointer group">
+                      <div 
+                        className="w-16 bg-white/30 h-1 rounded-full cursor-pointer group"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const clickX = e.clientX - rect.left;
+                          const newVolume = Math.round((clickX / rect.width) * 100);
+                          handleVolumeChange(Math.max(0, Math.min(100, newVolume)));
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          const handleMouseMove = (moveEvent: MouseEvent) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const clickX = moveEvent.clientX - rect.left;
+                            const newVolume = Math.round((clickX / rect.width) * 100);
+                            handleVolumeChange(Math.max(0, Math.min(100, newVolume)));
+                          };
+                          const handleMouseUp = () => {
+                            document.removeEventListener('mousemove', handleMouseMove);
+                            document.removeEventListener('mouseup', handleMouseUp);
+                          };
+                          document.addEventListener('mousemove', handleMouseMove);
+                          document.addEventListener('mouseup', handleMouseUp);
+                        }}
+                      >
                         <div 
-                          className="bg-white h-1 rounded-full relative" 
+                          className="bg-white h-1 rounded-full relative transition-all" 
                           style={{ width: `${volume}%` }}
                         >
                           <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
