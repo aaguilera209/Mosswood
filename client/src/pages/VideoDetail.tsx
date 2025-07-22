@@ -362,11 +362,11 @@ export default function VideoDetail() {
         </header>
       )}
 
-      <div className={`${playbackMode === 'theater' ? 'bg-gray-900' : 'bg-background'} ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
+      <div className={`bg-background ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
 
 
         {/* Video Player Section */}
-        <div className={getVideoContainerClasses()}>
+        <div className={`${getVideoContainerClasses()} ${playbackMode === 'theater' ? 'bg-black rounded-lg overflow-hidden' : ''}`}>
           <div 
             className="relative group cursor-pointer"
             onMouseEnter={() => setShowControls(true)}
@@ -554,27 +554,36 @@ export default function VideoDetail() {
                       <div 
                         className="w-16 bg-white/30 h-1 rounded-full cursor-pointer group"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           const rect = e.currentTarget.getBoundingClientRect();
                           const clickX = e.clientX - rect.left;
-                          const newVolume = Math.round((clickX / rect.width) * 100);
-                          handleVolumeChange(Math.max(0, Math.min(100, newVolume)));
+                          const newVolume = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+                          handleVolumeChange(newVolume);
                         }}
                         onMouseDown={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           const startElement = e.currentTarget;
+                          let isDragging = true;
+                          
                           const handleMouseMove = (moveEvent: MouseEvent) => {
-                            if (startElement) {
+                            if (isDragging && startElement) {
+                              moveEvent.preventDefault();
                               const rect = startElement.getBoundingClientRect();
                               const clickX = moveEvent.clientX - rect.left;
-                              const newVolume = Math.round((clickX / rect.width) * 100);
-                              handleVolumeChange(Math.max(0, Math.min(100, newVolume)));
+                              const newVolume = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+                              handleVolumeChange(newVolume);
                             }
                           };
-                          const handleMouseUp = () => {
+                          
+                          const handleMouseUp = (upEvent: MouseEvent) => {
+                            upEvent.preventDefault();
+                            isDragging = false;
                             document.removeEventListener('mousemove', handleMouseMove);
                             document.removeEventListener('mouseup', handleMouseUp);
                           };
+                          
                           document.addEventListener('mousemove', handleMouseMove);
                           document.addEventListener('mouseup', handleMouseUp);
                         }}
@@ -707,7 +716,7 @@ export default function VideoDetail() {
 
         {/* Video Info and Content - hidden in fullscreen */}
         {playbackMode !== 'fullscreen' && (
-          <div className={`max-w-4xl mx-auto mt-8 space-y-8 ${playbackMode === 'theater' ? 'bg-background text-foreground' : ''}`}>
+          <div className="max-w-4xl mx-auto mt-8 space-y-8">
             {/* Video Information */}
             <div className="space-y-4">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground dark:text-white">
