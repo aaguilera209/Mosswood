@@ -592,17 +592,26 @@ export default function VideoDetail() {
                         onMouseDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          const startElement = e.currentTarget;
+                          const rect = e.currentTarget.getBoundingClientRect();
                           let isDragging = true;
                           
+                          const updateVolume = (clientX: number) => {
+                            const clickX = clientX - rect.left;
+                            const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+                            const newVolume = percentage * 100;
+                            setVolume(newVolume);
+                            if (videoElement) {
+                              videoElement.volume = newVolume / 100;
+                            }
+                          };
+                          
+                          // Set initial position
+                          updateVolume(e.clientX);
+                          
                           const handleMouseMove = (moveEvent: MouseEvent) => {
-                            if (isDragging && startElement) {
+                            if (isDragging) {
                               moveEvent.preventDefault();
-                              const rect = startElement.getBoundingClientRect();
-                              const clickX = moveEvent.clientX - rect.left;
-                              const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-                              const newVolume = percentage * 100;
-                              handleVolumeChange(newVolume);
+                              updateVolume(moveEvent.clientX);
                             }
                           };
                           
@@ -618,7 +627,7 @@ export default function VideoDetail() {
                         }}
                       >
                         <div 
-                          className="bg-white h-1 rounded-full relative transition-all" 
+                          className="bg-white h-1 rounded-full relative" 
                           style={{ width: `${volume}%` }}
                         >
                           <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
