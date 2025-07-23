@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,7 @@ export default function VideoDetail() {
   const [videoPlaybackError, setVideoPlaybackError] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const isDraggingRef = useRef(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -241,6 +242,12 @@ export default function VideoDetail() {
   };
 
   const handleVideoClick = () => {
+    // Don't toggle play/pause if volume is being dragged
+    if (isDraggingRef.current) {
+      console.log('Ignoring video click - volume drag in progress');
+      return;
+    }
+    
     if (canWatchVideo()) {
       if (videoElement) {
         if (isPlaying) {
@@ -375,7 +382,7 @@ export default function VideoDetail() {
             onMouseLeave={() => setShowControls(false)}
             onClick={(e) => {
               // Don't toggle play/pause if volume is being dragged
-              if (isDraggingVolume) {
+              if (isDraggingRef.current) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -602,7 +609,10 @@ export default function VideoDetail() {
                           e.preventDefault();
                           e.stopPropagation();
                           const rect = e.currentTarget.getBoundingClientRect();
+                          
+                          // Set both state and ref for immediate and persistent tracking
                           setIsDraggingVolume(true);
+                          isDraggingRef.current = true;
                           
                           const updateVolume = (clientX: number) => {
                             const clickX = clientX - rect.left;
@@ -626,7 +636,15 @@ export default function VideoDetail() {
                           const handleMouseUp = (upEvent: MouseEvent) => {
                             upEvent.preventDefault();
                             upEvent.stopPropagation();
+                            
+                            // Clear both state and ref
                             setIsDraggingVolume(false);
+                            
+                            // Use setTimeout to ensure the click event doesn't fire immediately
+                            setTimeout(() => {
+                              isDraggingRef.current = false;
+                            }, 50);
+                            
                             document.removeEventListener('mousemove', handleMouseMove);
                             document.removeEventListener('mouseup', handleMouseUp);
                           };
