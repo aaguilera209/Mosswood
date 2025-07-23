@@ -374,3 +374,111 @@ export default function CreatorStorefront() {
     </div>
   );
 }
+                aria-label="YouTube"
+              >
+                <FaYoutube className="w-5 h-5" />
+              </a>
+              <a 
+                href={creator.socialLinks.website} 
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Website"
+              >
+                <FaGlobe className="w-5 h-5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Bio Section */}
+          <div className="text-center mb-12">
+            <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto">
+              {creator.bio}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Videos Grid Section */}
+      <div className="px-6 pb-16">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
+            Videos
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {creatorVideos.map((video) => (
+              <Card 
+                key={video.id} 
+                className="group bg-card border-border hover:bg-muted transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer"
+                onClick={() => handleVideoAction(video)}
+              >
+                <CardContent className="p-0">
+                  {/* Video Thumbnail */}
+                  <div className="relative">
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full aspect-video object-cover rounded-t-lg"
+                    />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors rounded-t-lg" />
+                    
+                    {/* Play Icon Overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Play className="w-12 h-12 text-white/80 group-hover:text-primary transition-colors" />
+                    </div>
+                    
+                    {/* Duration Badge */}
+                    <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                      {video.duration}
+                    </div>
+                  </div>
+
+                  {/* Video Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground mb-3 line-clamp-2">
+                      {video.title}
+                    </h3>
+                    
+                    <div className="flex items-center justify-between">
+                      {/* Price */}
+                      <div className="text-primary font-semibold">
+                        {video.price === 0 ? 'Free' : `$${video.price.toFixed(2)}`}
+                      </div>
+                      
+                      {/* Action Button */}
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVideoAction(video);
+                        }}
+                        size="sm"
+                        className={`${
+                          (() => {
+                            const isPurchased = purchasedVideoIds.includes(video.id);
+                            if (isOwnPage) return 'bg-blue-600 hover:bg-blue-700 text-white';
+                            if (isPurchased || video.price === 0) return 'bg-green-600 hover:bg-green-700 text-white';
+                            return 'bg-primary hover:bg-primary/90 text-primary-foreground';
+                          })()
+                        } transition-colors font-medium`}
+                      >
+                        {(() => {
+                          const isPurchased = purchasedVideoIds.includes(video.id);
+                          if (isOwnPage) return 'Edit';
+                          if (isPurchased || video.price === 0) return 'Watch';
+                          return 'View Details';
+                        })()}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+      
+
+    </div>
+  );
+}

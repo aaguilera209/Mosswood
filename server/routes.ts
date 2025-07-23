@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import Stripe from "stripe";
 import { getVideoById } from "../shared/videoData";
 import { createClient } from '@supabase/supabase-js';
-import { insertVideoSchema, type InsertVideo } from "../shared/schema";
+import { insertVideoSchema, type InsertVideo, updateProfileSchema, type UpdateProfile } from "../shared/schema";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -880,7 +880,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
+  // Get profile by ID or email
+  app.get("/api/profile/:identifier", async (req, res) => {
+    try {
+      const { identifier } = req.params;
+      
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+      
+      // Try to find profile by email first, then by ID
+      let query = supabase.from('profiles').select('*');
+      
+      if (identifier.includes('@')) {
+        query = query.eq('email', identifier);
+      } else {
+        query = query.eq('id', identifier);
+      }
+      
+      const { data: profile, error } = await query.single();
+      
+      if (error || !profile) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+      
+      res.json({ profile });
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      res.status(500).json({ error: 'Failed to fetch profile: ' + error.message });
+    }
+  });
+
+  // Update profile
+  app.put("/api/profile/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const profileData = req.body;
+      
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+      
+      // Validate the input data
+      const validatedData = updateProfileSchema.parse(profileData);
+      
+      // Update the profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          ...validatedData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Profile update error:', error);
+        return res.status(500).json({ error: 'Failed to update profile: ' + error.message });
+      }
+      
+      res.json({ success: true, profile: data });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: 'Invalid profile data', details: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to update profile: ' + error.message });
+    }
+  });
+
+  // Upload avatar image
+  app.post("/api/upload-avatar", async (req, res) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { fileName, fileData, contentType, userId } = req.body;
+      
+      if (!fileName || !fileData || !userId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Convert base64 to buffer
+      const buffer = Buffer.from(fileData, 'base64');
+      const filePath = `avatars/${userId}/${fileName}`;
+
+      console.log('Avatar upload attempt:', { fileName, filePath, size: buffer.length });
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, buffer, {
+          contentType,
+          cacheControl: '3600',
+          upsert: true, // Allow overwriting existing avatars
+        });
+
+      if (error) {
+        console.error('Supabase avatar upload error:', error);
+        return res.status(500).json({ error: `Avatar upload failed: ${error.message}` });
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      res.json({ 
+        success: true, 
+        path: data.path,
+        publicUrl: publicUrlData.publicUrl 
+      });
+
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      res.status(500).json({ error: 'Avatar upload failed: ' + error.message });
+    }
+  });
+
   // Update user role (for testing)
   app.post("/api/update-role", async (req, res) => {
     try {
@@ -903,5 +1020,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const httpServer = createServer(app);
   return httpServer;
 }

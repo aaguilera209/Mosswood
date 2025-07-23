@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Upload, Plus, Play, MoreHorizontal, LogOut, BarChart3, Users, DollarSign, TrendingUp, Clock, Eye, ShoppingCart, Gift, Calendar, Mail, MapPin, Repeat, ArrowUp, ArrowDown, Edit, Trash2 } from 'lucide-react';
+import { Upload, Plus, Play, MoreHorizontal, LogOut, BarChart3, Users, DollarSign, TrendingUp, Clock, Eye, ShoppingCart, Gift, Calendar, Mail, MapPin, Repeat, ArrowUp, ArrowDown, Edit, Trash2, User } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { VideoUploadModal } from '@/components/VideoUploadModal';
@@ -299,6 +299,15 @@ function DashboardContent() {
               <span className="text-sm text-muted-foreground">
                 {profile?.email} ({profile?.role})
               </span>
+              <Button
+                onClick={() => setLocation('/edit-profile')}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <User className="w-4 h-4" />
+                <span>Edit Profile</span>
+              </Button>
               <ThemeToggle />
               <Button 
                 variant="outline"

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, uuid, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, uuid, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -33,6 +33,32 @@ export const purchases = pgTable("purchases", {
   purchased_at: timestamp("purchased_at", { withTimezone: true }).defaultNow(),
 });
 
+// Add profiles table with MVP profile fields
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  role: text("role", { enum: ["creator", "viewer"] }).notNull().default("viewer"),
+  display_name: text("display_name"),
+  tagline: text("tagline"),
+  bio: text("bio"),
+  location: text("location"),
+  timezone: text("timezone"),
+  avatar_url: text("avatar_url"),
+  website: text("website"),
+  social_links: json("social_links").$type<{
+    twitter?: string;
+    instagram?: string;
+    youtube?: string;
+    tiktok?: string;
+    [key: string]: string | undefined;
+  }>(),
+  contact_email: text("contact_email"),
+  stripe_account_id: text("stripe_account_id"),
+  stripe_connect_enabled: boolean("stripe_connect_enabled").default(false),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -58,9 +84,28 @@ export const insertPurchaseSchema = createInsertSchema(purchases).pick({
   amount: true,
 });
 
+export const insertProfileSchema = createInsertSchema(profiles).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const updateProfileSchema = createInsertSchema(profiles).omit({
+  id: true,
+  email: true,
+  role: true,
+  stripe_account_id: true,
+  stripe_connect_enabled: true,
+  created_at: true,
+  updated_at: true,
+}).partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Video = typeof videos.$inferSelect;
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
 export type Purchase = typeof purchases.$inferSelect;
 export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
+export type Profile = typeof profiles.$inferSelect;
+export type InsertProfile = z.infer<typeof insertProfileSchema>;
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;

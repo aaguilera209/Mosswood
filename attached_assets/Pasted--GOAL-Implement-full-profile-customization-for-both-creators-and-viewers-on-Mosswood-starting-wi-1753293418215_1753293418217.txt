@@ -1,0 +1,47 @@
+🚀 GOAL:
+Implement full profile customization for both creators and viewers on Mosswood, starting with an MVP version that allows users to edit and display essential profile information.
+
+🔧 CONTEXT:
+We want to create clean, editable profiles that feel professional and personal. This profile will appear on Creator Storefronts and optionally in Viewer Libraries in the future.
+
+🧱 MVP PROFILE FIELDS (build all of these now):
+- Display Name (real name or stage name)
+- Tagline / One-liner (a short hook under the name)
+- Bio (a few lines max — optional to fill out, but field must exist)
+- Location (city/state or country)
+- Time Zone (standard list of time zones)
+- Avatar Upload (JPEG or PNG, displayed in a circle)
+- Website (creator's main link)
+- Social Links (Twitter, Instagram, YouTube, TikTok, etc.)
+- Contact Email
+
+📋 INSTRUCTIONS:
+1. **Database Update**: Add the above fields to the `profiles` table using a migration. Fields like social links can be stored as an array or JSON blob for flexibility.
+
+2. **Edit Profile Page**:
+   - Build a `/edit-profile` route available to both creators and viewers (but only accessible when logged in).
+   - Create a simple form that includes all MVP fields.
+   - Pre-fill fields using current user profile data from Supabase.
+   - Save form updates back to Supabase on submit.
+
+3. **Public Profile Display**:
+   - Update Creator Storefront pages to display all public profile info:
+     - Display Name
+     - Tagline
+     - Bio
+     - Avatar
+     - Website + Socials
+     - Location (optional to show)
+   - Add a basic visual layout — prioritize clarity over flashiness for now.
+
+4. **UX Notes**:
+   - For avatars, show default placeholder if none is uploaded.
+   - For social links, use recognizable icons (if easy).
+   - For timezone and location, defaults are fine if data is missing.
+   - Form validation should be basic — just confirm valid URLs/emails where needed.
+
+✅ DO NOT include birthday, pronouns, phone number, or Stripe info.
+
+Once MVP is live, we’ll revisit optional profile enhancements like banner image, content categories, preferred language, etc.
+
+Let me know once you've created the edit page and updated the schema, and I’ll test it from the Creator Dashboard!
