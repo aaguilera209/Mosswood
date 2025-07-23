@@ -43,6 +43,7 @@ export default function VideoDetail() {
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [videoPlaybackError, setVideoPlaybackError] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -372,7 +373,15 @@ export default function VideoDetail() {
             className="relative group cursor-pointer"
             onMouseEnter={() => setShowControls(true)}
             onMouseLeave={() => setShowControls(false)}
-            onClick={handleVideoClick}
+            onClick={(e) => {
+              // Don't toggle play/pause if volume is being dragged
+              if (isDraggingVolume) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+              }
+              handleVideoClick();
+            }}
           >
             {/* HTML5 Video Player or Access Control */}
             <div className={`${getVideoClasses()} bg-gray-900 flex items-center justify-center relative overflow-hidden`}>
@@ -593,7 +602,7 @@ export default function VideoDetail() {
                           e.preventDefault();
                           e.stopPropagation();
                           const rect = e.currentTarget.getBoundingClientRect();
-                          let isDragging = true;
+                          setIsDraggingVolume(true);
                           
                           const updateVolume = (clientX: number) => {
                             const clickX = clientX - rect.left;
@@ -609,15 +618,15 @@ export default function VideoDetail() {
                           updateVolume(e.clientX);
                           
                           const handleMouseMove = (moveEvent: MouseEvent) => {
-                            if (isDragging) {
-                              moveEvent.preventDefault();
-                              updateVolume(moveEvent.clientX);
-                            }
+                            moveEvent.preventDefault();
+                            moveEvent.stopPropagation();
+                            updateVolume(moveEvent.clientX);
                           };
                           
                           const handleMouseUp = (upEvent: MouseEvent) => {
                             upEvent.preventDefault();
-                            isDragging = false;
+                            upEvent.stopPropagation();
+                            setIsDraggingVolume(false);
                             document.removeEventListener('mousemove', handleMouseMove);
                             document.removeEventListener('mouseup', handleMouseUp);
                           };
