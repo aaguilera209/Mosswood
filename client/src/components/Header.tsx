@@ -1,11 +1,23 @@
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'wouter';
+import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 
 export function Header() {
   const { user, profile } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      // Simple logout - clear auth and redirect
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <header className="relative z-50 px-6 py-4 bg-background/95 backdrop-blur-sm border-b border-border">
@@ -33,9 +45,54 @@ export function Header() {
                     </Button>
                   </Link>
                 )}
-                <span className="text-sm text-muted-foreground">
-                  {profile?.email || user.email}
-                </span>
+                
+                {/* User Profile Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 hover:bg-muted">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={(profile as any)?.avatar_url} alt={(profile as any)?.display_name || 'User'} />
+                        <AvatarFallback>
+                          <User className="w-4 h-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex items-center space-x-1">
+                        <span className="text-sm font-medium">
+                          {(profile as any)?.display_name || profile?.email || user.email}
+                        </span>
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium">{(profile as any)?.display_name || 'User'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {profile?.email || user.email} • {profile?.role || 'viewer'}
+                      </p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/edit-profile" className="flex items-center w-full">
+                        <User className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    {profile?.role === 'viewer' && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/library" className="flex items-center w-full">
+                          <Settings className="w-4 h-4 mr-2" />
+                          My Library
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>

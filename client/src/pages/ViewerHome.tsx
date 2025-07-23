@@ -126,15 +126,18 @@ export default function ViewerHome() {
                 Explore Creators
               </Button>
             </Link>
-            <Link href="/library">
-              <Button size="lg" variant="outline">
-                My Library
-              </Button>
-            </Link>
-            <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
-              Become a Creator
-            </Button>
-            {!user && (
+            {user ? (
+              <>
+                <Link href="/library">
+                  <Button size="lg" variant="outline">
+                    My Library
+                  </Button>
+                </Link>
+                <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
+                  Become a Creator
+                </Button>
+              </>
+            ) : (
               <>
                 <Link href="/signup">
                   <Button size="lg" variant="outline">
