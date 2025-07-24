@@ -49,7 +49,10 @@ export function Header() {
                 {/* User Profile Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center space-x-2 hover:bg-muted">
+                    <Button 
+                      variant="ghost" 
+                      className="flex items-center space-x-2 hover:bg-muted/50 transition-colors duration-200 text-foreground hover:text-foreground"
+                    >
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={(profile as any)?.avatar_url} alt={(profile as any)?.display_name || 'User'} />
                         <AvatarFallback>
@@ -57,10 +60,10 @@ export function Header() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex items-center space-x-1">
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium text-foreground">
                           {(profile as any)?.display_name || profile?.email || user.email}
                         </span>
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
