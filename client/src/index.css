@@ -71,6 +71,16 @@
     @apply border-border;
   }
 
+  /* Remove all focus outlines globally */
+  button:focus,
+  button:focus-visible,
+  [role="button"]:focus,
+  [role="button"]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground transition-colors duration-300;
     font-family: 'Inter', sans-serif;

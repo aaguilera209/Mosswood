@@ -51,7 +51,8 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      className="flex items-center space-x-2 hover:bg-muted/50 transition-colors duration-200 text-foreground hover:text-foreground focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      className="flex items-center space-x-2 hover:bg-muted/50 transition-colors duration-200 text-foreground hover:text-foreground !outline-none !ring-0 !border-0 focus:!outline-none focus:!ring-0 focus:!border-0 active:!outline-none active:!ring-0"
+                      style={{ outline: 'none !important', boxShadow: 'none !important' }}
                     >
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={(profile as any)?.avatar_url} alt={(profile as any)?.display_name || 'User'} />
