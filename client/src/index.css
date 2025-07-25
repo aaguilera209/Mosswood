@@ -71,14 +71,31 @@
     @apply border-border;
   }
 
-  /* Remove all focus outlines globally */
+  /* Remove all focus outlines and resize handles globally */
   button:focus,
   button:focus-visible,
   [role="button"]:focus,
-  [role="button"]:focus-visible {
+  [role="button"]:focus-visible,
+  [data-radix-popper-content-wrapper],
+  [data-state="open"],
+  [data-state="closed"] {
     outline: none !important;
     box-shadow: none !important;
     border: none !important;
+    resize: none !important;
+  }
+
+  /* Remove corner markers/resize handles */
+  *:focus::before,
+  *:focus::after,
+  *:focus-visible::before,
+  *:focus-visible::after {
+    display: none !important;
+  }
+
+  /* Remove any selection handles */
+  *::selection {
+    background: transparent !important;
   }
 
   body {
