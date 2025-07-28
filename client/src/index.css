@@ -93,8 +93,15 @@
     display: none !important;
   }
 
-  /* Remove any selection handles */
-  *::selection {
+  /* Restore text selection for input fields */
+  input::selection,
+  textarea::selection {
+    background: hsl(var(--primary) / 0.2) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  /* Keep selection hidden for other elements */
+  *:not(input):not(textarea)::selection {
     background: transparent !important;
   }
 
