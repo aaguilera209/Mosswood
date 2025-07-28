@@ -99,11 +99,9 @@ export default function VideoDetail() {
       // For now, use empty array for related videos since we don't have that API yet
       setRelatedVideos([]);
       
-      // Fetch creator profile to get the actual creator name
-      if (videoApiData.video.creator_id) {
-        // For now, use a placeholder - in production this would be a proper API call
-        setCreatorUsername('Maya'); // This will be dynamic when we have creator profiles
-      }
+      // Set creator username from profile data returned with video
+      const creatorName = videoApiData.video.profiles?.display_name || 'Unknown Creator';
+      setCreatorUsername(creatorName);
     }
   }, [videoApiData]);
 

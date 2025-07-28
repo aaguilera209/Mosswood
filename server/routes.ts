@@ -151,7 +151,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({ video });
+      // Manually fetch creator profile
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('display_name, email')
+        .eq('id', video.creator_id)
+        .single();
+
+      // Add profile data to video
+      const enrichedVideo = {
+        ...video,
+        profiles: creatorProfile || null
+      };
+
+      res.json({ video: enrichedVideo });
     } catch (error: any) {
       console.error('Video fetch error:', error);
       res.status(500).json({ 
@@ -188,7 +201,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({ videos });
+      // Manually fetch creator profile
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('display_name, email')
+        .eq('id', creatorId)
+        .single();
+
+      // Add profile data to all videos
+      const enrichedVideos = videos.map(video => ({
+        ...video,
+        profiles: creatorProfile || null
+      }));
+
+      res.json({ videos: enrichedVideos });
     } catch (error: any) {
       console.error('Videos fetch error:', error);
       res.status(500).json({ 
