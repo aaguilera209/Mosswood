@@ -46,4 +46,3 @@ CREATE POLICY "Public can read creator profiles" ON profiles
 
 -- Verify the migration worked
 SELECT 'Migration complete. Checking profiles table structure...' as status;
-\d profiles;
