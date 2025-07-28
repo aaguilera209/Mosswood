@@ -224,6 +224,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Track video view endpoint
+  app.post("/api/track-view", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const {
+        video_id,
+        session_id,
+        watch_duration = 0,
+        device_type,
+        browser,
+        viewer_id = null
+      } = req.body;
+
+      // Validate required fields
+      if (!video_id || !session_id) {
+        return res.status(400).json({ error: "video_id and session_id are required" });
+      }
+
+      // Check if this is a returning viewer (has viewed any video before)
+      let is_returning_viewer = false;
+      if (viewer_id) {
+        const { data: previousViews } = await supabase
+          .from('video_views')
+          .select('id')
+          .eq('viewer_id', viewer_id)
+          .limit(1);
+        
+        is_returning_viewer = previousViews && previousViews.length > 0;
+      }
+
+      // Determine completion and 30-second thresholds
+      // First get video duration to calculate completion
+      const { data: video } = await supabase
+        .from('videos')
+        .select('duration')
+        .eq('id', video_id)
+        .single();
+
+      const completed = video?.duration ? (watch_duration / video.duration) >= 0.9 : false;
+      const watched_30_seconds = watch_duration >= 30;
+
+      // Insert or update view record
+      const { error } = await supabase
+        .from('video_views')
+        .upsert({
+          video_id,
+          viewer_id,
+          session_id,
+          device_type,
+          browser,
+          watch_duration,
+          completed,
+          watched_30_seconds,
+          is_returning_viewer
+        }, {
+          onConflict: 'session_id, video_id'
+        });
+
+      if (error) {
+        console.error('View tracking error:', error);
+        return res.status(500).json({ error: "Failed to track view" });
+      }
+
+      // Update daily analytics asynchronously
+      const today = new Date().toISOString().split('T')[0];
+      await supabase.rpc('update_daily_analytics', {
+        p_video_id: video_id,
+        p_date: today
+      });
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Track view error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get analytics data for a creator
+  app.get("/api/analytics/:creatorId", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const creatorId = req.params.creatorId;
+      const { timeframe = '30d' } = req.query;
+
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      if (timeframe === '7d') {
+        startDate.setDate(startDate.getDate() - 7);
+      } else if (timeframe === '30d') {
+        startDate.setDate(startDate.getDate() - 30);
+      } else if (timeframe === '90d') {
+        startDate.setDate(startDate.getDate() - 90);
+      }
+
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+
+      // Get creator's videos
+      const { data: videos } = await supabase
+        .from('videos')
+        .select('id, title, price, created_at')
+        .eq('creator_id', creatorId);
+
+      if (!videos || videos.length === 0) {
+        return res.json({
+          overview: {
+            totalViews: 0,
+            totalRevenue: 0,
+            totalPurchases: 0,
+            avgCompletionRate: 0,
+            avgRevenuePerViewer: 0,
+            newViewers: 0,
+            returningViewers: 0,
+            subscriberConversionRate: 0
+          },
+          videoPerformance: [],
+          deviceBreakdown: { mobile: 0, desktop: 0, tablet: 0 },
+          watchTimeTrend: [],
+          conversionFunnel: {
+            views: 0,
+            watched30Sec: 0,
+            completed: 0,
+            purchased: 0
+          }
+        });
+      }
+
+      const videoIds = videos.map(v => v.id);
+
+      // Get aggregated analytics
+      const { data: analytics } = await supabase
+        .from('analytics_daily')
+        .select('*')
+        .in('video_id', videoIds)
+        .gte('date', startDateStr)
+        .lte('date', endDateStr);
+
+      // Get detailed view data for device breakdown and trends
+      const { data: viewData } = await supabase
+        .from('video_views')
+        .select('device_type, completed, watched_30_seconds, created_at, video_id')
+        .in('video_id', videoIds)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      // Get purchase data
+      const { data: purchaseData } = await supabase
+        .from('purchases')
+        .select('video_id, amount, purchased_at')
+        .in('video_id', videoIds)
+        .gte('purchased_at', startDate.toISOString())
+        .lte('purchased_at', endDate.toISOString());
+
+      // Get subscriber data
+      const { data: subscriberData } = await supabase
+        .from('email_subscribers')
+        .select('video_id, subscribed_at')
+        .eq('creator_id', creatorId)
+        .gte('subscribed_at', startDate.toISOString())
+        .lte('subscribed_at', endDate.toISOString());
+
+      // Calculate overview metrics
+      const totalViews = analytics?.reduce((sum, a) => sum + a.total_views, 0) || 0;
+      const totalRevenue = analytics?.reduce((sum, a) => sum + a.revenue, 0) || 0;
+      const totalPurchases = analytics?.reduce((sum, a) => sum + a.purchases, 0) || 0;
+      const totalCompletions = analytics?.reduce((sum, a) => sum + a.completions, 0) || 0;
+      const newViewers = analytics?.reduce((sum, a) => sum + a.new_viewers, 0) || 0;
+      const returningViewers = analytics?.reduce((sum, a) => sum + a.returning_viewers, 0) || 0;
+
+      const avgCompletionRate = totalViews > 0 ? Math.round((totalCompletions / totalViews) * 100) : 0;
+      const avgRevenuePerViewer = totalViews > 0 ? Math.round((totalRevenue / 100) / totalViews * 100) / 100 : 0;
+      const subscriberConversionRate = totalViews > 0 ? Math.round(((subscriberData?.length || 0) / totalViews) * 100 * 100) / 100 : 0;
+
+      // Device breakdown
+      const deviceBreakdown = {
+        mobile: viewData?.filter(v => v.device_type === 'mobile').length || 0,
+        desktop: viewData?.filter(v => v.device_type === 'desktop').length || 0,
+        tablet: viewData?.filter(v => v.device_type === 'tablet').length || 0
+      };
+
+      // Video performance
+      const videoPerformance = videos.map(video => {
+        const videoAnalytics = analytics?.filter(a => a.video_id === video.id) || [];
+        const views = videoAnalytics.reduce((sum, a) => sum + a.total_views, 0);
+        const revenue = videoAnalytics.reduce((sum, a) => sum + a.revenue, 0);
+        const purchases = videoAnalytics.reduce((sum, a) => sum + a.purchases, 0);
+        const completions = videoAnalytics.reduce((sum, a) => sum + a.completions, 0);
+
+        return {
+          id: video.id,
+          title: video.title,
+          views,
+          revenue: revenue / 100, // Convert from cents
+          purchases,
+          completionRate: views > 0 ? Math.round((completions / views) * 100) : 0,
+          revenuePerViewer: views > 0 ? Math.round((revenue / 100) / views * 100) / 100 : 0
+        };
+      });
+
+      // Watch time trend (weekly data for timeframe)
+      const watchTimeTrend = [];
+      const today = new Date();
+      for (let i = timeframe === '7d' ? 7 : timeframe === '30d' ? 4 : 12; i >= 0; i--) {
+        const weekStart = new Date(today);
+        if (timeframe === '7d') {
+          weekStart.setDate(weekStart.getDate() - i);
+        } else if (timeframe === '30d') {
+          weekStart.setDate(weekStart.getDate() - (i * 7));
+        } else {
+          weekStart.setDate(weekStart.getDate() - (i * 7));
+        }
+        
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + (timeframe === '7d' ? 1 : 7));
+
+        const weekAnalytics = analytics?.filter(a => {
+          const aDate = new Date(a.date);
+          return aDate >= weekStart && aDate < weekEnd;
+        }) || [];
+
+        const weekWatchTime = weekAnalytics.reduce((sum, a) => sum + a.watch_time_total, 0);
+        
+        watchTimeTrend.push({
+          date: weekStart.toISOString().split('T')[0],
+          avgWatchTime: weekWatchTime > 0 ? Math.round(weekWatchTime / Math.max(1, weekAnalytics.length)) : 0
+        });
+      }
+
+      // Conversion funnel
+      const watched30Sec = viewData?.filter(v => v.watched_30_seconds).length || 0;
+      const completed = viewData?.filter(v => v.completed).length || 0;
+
+      const conversionFunnel = {
+        views: totalViews,
+        watched30Sec,
+        completed,
+        purchased: totalPurchases
+      };
+
+      res.json({
+        overview: {
+          totalViews,
+          totalRevenue: totalRevenue / 100, // Convert from cents
+          totalPurchases,
+          avgCompletionRate,
+          avgRevenuePerViewer,
+          newViewers,
+          returningViewers,
+          subscriberConversionRate
+        },
+        videoPerformance: videoPerformance.sort((a, b) => b.revenue - a.revenue),
+        deviceBreakdown,
+        watchTimeTrend,
+        conversionFunnel
+      });
+
+    } catch (error: any) {
+      console.error('Analytics fetch error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Delete a video
   app.delete("/api/videos/:id", async (req: Request, res: Response) => {
     try {

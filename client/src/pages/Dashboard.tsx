@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { AnalyticsCharts } from '@/components/AnalyticsCharts';
 
 // Mock video data with enhanced analytics - TODO: Replace with actual data from backend
 const mockVideos = [
@@ -198,6 +199,7 @@ function DashboardContent() {
   const [deleteVideoId, setDeleteVideoId] = useState<number | null>(null);
   const [deleteVideoTitle, setDeleteVideoTitle] = useState<string>('');
   const queryClient = useQueryClient();
+  const [analyticsTimeframe, setAnalyticsTimeframe] = useState('30d');
   
   // Get display name for personalization
   const displayName = profile?.display_name || 'Creator';
@@ -218,6 +220,20 @@ function DashboardContent() {
 
   const videos = videosData?.videos || [];
   const hasVideos = videos.length > 0;
+
+  // Fetch real analytics data
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['analytics', user?.id, analyticsTimeframe],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/analytics/${user.id}?timeframe=${analyticsTimeframe}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
 
   const handleLogout = async () => {
     try {
@@ -636,137 +652,145 @@ function DashboardContent() {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Advanced Analytics</h2>
-              
-              {/* Video Performance */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Video Performance</CardTitle>
-                  <CardDescription>Detailed metrics for your content</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockVideos.filter(v => v.status === 'Published').map((video) => (
-                      <div key={video.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-medium line-clamp-1 flex-1">{video.title}</h4>
-                          <Badge variant={video.conversionRate > 7 ? "default" : "secondary"}>
-                            {video.conversionRate}% conversion
-                          </Badge>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground flex items-center"><Eye className="w-3 h-3 mr-1" />Views</p>
-                            <p className="font-semibold">{video.views.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground flex items-center"><ShoppingCart className="w-3 h-3 mr-1" />Purchases</p>
-                            <p className="font-semibold">{video.purchases}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground flex items-center"><Clock className="w-3 h-3 mr-1" />Watch Rate</p>
-                            <p className="font-semibold">{video.watchThroughRate}%</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground flex items-center"><DollarSign className="w-3 h-3 mr-1" />Revenue</p>
-                            <p className="font-semibold">${video.revenue.toLocaleString()}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="text-sm text-muted-foreground">
-                          Avg. watch time: {video.avgWatchTime} • Published: {new Date(video.publishedAt!).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Revenue Insights */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Revenue Insights</CardTitle>
-                    <CardDescription>Financial performance breakdown</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Total Revenue</span>
-                        <span className="font-bold">${mockAnalytics.overview.totalRevenue.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Direct Sales</span>
-                        <span>${(mockAnalytics.overview.totalRevenue - mockAnalytics.overview.promoCodeRevenue).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Promo Code Sales</span>
-                        <span>${mockAnalytics.overview.promoCodeRevenue.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t">
-                      <h5 className="font-medium mb-3">Revenue by Video</h5>
-                      <div className="space-y-2">
-                        {mockVideos.filter(v => v.revenue > 0).sort((a, b) => b.revenue - a.revenue).map((video) => (
-                          <div key={video.id} className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground line-clamp-1 flex-1">{video.title}</span>
-                            <span className="font-medium ml-2">${video.revenue.toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Audience Insights</CardTitle>
-                    <CardDescription>Know your viewers better</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h5 className="font-medium mb-3">Top Viewer Countries</h5>
-                      <div className="space-y-2">
-                        {mockAnalytics.audienceInsights.topCountries.slice(0, 5).map((country) => (
-                          <div key={country.country} className="flex justify-between items-center text-sm">
-                            <span className="flex items-center">
-                              <MapPin className="w-3 h-3 mr-2 text-muted-foreground" />
-                              {country.country}
-                            </span>
-                            <div className="text-right">
-                              <span className="font-medium">{country.viewers}</span>
-                              <span className="text-muted-foreground ml-1">({country.percentage}%)</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center">
-                          <Repeat className="w-3 h-3 mr-1" />
-                          Repeat Purchasers
-                        </span>
-                        <span className="font-medium">{mockAnalytics.audienceInsights.repeatPurchasers}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground flex items-center">
-                          <Mail className="w-3 h-3 mr-1" />
-                          Email Subscribers
-                        </span>
-                        <span className="font-medium">{mockAnalytics.audienceInsights.emailSubscribers.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Growth Rate</span>
-                        <span className="font-medium text-green-600">+{mockAnalytics.audienceInsights.emailGrowthRate}%</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-semibold text-foreground">Advanced Analytics</h2>
+                <div className="flex items-center gap-2">
+                  <select 
+                    value={analyticsTimeframe} 
+                    onChange={(e) => setAnalyticsTimeframe(e.target.value)}
+                    className="px-3 py-1 border border-border rounded-md bg-background text-foreground text-sm"
+                  >
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="90d">Last 90 days</option>
+                  </select>
+                </div>
               </div>
+
+              {analyticsData && (
+                <>
+                  {/* Overview Metrics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{analyticsData.overview.totalViews.toLocaleString()}</div>
+                        <p className="text-xs text-muted-foreground">
+                          {analyticsData.overview.newViewers} new, {analyticsData.overview.returningViewers} returning
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">${analyticsData.overview.totalRevenue.toLocaleString()}</div>
+                        <p className="text-xs text-muted-foreground">
+                          ${analyticsData.overview.avgRevenuePerViewer.toFixed(2)} per viewer
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{analyticsData.overview.avgCompletionRate}%</div>
+                        <p className="text-xs text-muted-foreground">
+                          Viewers who watched &gt;90%
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Subscriber Rate</CardTitle>
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{analyticsData.overview.subscriberConversionRate}%</div>
+                        <p className="text-xs text-muted-foreground">
+                          Email conversion rate
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Charts */}
+                  <AnalyticsCharts data={analyticsData} isLoading={analyticsLoading} />
+
+                  {/* Video Performance Table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Video Performance</CardTitle>
+                      <CardDescription>Detailed metrics for your content</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analyticsData.videoPerformance.length > 0 ? (
+                        <div className="space-y-4">
+                          {analyticsData.videoPerformance.map((video) => (
+                            <div key={video.id} className="border rounded-lg p-4 space-y-3">
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-medium line-clamp-1 flex-1">{video.title}</h4>
+                                <Badge variant={video.completionRate > 70 ? "default" : "secondary"}>
+                                  {video.completionRate}% completion
+                                </Badge>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground flex items-center"><Eye className="w-3 h-3 mr-1" />Views</p>
+                                  <p className="font-semibold">{video.views.toLocaleString()}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground flex items-center"><ShoppingCart className="w-3 h-3 mr-1" />Purchases</p>
+                                  <p className="font-semibold">{video.purchases}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground flex items-center"><TrendingUp className="w-3 h-3 mr-1" />Revenue/Viewer</p>
+                                  <p className="font-semibold">${video.revenuePerViewer.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground flex items-center"><DollarSign className="w-3 h-3 mr-1" />Revenue</p>
+                                  <p className="font-semibold">${video.revenue.toLocaleString()}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No video performance data available yet. Upload and publish videos to see analytics.
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {!analyticsData && !analyticsLoading && (
+                <Card>
+                  <CardContent className="py-16 text-center">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No Analytics Data Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Upload and publish videos to start tracking performance metrics
+                    </p>
+                    <Button onClick={handleUploadVideo} variant="default">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Your First Video
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
@@ -781,132 +805,50 @@ function DashboardContent() {
             </div>
 
             <div className="space-y-6">
-              {mockPromoCodes.length > 0 ? (
-                mockPromoCodes.map((promoCode) => (
-                  <Card key={promoCode.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            <Gift className="w-5 h-5" />
-                            {promoCode.code}
-                          </CardTitle>
-                          <CardDescription>
-                            {promoCode.discount}% discount • Created {new Date(promoCode.createdAt).toLocaleDateString()}
-                          </CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold">{promoCode.totalRedemptions}</p>
-                          <p className="text-sm text-muted-foreground">redemptions</p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {promoCode.redemptions.length > 0 ? (
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="font-medium">Revenue Generated:</span>
-                            <span className="font-bold text-green-600">${promoCode.revenueGenerated.toLocaleString()}</span>
-                          </div>
-                          
-                          <div>
-                            <h5 className="font-medium mb-3">Recent Redemptions</h5>
-                            <div className="space-y-3">
-                              {promoCode.redemptions.slice(0, 5).map((redemption) => (
-                                <div key={redemption.id} className="flex justify-between items-start p-3 bg-muted/50 rounded-lg">
-                                  <div className="flex-1">
-                                    <p className="font-medium text-sm">{redemption.userEmail}</p>
-                                    <p className="text-sm text-muted-foreground line-clamp-1">{redemption.videoTitle}</p>
-                                    <p className="text-xs text-muted-foreground flex items-center">
-                                      <Calendar className="w-3 h-3 mr-1" />
-                                      {new Date(redemption.redeemedAt).toLocaleDateString()} at {new Date(redemption.redeemedAt).toLocaleTimeString()}
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-sm">
-                                      <span className="line-through text-muted-foreground">${redemption.originalPrice}</span>
-                                      <span className="ml-2 font-medium">${redemption.finalPrice}</span>
-                                    </p>
-                                    <p className="text-xs text-green-600">-${redemption.discountAmount} saved</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            {promoCode.redemptions.length > 5 && (
-                              <Button variant="outline" size="sm" className="w-full mt-3">
-                                View All {promoCode.redemptions.length} Redemptions
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <Gift className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                          <p className="text-muted-foreground">
-                            No redemptions yet. Share this promo code to start tracking!
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <Card>
-                  <CardHeader className="text-center py-12">
-                    <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                      <Gift className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <CardTitle>No promo codes yet</CardTitle>
-                    <CardDescription>
-                      Create discount codes to boost sales and track redemptions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center pb-12">
-                    <Button className="bg-primary hover:bg-primary/90">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Your First Promo Code
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
+              <Card>
+                <CardHeader className="text-center py-12">
+                  <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                    <Gift className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <CardTitle>Promo Codes Coming Soon</CardTitle>
+                  <CardDescription>
+                    Advanced promo code analytics will be available in the next release
+                  </CardDescription>
+                </CardHeader>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Video Upload Modal */}
+        <VideoUploadModal 
+          isOpen={isUploadModalOpen} 
+          onClose={handleCloseUploadModal} 
+        />
+
+        {/* Stripe Connect Setup */}
+        <StripeConnectSetup />
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog 
+          isOpen={!!deleteVideoId}
+          onClose={() => {
+            setDeleteVideoId(null);
+            setDeleteVideoTitle('');
+          }}
+          onConfirm={handleDeleteVideoConfirm}
+          title="Delete Video"
+          description={`Are you sure you want to delete "${deleteVideoTitle}"? This action cannot be undone.`}
+        />
       </main>
-
-      {/* Video Upload Modal */}
-      <VideoUploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={handleCloseUploadModal} 
-      />
-
-      {/* Delete Confirmation Modal */}
-      <AlertDialog open={!!deleteVideoId} onOpenChange={(open) => !open && setDeleteVideoId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Video</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{deleteVideoTitle}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteVideoId(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteVideoConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete Video
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
 
 export default function Dashboard() {
-  return <DashboardContent />;
+  return (
+    <ProtectedRoute requiredRole="creator">
+      <DashboardContent />
+    </ProtectedRoute>
+  );
 }

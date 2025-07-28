@@ -62,6 +62,46 @@ export const profiles = pgTable("profiles", {
   updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+// Analytics tables for tracking video interactions
+export const video_views = pgTable("video_views", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  video_id: integer("video_id").notNull(),
+  viewer_id: uuid("viewer_id"), // null for anonymous views
+  session_id: text("session_id").notNull(), // track unique sessions
+  device_type: text("device_type", { enum: ["mobile", "desktop", "tablet"] }),
+  browser: text("browser"),
+  watch_duration: integer("watch_duration").notNull().default(0), // seconds watched
+  completed: boolean("completed").notNull().default(false), // watched >90%
+  watched_30_seconds: boolean("watched_30_seconds").notNull().default(false),
+  is_returning_viewer: boolean("is_returning_viewer").notNull().default(false),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const email_subscribers = pgTable("email_subscribers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  creator_id: uuid("creator_id").notNull(), // which creator they subscribed to
+  video_id: integer("video_id"), // video that drove the subscription (nullable)
+  subscribed_at: timestamp("subscribed_at", { withTimezone: true }).defaultNow(),
+});
+
+export const analytics_daily = pgTable("analytics_daily", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  video_id: integer("video_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD format
+  total_views: integer("total_views").notNull().default(0),
+  unique_viewers: integer("unique_viewers").notNull().default(0),
+  watch_time_total: integer("watch_time_total").notNull().default(0), // total seconds
+  completions: integer("completions").notNull().default(0),
+  purchases: integer("purchases").notNull().default(0),
+  revenue: integer("revenue").notNull().default(0), // in cents
+  new_viewers: integer("new_viewers").notNull().default(0),
+  returning_viewers: integer("returning_viewers").notNull().default(0),
+  mobile_views: integer("mobile_views").notNull().default(0),
+  desktop_views: integer("desktop_views").notNull().default(0),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -106,6 +146,21 @@ export const updateProfileSchema = createInsertSchema(profiles).omit({
   updated_at: true,
 }).partial();
 
+export const insertVideoViewSchema = createInsertSchema(video_views).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertEmailSubscriberSchema = createInsertSchema(email_subscribers).omit({
+  id: true,
+  subscribed_at: true,
+});
+
+export const insertAnalyticsDailySchema = createInsertSchema(analytics_daily).omit({
+  id: true,
+  created_at: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Video = typeof videos.$inferSelect;
@@ -115,3 +170,9 @@ export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
 export type Profile = typeof profiles.$inferSelect;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
+export type VideoView = typeof video_views.$inferSelect;
+export type InsertVideoView = z.infer<typeof insertVideoViewSchema>;
+export type EmailSubscriber = typeof email_subscribers.$inferSelect;
+export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
+export type AnalyticsDaily = typeof analytics_daily.$inferSelect;
+export type InsertAnalyticsDaily = z.infer<typeof insertAnalyticsDailySchema>;

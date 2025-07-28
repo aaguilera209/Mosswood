@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useVideoTracking } from '@/hooks/useVideoTracking';
 
 type PlaybackMode = 'default' | 'theater' | 'fullscreen';
 
@@ -68,6 +69,12 @@ export default function VideoDetail() {
   
   // Check if user has purchased this video
   const hasPurchased = videoData ? purchases.some((p: any) => p.video_id === videoData.id) : false;
+
+  // Initialize video tracking
+  const { trackView, trackTimeUpdate } = useVideoTracking({
+    videoId: videoData?.id || 0,
+    videoDuration: videoDuration || undefined
+  });
   
   // Also check URL parameters for recent purchases (to handle immediate post-purchase access)
   const urlParams = new URLSearchParams(window.location.search);
@@ -274,13 +281,21 @@ export default function VideoDetail() {
           console.log('Video duration loaded:', realDuration, 'seconds');
         }
       };
-      const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+      const handleTimeUpdate = () => {
+        setCurrentTime(video.currentTime);
+        // Track video time updates for analytics
+        trackTimeUpdate(video.currentTime);
+      };
       const handleProgress = () => {
         if (video.buffered.length > 0) {
           setBuffered(video.buffered.end(video.buffered.length - 1));
         }
       };
-      const handlePlay = () => setIsPlaying(true);
+      const handlePlay = () => {
+        setIsPlaying(true);
+        // Track video view when user starts playing
+        trackView();
+      };
       const handlePause = () => setIsPlaying(false);
       const handleError = () => {
         setVideoPlaybackError('Failed to load video. Please try again later.');
