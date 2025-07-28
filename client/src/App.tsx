@@ -9,6 +9,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Home from "@/pages/Home";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import CreatorStorefront from "@/pages/CreatorStorefront";
 import VideoDetail from "@/pages/VideoDetail";
@@ -29,6 +31,8 @@ function Router() {
       <Route path="/home" component={Home} />
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/edit-profile" component={EditProfile} />
       <Route path="/edit-video-coming-soon" component={EditVideoComingSoon} />
