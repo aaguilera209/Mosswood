@@ -72,7 +72,8 @@ export default function EditProfile() {
     queryKey: ['/api/profile', user?.email],
     queryFn: async () => {
       console.log('🔍 Fetching profile for:', user?.email);
-      const result = await apiRequest('GET', `/api/profile/${encodeURIComponent(user?.email || '')}`);
+      const response = await apiRequest('GET', `/api/profile/${encodeURIComponent(user?.email || '')}`);
+      const result = await response.json();
       console.log('🔍 Profile fetch result:', result);
       return result;
     },
@@ -96,7 +97,8 @@ export default function EditProfile() {
       }
       
       try {
-        const result = await apiRequest('PUT', `/api/profile/${profileId}`, data);
+        const response = await apiRequest('PUT', `/api/profile/${profileId}`, data);
+        const result = await response.json();
         console.log('✅ Profile update successful:', result);
         return result;
       } catch (error) {
@@ -143,7 +145,8 @@ export default function EditProfile() {
               userId: profileId,
             });
             
-            resolve(response);
+            const result = await response.json();
+            resolve(result);
           } catch (error) {
             reject(error);
           }
@@ -156,7 +159,9 @@ export default function EditProfile() {
 
   // Load profile data into form
   useEffect(() => {
+    console.log('🔍 useEffect profileData:', profileData);
     if (profileData?.profile) {
+      console.log('🔍 Loading profile into form:', profileData.profile);
       const prof = (profileData as any).profile;
       setFormData({
         display_name: prof.display_name || '',
@@ -225,11 +230,13 @@ export default function EditProfile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const profileId = profileData?.profile?.id || profile?.id;
+    // Try multiple ways to get profile ID
+    const profileId = profileData?.profile?.id || profileData?.id || profile?.id;
     console.log('🔍 Form Submit Debug:', {
       profileId,
       profileData: profileData,
-      profileDataProfile: profileData?.profile,
+      profileDataProfile: profileData?.profile, 
+      profileDataId: profileData?.id,
       authProfile: profile,
       userEmail: user?.email,
       formData
