@@ -220,7 +220,16 @@ export default function EditProfile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!profile?.id) {
+    const profileId = profileData?.profile?.id || profile?.id;
+    console.log('🔍 Form Submit Debug:', {
+      profileId,
+      profileData: profileData?.profile,
+      authProfile: profile,
+      formData
+    });
+    
+    if (!profileId) {
+      console.error('❌ No profile ID found in handleSubmit');
       toast({
         title: "Error",
         description: "User profile not found. Please try logging in again.",
