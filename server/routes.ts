@@ -917,8 +917,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const profileData = req.body;
       
+      console.log('Profile update request:', {
+        profileId: id,
+        requestBody: profileData
+      });
+      
       if (!supabase) {
         return res.status(500).json({ error: "Database connection not available" });
+      }
+      
+      // First check if profile exists
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError) {
+        console.error('Profile fetch error:', fetchError);
+        return res.status(404).json({ error: 'Profile not found' });
       }
       
       // Validate the input data
@@ -940,6 +957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to update profile: ' + error.message });
       }
       
+      console.log('Profile updated successfully:', data);
       res.json({ success: true, profile: data });
     } catch (error: any) {
       console.error('Error updating profile:', error);

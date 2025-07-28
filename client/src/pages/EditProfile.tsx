@@ -78,6 +78,12 @@ export default function EditProfile() {
   const updateProfileMutation = useMutation({
     mutationFn: (data: ProfileFormData) => {
       const profileId = profileData?.profile?.id || profile?.id;
+      console.log('Profile update debug:', {
+        profileData: profileData?.profile,
+        profileFromAuth: profile,
+        selectedProfileId: profileId,
+        formData: data
+      });
       if (!profileId) {
         throw new Error('Profile ID not found');
       }
