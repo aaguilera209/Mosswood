@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        input, textarea {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            font-size: 16px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin: 10px;
+            width: 300px;
+        }
+        
+        input::selection, textarea::selection {
+            background: rgba(0, 123, 130, 0.3) !important;
+            color: black !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Text Selection Test</h1>
+    <input type="text" value="I'm a builder. Founder of" />
+    <textarea>I'm a builder. Founder of amazing products</textarea>
+    <p>Try selecting text with Cmd+Shift+← or mouse drag</p>
+</body>
+</html>

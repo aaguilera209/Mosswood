@@ -353,6 +353,12 @@ export default function EditProfile() {
                   onChange={(e) => handleInputChange('tagline', e.target.value)}
                   placeholder="A short hook that describes what you do"
                   maxLength={100}
+                  style={{
+                    userSelect: 'text',
+                    WebkitUserSelect: 'text',
+                    MozUserSelect: 'text',
+                    msUserSelect: 'text'
+                  }}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {formData.tagline.length}/100 characters
@@ -369,6 +375,12 @@ export default function EditProfile() {
                   placeholder="Tell people about yourself, your work, and what they can expect from your content..."
                   rows={4}
                   maxLength={500}
+                  style={{
+                    userSelect: 'text',
+                    WebkitUserSelect: 'text',
+                    MozUserSelect: 'text',
+                    msUserSelect: 'text'
+                  }}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {formData.bio.length}/500 characters

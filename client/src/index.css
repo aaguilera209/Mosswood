@@ -93,19 +93,33 @@
     display: none !important;
   }
 
-  /* Enable text selection for input fields */
+  /* CRITICAL: Enable text selection for input fields - Override all restrictions */
   input,
-  textarea {
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="url"] {
     user-select: text !important;
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
     -ms-user-select: text !important;
+    -webkit-touch-callout: default !important;
+  }
+
+  /* Override any Tailwind select-none classes */
+  input.select-none,
+  textarea.select-none {
+    user-select: text !important;
+    -webkit-user-select: text !important;
   }
 
   /* Restore text selection styling for input fields */
   input::selection,
-  textarea::selection {
-    background: hsl(var(--primary) / 0.2) !important;
+  textarea::selection,
+  input[type="text"]::selection,
+  input[type="email"]::selection,
+  input[type="url"]::selection {
+    background: hsl(183, 100%, 25%, 0.3) !important;
     color: hsl(var(--foreground)) !important;
   }
   
