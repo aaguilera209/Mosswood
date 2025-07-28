@@ -59,95 +59,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadProfile = async (userId: string) => {
     console.log('🔍 AuthContext Loading profile for user ID:', userId);
     
-    try {
-      // Get user email for API call
-      const { data: user, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error('❌ Error getting user:', userError);
-        setLoading(false);
-        return;
-      }
-      
-      const email = user?.user?.email;
-      console.log('🔍 User email for API call:', email);
-      
-      if (!email) {
-        console.error('❌ No email found for user');
-        setLoading(false);
-        return;
-      }
-      
-      // Make API call to get profile
-      console.log('🔍 Making API call to /api/profile/' + encodeURIComponent(email));
-      const response = await fetch(`/api/profile/${encodeURIComponent(email)}`);
-      console.log('🔍 API response status:', response.status, response.ok);
-      
-      if (!response.ok) {
-        console.error('❌ API response not ok:', response.status, response.statusText);
-        setLoading(false);
-        return;
-      }
-      
-      const result = await response.json();
-      console.log('🔍 API profile result:', result);
-      
-      if (result && result.profile) {
-        console.log('✅ SUCCESS! Profile loaded from API with display_name:', result.profile.display_name);
-        console.log('✅ Profile role:', result.profile.role);
-        console.log('✅ Setting profile in context...');
-        setProfile(result.profile);
-        console.log('✅ Profile set successfully!');
-      } else {
-        console.error('❌ No profile found in API result:', result);
-      }
-      
-      // Fallback to direct Supabase query
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-      console.log('🔍 Supabase fallback result:', { data, error });
-
-      if (error) {
-        console.error('Profile loading error:', error);
-        // If profile doesn't exist, try to create one
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found, attempting to create...');
-          const { data: user } = await supabase.auth.getUser();
-          if (user?.user?.email) {
-            const { data: newProfile, error: createError } = await supabase
-              .from('profiles')
-              .insert({
-                id: userId,
-                email: user.user.email,
-                role: 'creator' // Set default role
-              })
-              .select()
-              .single();
-            
-            if (createError) {
-              console.error('Failed to create profile:', createError);
-            } else {
-              console.log('Profile created successfully:', newProfile);
-              setProfile(newProfile);
-            }
-          }
-        }
-      } else {
-        console.log('Profile loaded successfully:', data);
-        console.log('Profile display_name:', data?.display_name);
-        console.log('Full profile data:', JSON.stringify(data, null, 2));
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('❌ CRITICAL ERROR loading profile:', error);
-      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    } finally {
+    // Get current user email directly from auth
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const email = currentUser?.email;
+    
+    console.log('🔍 User email for API call:', email);
+    
+    if (!email) {
+      console.error('❌ No email found');
       setLoading(false);
-      console.log('🔍 Profile loading completed, loading set to false');
+      return;
     }
+    
+    // Simple fetch call
+    console.log('🔍 Making API call...');
+    fetch(`/api/profile/${encodeURIComponent(email)}`)
+      .then(response => {
+        console.log('🔍 Response received:', response.status);
+        return response.json();
+      })
+      .then(result => {
+        console.log('🔍 Profile result:', result);
+        if (result?.profile) {
+          console.log('✅ SUCCESS! Setting profile with display_name:', result.profile.display_name);
+          setProfile(result.profile);
+        } else {
+          console.error('❌ No profile in result');
+          setProfile(null);
+        }
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('❌ Profile load error:', error);
+        setProfile(null);
+        setLoading(false);
+      });
   };
 
   const signUp = async (email: string, password: string) => {
