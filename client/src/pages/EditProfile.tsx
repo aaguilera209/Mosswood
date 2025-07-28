@@ -10,15 +10,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ArrowLeft, Upload, User, Globe, Mail, MapPin, Clock, Link, Camera } from 'lucide-react';
+import { DynamicSocialLinks } from '@/components/DynamicSocialLinks';
 import { Link as RouterLink, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface SocialLinks {
-  twitter?: string;
-  instagram?: string;
-  youtube?: string;
-  tiktok?: string;
+interface SocialLink {
+  id: string;
+  url: string;
+  platform?: string;
 }
 
 interface ProfileFormData {
@@ -29,7 +29,7 @@ interface ProfileFormData {
   timezone: string;
   website: string;
   contact_email: string;
-  social_links: SocialLinks;
+  social_links: SocialLink[];
   avatar_url?: string;
 }
 
@@ -61,7 +61,7 @@ export default function EditProfile() {
     timezone: '',
     website: '',
     contact_email: '',
-    social_links: {},
+    social_links: [],
   });
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -126,7 +126,7 @@ export default function EditProfile() {
   // Load profile data into form
   useEffect(() => {
     if (profileData?.profile) {
-      const prof = profileData.profile;
+      const prof = (profileData as any).profile;
       setFormData({
         display_name: prof.display_name || '',
         tagline: prof.tagline || '',
@@ -135,7 +135,12 @@ export default function EditProfile() {
         timezone: prof.timezone || '',
         website: prof.website || '',
         contact_email: prof.contact_email || prof.email || '',
-        social_links: prof.social_links || {},
+        social_links: Array.isArray(prof.social_links) ? prof.social_links : 
+          Object.entries(prof.social_links || {}).map(([platform, url], index) => ({
+            id: `${platform}_${index}`,
+            url: url as string,
+            platform
+          })).filter(link => link.url),
         avatar_url: prof.avatar_url,
       });
       setAvatarPreview(prof.avatar_url || '');
@@ -146,13 +151,10 @@ export default function EditProfile() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSocialLinkChange = (platform: keyof SocialLinks, value: string) => {
+  const handleSocialLinksChange = (links: SocialLink[]) => {
     setFormData(prev => ({
       ...prev,
-      social_links: {
-        ...prev.social_links,
-        [platform]: value || undefined,
-      },
+      social_links: links,
     }));
   };
 
@@ -218,8 +220,8 @@ export default function EditProfile() {
     }
 
     // Clean up social links (remove empty values)
-    const cleanedSocialLinks = Object.fromEntries(
-      Object.entries(updatedFormData.social_links).filter(([_, value]) => value && value.trim())
+    const cleanedSocialLinks = updatedFormData.social_links.filter(link => 
+      link.url && link.url.trim()
     );
     updatedFormData.social_links = cleanedSocialLinks;
 
@@ -423,54 +425,11 @@ export default function EditProfile() {
                 />
               </div>
 
-              {/* Social Links */}
-              <div>
-                <Label className="flex items-center space-x-1 mb-3">
-                  <Link className="w-4 h-4" />
-                  <span>Social Links</span>
-                </Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="twitter" className="text-sm">Twitter/X</Label>
-                    <Input
-                      id="twitter"
-                      value={formData.social_links.twitter || ''}
-                      onChange={(e) => handleSocialLinkChange('twitter', e.target.value)}
-                      placeholder="https://twitter.com/username"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="instagram" className="text-sm">Instagram</Label>
-                    <Input
-                      id="instagram"
-                      value={formData.social_links.instagram || ''}
-                      onChange={(e) => handleSocialLinkChange('instagram', e.target.value)}
-                      placeholder="https://instagram.com/username"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="youtube" className="text-sm">YouTube</Label>
-                    <Input
-                      id="youtube"
-                      value={formData.social_links.youtube || ''}
-                      onChange={(e) => handleSocialLinkChange('youtube', e.target.value)}
-                      placeholder="https://youtube.com/@username"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="tiktok" className="text-sm">TikTok</Label>
-                    <Input
-                      id="tiktok"
-                      value={formData.social_links.tiktok || ''}
-                      onChange={(e) => handleSocialLinkChange('tiktok', e.target.value)}
-                      placeholder="https://tiktok.com/@username"
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Dynamic Social Links */}
+              <DynamicSocialLinks
+                value={formData.social_links}
+                onChange={handleSocialLinksChange}
+              />
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-4 pt-6">

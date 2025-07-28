@@ -1,0 +1,49 @@
+Prompt: Improve Profile Form UX – Input Styling, Keyboard Behavior, and Social Link Handling
+
+🛠️ Goal:
+Enhance the UX of the profile form across three areas:
+1. Fix broken text selection shortcuts
+2. Improve visual styling of focused input fields
+3. Rethink social link input UX to prevent misuse or clutter
+
+---
+
+🧠 1. Keyboard UX Fixes
+Currently, users cannot use standard keyboard shortcuts (e.g. Cmd+Shift+← or →) to highlight text inside input and textarea fields on the profile form. This breaks a common editing behavior expected on desktop.
+
+✅ Expected Fix:
+- Allow standard text editing shortcuts:
+  - Cmd+← and Cmd+→: Move to beginning/end of line
+  - Cmd+Shift+← / →: Select to beginning/end of line
+  - Cmd+A: Select all
+  - Shift+← / →: Character-level selection
+- Should work in both `<input>` and `<textarea>` fields across browsers (Mac + Windows)
+
+---
+
+🎨 2. Green Focus Border – Replace or Remove
+Right now, when focusing any profile field (e.g. Website), a green border appears. This:
+- Looks visually harsh
+- Sometimes overlaps or obstructs icons/text (see attached screenshot)
+
+✅ Desired Change:
+- Remove the current green focus ring
+- Replace with a cleaner, more modern highlight (e.g. subtle box shadow or border-bottom underline)
+- Ensure icons inside fields are not obstructed by styling
+
+---
+
+🔗 3. Social Links Input UX
+Right now, social links are presented as hard-coded fields (Twitter, Instagram, TikTok, etc), which:
+- Forces a fixed format (could be misused by user pasting wrong platform)
+- Doesn’t scale or allow flexibility
+
+💡 Better UX Proposal:
+- Change to a dynamic list of link fields:
+  - User can input multiple links (1 per field)
+  - Each link auto-detects the platform based on the URL (e.g. youtube.com → YouTube, instagram.com → Instagram)
+  - Option to add/remove fields dynamically
+  - Frontend shows a platform-specific icon or label next to each link
+
+Let me know which approach you'd recommend for #3 — or go ahead and prototype the smart auto-detect system if feasible. Prioritize fixing #1 and #2 first.
+
