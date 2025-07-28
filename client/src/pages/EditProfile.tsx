@@ -76,8 +76,13 @@ export default function EditProfile() {
 
   // Profile update mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: ProfileFormData) => 
-      apiRequest('PUT', `/api/profile/${profile?.id}`, data),
+    mutationFn: (data: ProfileFormData) => {
+      const profileId = profileData?.profile?.id || profile?.id;
+      if (!profileId) {
+        throw new Error('Profile ID not found');
+      }
+      return apiRequest('PUT', `/api/profile/${profileId}`, data);
+    },
     onSuccess: () => {
       toast({
         title: "Profile Updated",
@@ -105,11 +110,16 @@ export default function EditProfile() {
             const base64 = reader.result as string;
             const base64Data = base64.split(',')[1];
             
+            const profileId = profileData?.profile?.id || profile?.id;
+            if (!profileId) {
+              throw new Error('Profile ID not found');
+            }
+            
             const response = await apiRequest('POST', '/api/upload-avatar', {
               fileName: `avatar_${Date.now()}.${file.type.split('/')[1]}`,
               fileData: base64Data,
               contentType: file.type,
-              userId: profile?.id,
+              userId: profileId,
             });
             
             resolve(response);
