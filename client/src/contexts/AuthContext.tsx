@@ -58,16 +58,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
-      console.log('Loading profile for user ID:', userId);
+      console.log('🔍 AuthContext Loading profile for user ID:', userId);
       
-      // First try direct Supabase query
+      // Try using the working API endpoint instead of direct Supabase
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        const email = user?.user?.email;
+        console.log('🔍 User email for API call:', email);
+        
+        if (email) {
+          const response = await fetch(`/api/profile/${encodeURIComponent(email)}`);
+          const result = await response.json();
+          console.log('🔍 API profile result:', result);
+          
+          if (result.profile) {
+            console.log('✅ Profile loaded from API with display_name:', result.profile.display_name);
+            setProfile(result.profile);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (apiError) {
+        console.error('❌ API profile load failed:', apiError);
+      }
+      
+      // Fallback to direct Supabase query
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
         
-      console.log('Supabase query result:', { data, error });
+      console.log('🔍 Supabase fallback result:', { data, error });
 
       if (error) {
         console.error('Profile loading error:', error);

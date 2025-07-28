@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'wouter';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, BarChart3 } from 'lucide-react';
 
 export function Header() {
   const { user, profile } = useAuth();
@@ -80,6 +80,14 @@ export function Header() {
                       </p>
                     </div>
                     <DropdownMenuSeparator />
+                    {profile?.role === 'creator' && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard" className="flex items-center w-full">
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link href="/edit-profile" className="flex items-center w-full">
                         <User className="w-4 h-4 mr-2" />
