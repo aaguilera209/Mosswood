@@ -75,7 +75,7 @@ export function Header() {
                     <div className="px-2 py-1.5">
                       <p className="text-sm font-medium">{profile?.display_name || 'User'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {profile?.email || user.email} • {profile?.role || 'viewer'}
+                        {profile?.email || user.email} • {profile?.role === 'creator' ? 'Creator' : 'Viewer'}
                       </p>
                     </div>
                     <DropdownMenuSeparator />

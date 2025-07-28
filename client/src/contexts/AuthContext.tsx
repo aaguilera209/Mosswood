@@ -59,41 +59,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadProfile = async (userId: string) => {
     console.log('🔍 AuthContext Loading profile for user ID:', userId);
     
-    // Get current user email directly from auth
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    const email = currentUser?.email;
-    
-    console.log('🔍 User email for API call:', email);
-    
-    if (!email) {
-      console.error('❌ No email found');
-      setLoading(false);
-      return;
-    }
-    
-    // Simple fetch call
-    console.log('🔍 Making API call...');
-    fetch(`/api/profile/${encodeURIComponent(email)}`)
-      .then(response => {
-        console.log('🔍 Response received:', response.status);
-        return response.json();
-      })
-      .then(result => {
-        console.log('🔍 Profile result:', result);
-        if (result?.profile) {
-          console.log('✅ SUCCESS! Setting profile with display_name:', result.profile.display_name);
-          setProfile(result.profile);
-        } else {
-          console.error('❌ No profile in result');
-          setProfile(null);
-        }
+    try {
+      // Get current user email directly from auth
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const email = currentUser?.email;
+      
+      console.log('🔍 User email for API call:', email);
+      
+      if (!email) {
+        console.error('❌ No email found');
         setLoading(false);
-      })
-      .catch(error => {
-        console.error('❌ Profile load error:', error);
+        return;
+      }
+      
+      // Direct API call with await
+      console.log('🔍 Making API call to:', `/api/profile/${encodeURIComponent(email)}`);
+      const response = await fetch(`/api/profile/${encodeURIComponent(email)}`);
+      console.log('🔍 Response received:', response.status, response.ok);
+      
+      if (!response.ok) {
+        console.error('❌ Response not OK:', response.status);
+        setLoading(false);
+        return;
+      }
+      
+      const result = await response.json();
+      console.log('🔍 Profile result:', result);
+      
+      if (result?.profile) {
+        console.log('✅ SUCCESS! Setting profile with display_name:', result.profile.display_name);
+        console.log('✅ Profile role:', result.profile.role);
+        setProfile(result.profile);
+      } else {
+        console.error('❌ No profile in result');
         setProfile(null);
-        setLoading(false);
-      });
+      }
+    } catch (error) {
+      console.error('❌ Profile load error:', error);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signUp = async (email: string, password: string) => {
