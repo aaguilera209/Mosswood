@@ -300,7 +300,7 @@ function DashboardContent() {
             
             <div className="flex items-center space-x-4">
               <span className="text-sm text-muted-foreground">
-                {profile?.email} ({profile?.role})
+                {displayName} ({profile?.role === 'creator' ? 'Creator' : 'Viewer'})
               </span>
               <Button
                 onClick={() => setLocation('/edit-profile')}

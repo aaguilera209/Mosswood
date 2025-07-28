@@ -110,11 +110,6 @@ export default function ViewerHome() {
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-foreground mb-6">
             Welcome to Mosswood
-            {user && profile && (
-              <span className="block text-3xl text-primary mt-2">
-                Hello, {profile.email}!
-              </span>
-            )}
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Discover amazing content from independent creators. Support artists directly and own your viewing experience.

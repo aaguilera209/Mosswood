@@ -58,51 +58,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadProfile = (userId: string) => {
-    console.log('🔍 AuthContext Loading profile for user ID:', userId);
-    
-    // Get user email immediately 
+    // Get user email and load profile
     supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
       const email = currentUser?.email;
-      console.log('🔍 User email for API call:', email);
       
       if (!email) {
-        console.error('❌ No email found');
         setLoading(false);
         return;
       }
       
-      console.log('🔍 Making API call to:', `/api/profile/${encodeURIComponent(email)}`);
-      
       // Make the fetch call
       fetch(`/api/profile/${encodeURIComponent(email)}`)
         .then(response => {
-          console.log('🔍 Response received:', response.status, response.ok);
           if (!response.ok) {
             throw new Error(`Response not OK: ${response.status}`);
           }
           return response.json();
         })
         .then(result => {
-          console.log('🔍 Profile result:', result);
           if (result?.profile) {
-            console.log('✅ SUCCESS! Setting profile with display_name:', result.profile.display_name);
-            console.log('✅ Profile role:', result.profile.role);
-            console.log('✅ About to call setProfile...');
             setProfile(result.profile);
-            console.log('✅ setProfile called successfully!');
           } else {
-            console.error('❌ No profile in result');
             setProfile(null);
           }
           setLoading(false);
         })
         .catch(error => {
-          console.error('❌ Profile load error:', error);
+          console.error('Profile load error:', error);
           setProfile(null);
           setLoading(false);
         });
     }).catch(error => {
-      console.error('❌ Error getting user:', error);
+      console.error('Error getting user:', error);
       setProfile(null);
       setLoading(false);
     });
