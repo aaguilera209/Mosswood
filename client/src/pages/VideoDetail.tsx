@@ -294,7 +294,9 @@ export default function VideoDetail() {
       const handlePlay = () => {
         setIsPlaying(true);
         // Track video view when user starts playing
-        trackView();
+        if (videoData?.id) {
+          trackView();
+        }
       };
       const handlePause = () => setIsPlaying(false);
       const handleError = () => {
@@ -411,14 +413,14 @@ export default function VideoDetail() {
                   <video
                     ref={handleVideoRef}
                     className="w-full h-full object-contain"
-                    poster={videoData.thumbnail_url || undefined}
+                    poster={videoData.thumbnail || undefined}
                     controls={false} // We'll use custom controls
                     preload="metadata"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <source src={videoData.video_url} type="video/mp4" />
-                    <source src={videoData.video_url} type="video/webm" />
-                    <source src={videoData.video_url} type="video/quicktime" />
+                    <source src={videoData.videoUrl} type="video/mp4" />
+                    <source src={videoData.videoUrl} type="video/webm" />
+                    <source src={videoData.videoUrl} type="video/quicktime" />
                     Your browser does not support the video tag.
                   </video>
                   
@@ -471,9 +473,9 @@ export default function VideoDetail() {
               ) : (
                 <>
                   {/* Thumbnail/Poster for locked videos */}
-                  {videoData.thumbnail_url ? (
+                  {videoData.thumbnail ? (
                     <img
-                      src={videoData.thumbnail_url}
+                      src={videoData.thumbnail}
                       alt={videoData.title}
                       className="w-full h-full object-cover"
                     />
