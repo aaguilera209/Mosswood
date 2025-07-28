@@ -57,32 +57,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadProfile = async (userId: string) => {
+    console.log('🔍 AuthContext Loading profile for user ID:', userId);
+    
     try {
-      console.log('🔍 AuthContext Loading profile for user ID:', userId);
+      // Get user email for API call
+      const { data: user, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('❌ Error getting user:', userError);
+        setLoading(false);
+        return;
+      }
       
-      // Force use the working API endpoint
-      const { data: user } = await supabase.auth.getUser();
       const email = user?.user?.email;
       console.log('🔍 User email for API call:', email);
       
-      if (email) {
-        console.log('🔍 Making API call to /api/profile/' + encodeURIComponent(email));
-        const response = await fetch(`/api/profile/${encodeURIComponent(email)}`);
-        console.log('🔍 API response status:', response.status);
-        const result = await response.json();
-        console.log('🔍 API profile result:', result);
-        
-        if (result.profile) {
-          console.log('✅ SUCCESS! Profile loaded from API with display_name:', result.profile.display_name);
-          console.log('✅ Setting profile in context:', result.profile);
-          setProfile(result.profile);
-          setLoading(false);
-          return;
-        } else {
-          console.error('❌ No profile found in API result');
-        }
-      } else {
+      if (!email) {
         console.error('❌ No email found for user');
+        setLoading(false);
+        return;
+      }
+      
+      // Make API call to get profile
+      console.log('🔍 Making API call to /api/profile/' + encodeURIComponent(email));
+      const response = await fetch(`/api/profile/${encodeURIComponent(email)}`);
+      console.log('🔍 API response status:', response.status, response.ok);
+      
+      if (!response.ok) {
+        console.error('❌ API response not ok:', response.status, response.statusText);
+        setLoading(false);
+        return;
+      }
+      
+      const result = await response.json();
+      console.log('🔍 API profile result:', result);
+      
+      if (result && result.profile) {
+        console.log('✅ SUCCESS! Profile loaded from API with display_name:', result.profile.display_name);
+        console.log('✅ Profile role:', result.profile.role);
+        console.log('✅ Setting profile in context...');
+        setProfile(result.profile);
+        console.log('✅ Profile set successfully!');
+      } else {
+        console.error('❌ No profile found in API result:', result);
       }
       
       // Fallback to direct Supabase query
@@ -126,9 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(data);
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('❌ CRITICAL ERROR loading profile:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     } finally {
       setLoading(false);
+      console.log('🔍 Profile loading completed, loading set to false');
     }
   };
 
