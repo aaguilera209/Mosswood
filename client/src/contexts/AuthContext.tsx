@@ -158,8 +158,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    // Get the correct port for development
+    // Get the current URL - this works for both localhost and Replit environments
     const baseUrl = window.location.origin;
+    console.log('Using redirect URL:', `${baseUrl}/reset-password`);
+    
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${baseUrl}/reset-password`,
     });

@@ -71,6 +71,7 @@ export default function ForgotPassword() {
                 <p>• Click the link in your email to reset your password</p>
                 <p>• The link will expire in 24 hours for security</p>
                 <p>• Check your spam folder if you don't see the email</p>
+                <p className="text-yellow-600 dark:text-yellow-400">• If the link doesn't work, <Link href="/manual-reset"><span className="underline cursor-pointer">try the manual reset method</span></Link></p>
               </div>
               
               <Button 
