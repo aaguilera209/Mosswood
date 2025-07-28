@@ -917,7 +917,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const profileData = req.body;
       
-      // Debug logging removed - functionality working
+      console.log('🔍 Server Profile Update:', {
+        profileId: id,
+        requestBody: profileData,
+        timestamp: new Date().toISOString()
+      });
       
       if (!supabase) {
         return res.status(500).json({ error: "Database connection not available" });

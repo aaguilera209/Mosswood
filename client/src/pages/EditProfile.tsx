@@ -76,13 +76,28 @@ export default function EditProfile() {
 
   // Profile update mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: ProfileFormData) => {
+    mutationFn: async (data: ProfileFormData) => {
       const profileId = profileData?.profile?.id || profile?.id;
-      // Debug logging removed - functionality working
+      console.log('🔍 Profile Update Debug:', {
+        profileId,
+        profileData: profileData?.profile,
+        authProfile: profile,
+        formData: data
+      });
+      
       if (!profileId) {
+        console.error('❌ No profile ID found');
         throw new Error('Profile ID not found');
       }
-      return apiRequest('PUT', `/api/profile/${profileId}`, data);
+      
+      try {
+        const result = await apiRequest('PUT', `/api/profile/${profileId}`, data);
+        console.log('✅ Profile update successful:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Profile update failed:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
