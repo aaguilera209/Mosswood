@@ -60,26 +60,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔍 AuthContext Loading profile for user ID:', userId);
       
-      // Try using the working API endpoint instead of direct Supabase
-      try {
-        const { data: user } = await supabase.auth.getUser();
-        const email = user?.user?.email;
-        console.log('🔍 User email for API call:', email);
+      // Force use the working API endpoint
+      const { data: user } = await supabase.auth.getUser();
+      const email = user?.user?.email;
+      console.log('🔍 User email for API call:', email);
+      
+      if (email) {
+        console.log('🔍 Making API call to /api/profile/' + encodeURIComponent(email));
+        const response = await fetch(`/api/profile/${encodeURIComponent(email)}`);
+        console.log('🔍 API response status:', response.status);
+        const result = await response.json();
+        console.log('🔍 API profile result:', result);
         
-        if (email) {
-          const response = await fetch(`/api/profile/${encodeURIComponent(email)}`);
-          const result = await response.json();
-          console.log('🔍 API profile result:', result);
-          
-          if (result.profile) {
-            console.log('✅ Profile loaded from API with display_name:', result.profile.display_name);
-            setProfile(result.profile);
-            setLoading(false);
-            return;
-          }
+        if (result.profile) {
+          console.log('✅ SUCCESS! Profile loaded from API with display_name:', result.profile.display_name);
+          console.log('✅ Setting profile in context:', result.profile);
+          setProfile(result.profile);
+          setLoading(false);
+          return;
+        } else {
+          console.error('❌ No profile found in API result');
         }
-      } catch (apiError) {
-        console.error('❌ API profile load failed:', apiError);
+      } else {
+        console.error('❌ No email found for user');
       }
       
       // Fallback to direct Supabase query

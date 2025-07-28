@@ -9,6 +9,10 @@ import { User, Settings, LogOut, ChevronDown, BarChart3 } from 'lucide-react';
 
 export function Header() {
   const { user, profile } = useAuth();
+  
+  console.log('🎯 Header render - profile:', profile);
+  console.log('🎯 Header render - display_name:', profile?.display_name);
+  console.log('🎯 Header render - role:', profile?.role);
 
   const handleLogout = async () => {
     try {
