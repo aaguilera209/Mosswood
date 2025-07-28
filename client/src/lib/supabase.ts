@@ -14,4 +14,18 @@ export type Profile = {
   email: string;
   role: 'creator' | 'viewer';
   created_at: string;
+  display_name?: string;
+  tagline?: string;
+  bio?: string;
+  location?: string;
+  timezone?: string;
+  avatar_url?: string;
+  website?: string;
+  social_links?: any[];
+  contact_email?: string;
+  updated_at?: string;
+  stripe_account_id?: string;
+  stripe_onboarding_complete?: boolean;
+  stripe_charges_enabled?: boolean;
+  stripe_payouts_enabled?: boolean;
 };

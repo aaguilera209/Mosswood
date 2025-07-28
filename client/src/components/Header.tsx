@@ -53,21 +53,20 @@ export function Header() {
                       variant="ghost" 
                       className="flex items-center space-x-2 hover:bg-muted/50 transition-colors duration-200 text-foreground hover:text-foreground !outline-none !ring-0 !border-0 focus:!outline-none focus:!ring-0 focus:!border-0 active:!outline-none active:!ring-0 [&::before]:!hidden [&::after]:!hidden"
                       style={{ 
-                        outline: 'none !important', 
-                        boxShadow: 'none !important',
-                        resize: 'none !important',
+                        outline: 'none', 
+                        boxShadow: 'none',
                         userSelect: 'none'
                       }}
                     >
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src={(profile as any)?.avatar_url} alt={(profile as any)?.display_name || 'User'} />
+                        <AvatarImage src={profile?.avatar_url} alt={profile?.display_name || 'User'} />
                         <AvatarFallback>
                           <User className="w-4 h-4" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex items-center space-x-1">
                         <span className="text-sm font-medium text-foreground">
-                          {(profile as any)?.display_name || profile?.email || user.email}
+                          {profile?.display_name || profile?.email || user.email}
                         </span>
                         <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       </div>
@@ -75,7 +74,7 @@ export function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium">{(profile as any)?.display_name || 'User'}</p>
+                      <p className="text-sm font-medium">{profile?.display_name || 'User'}</p>
                       <p className="text-xs text-muted-foreground">
                         {profile?.email || user.email} • {profile?.role || 'viewer'}
                       </p>

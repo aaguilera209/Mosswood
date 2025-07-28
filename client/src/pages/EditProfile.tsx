@@ -71,10 +71,8 @@ export default function EditProfile() {
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['/api/profile', user?.email],
     queryFn: async () => {
-      console.log('🔍 Fetching profile for:', user?.email);
       const response = await apiRequest('GET', `/api/profile/${encodeURIComponent(user?.email || '')}`);
       const result = await response.json();
-      console.log('🔍 Profile fetch result:', result);
       return result;
     },
     enabled: !!user?.email,
@@ -84,31 +82,18 @@ export default function EditProfile() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       const profileId = profileData?.profile?.id || profile?.id;
-      console.log('🔍 Profile Update Debug:', {
-        profileId,
-        profileData: profileData?.profile,
-        authProfile: profile,
-        formData: data
-      });
       
       if (!profileId) {
-        console.error('❌ No profile ID found');
         throw new Error('Profile ID not found');
       }
       
-      try {
-        const response = await apiRequest('PUT', `/api/profile/${profileId}`, data);
-        const result = await response.json();
-        console.log('✅ Profile update successful:', result);
-        return result;
-      } catch (error) {
-        console.error('❌ Profile update failed:', error);
-        throw error;
-      }
+      const response = await apiRequest('PUT', `/api/profile/${profileId}`, data);
+      const result = await response.json();
+      return result;
     },
     onSuccess: () => {
       toast({
-        title: "Profile Updated",
+        title: "Profile Updated", 
         description: "Your profile has been successfully updated.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
@@ -159,9 +144,7 @@ export default function EditProfile() {
 
   // Load profile data into form
   useEffect(() => {
-    console.log('🔍 useEffect profileData:', profileData);
     if (profileData?.profile) {
-      console.log('🔍 Loading profile into form:', profileData.profile);
       const prof = (profileData as any).profile;
       setFormData({
         display_name: prof.display_name || '',
@@ -230,20 +213,10 @@ export default function EditProfile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Try multiple ways to get profile ID
+    // Get profile ID from API data or auth context
     const profileId = profileData?.profile?.id || profileData?.id || profile?.id;
-    console.log('🔍 Form Submit Debug:', {
-      profileId,
-      profileData: profileData,
-      profileDataProfile: profileData?.profile, 
-      profileDataId: profileData?.id,
-      authProfile: profile,
-      userEmail: user?.email,
-      formData
-    });
     
     if (!profileId) {
-      console.error('❌ No profile ID found in handleSubmit');
       toast({
         title: "Error",
         description: "User profile not found. Please try logging in again.",
