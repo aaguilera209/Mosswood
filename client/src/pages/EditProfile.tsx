@@ -97,7 +97,8 @@ export default function EditProfile() {
         description: "Your profile has been successfully updated.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
-      setLocation('/dashboard');
+      // Force refresh the page to update AuthContext
+      window.location.href = '/dashboard';
     },
     onError: (error: any) => {
       toast({

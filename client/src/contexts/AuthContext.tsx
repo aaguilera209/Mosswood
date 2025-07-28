@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         console.log('Profile loaded successfully:', data);
+        console.log('Profile display_name:', data.display_name);
         setProfile(data);
       }
     } catch (error) {
