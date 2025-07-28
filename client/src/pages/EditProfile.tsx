@@ -70,7 +70,12 @@ export default function EditProfile() {
   // Fetch current profile data
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ['/api/profile', user?.email],
-    queryFn: () => apiRequest('GET', `/api/profile/${encodeURIComponent(user?.email || '')}`),
+    queryFn: async () => {
+      console.log('🔍 Fetching profile for:', user?.email);
+      const result = await apiRequest('GET', `/api/profile/${encodeURIComponent(user?.email || '')}`);
+      console.log('🔍 Profile fetch result:', result);
+      return result;
+    },
     enabled: !!user?.email,
   });
 
@@ -223,8 +228,10 @@ export default function EditProfile() {
     const profileId = profileData?.profile?.id || profile?.id;
     console.log('🔍 Form Submit Debug:', {
       profileId,
-      profileData: profileData?.profile,
+      profileData: profileData,
+      profileDataProfile: profileData?.profile,
       authProfile: profile,
+      userEmail: user?.email,
       formData
     });
     
