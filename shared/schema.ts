@@ -55,6 +55,9 @@ export const profiles = pgTable("profiles", {
   contact_email: text("contact_email"),
   stripe_account_id: text("stripe_account_id"),
   stripe_connect_enabled: boolean("stripe_connect_enabled").default(false),
+  stripe_onboarding_complete: boolean("stripe_onboarding_complete").default(false),
+  stripe_charges_enabled: boolean("stripe_charges_enabled").default(false),
+  stripe_payouts_enabled: boolean("stripe_payouts_enabled").default(false),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
@@ -96,6 +99,9 @@ export const updateProfileSchema = createInsertSchema(profiles).omit({
   role: true,
   stripe_account_id: true,
   stripe_connect_enabled: true,
+  stripe_onboarding_complete: true,
+  stripe_charges_enabled: true,
+  stripe_payouts_enabled: true,
   created_at: true,
   updated_at: true,
 }).partial();

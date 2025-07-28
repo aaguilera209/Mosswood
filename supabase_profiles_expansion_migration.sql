@@ -1,43 +1,49 @@
--- Add profile customization fields to existing profiles table
--- This updates the profiles table with MVP fields for creators and viewers
+-- Migration to add missing profile fields to the profiles table
+-- This adds all the profile customization fields that are missing
 
--- Add new columns to profiles table
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tagline TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS location TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS timezone TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_links JSONB;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS contact_email TEXT;
+-- Add missing columns to profiles table
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tagline text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS location text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS timezone text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_links jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS contact_email text;
 
--- Update existing records to ensure they have default values where needed
-UPDATE profiles SET 
-  display_name = COALESCE(display_name, ''),
-  social_links = COALESCE(social_links, '{}'::jsonb),
-  updated_at = NOW()
-WHERE display_name IS NULL OR social_links IS NULL;
+-- Update the updated_at timestamp when any profile is modified
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
 
--- Add indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_profiles_display_name ON profiles(display_name);
-CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+-- Create trigger for profiles table if it doesn't exist
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
+CREATE TRIGGER update_profiles_updated_at
+    BEFORE UPDATE ON profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
--- Ensure RLS policies allow profile updates for authenticated users
--- Policy for users to update their own profiles
-CREATE POLICY "Users can update own profile"
-ON profiles FOR UPDATE
-USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+-- Update RLS policies to allow profile updates
+-- Allow users to update their own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+CREATE POLICY "Users can update own profile" ON profiles
+    FOR UPDATE USING (auth.uid() = id);
 
--- Policy for users to view all public profiles (for creator storefronts)
-CREATE POLICY "Public profile read access"
-ON profiles FOR SELECT
-USING (true);
+-- Allow users to read their own profile
+DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
+CREATE POLICY "Users can read own profile" ON profiles
+    FOR SELECT USING (auth.uid() = id);
 
--- Enable RLS if not already enabled
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- Allow public read access to creator profiles (for storefronts)
+DROP POLICY IF EXISTS "Public can read creator profiles" ON profiles;
+CREATE POLICY "Public can read creator profiles" ON profiles
+    FOR SELECT USING (role = 'creator');
 
--- Grant necessary permissions
-GRANT SELECT, UPDATE ON profiles TO authenticated;
-GRANT SELECT ON profiles TO anon;
+-- Verify the migration worked
+SELECT 'Migration complete. Checking profiles table structure...' as status;
+\d profiles;
