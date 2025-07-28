@@ -11,6 +11,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS website text;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_links jsonb;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS contact_email text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP;
 
 -- Update the updated_at timestamp when any profile is modified
 CREATE OR REPLACE FUNCTION update_updated_at_column()

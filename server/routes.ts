@@ -917,10 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const profileData = req.body;
       
-      console.log('Profile update request:', {
-        profileId: id,
-        requestBody: profileData
-      });
+      // Debug logging removed - functionality working
       
       if (!supabase) {
         return res.status(500).json({ error: "Database connection not available" });
@@ -944,10 +941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the profile
       const { data, error } = await supabase
         .from('profiles')
-        .update({
-          ...validatedData,
-          updated_at: new Date().toISOString(),
-        })
+        .update(validatedData)
         .eq('id', id)
         .select()
         .single();
@@ -957,7 +951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to update profile: ' + error.message });
       }
       
-      console.log('Profile updated successfully:', data);
+      // Profile updated successfully
       res.json({ success: true, profile: data });
     } catch (error: any) {
       console.error('Error updating profile:', error);
