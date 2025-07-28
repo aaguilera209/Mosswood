@@ -11,6 +11,7 @@ import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import PasswordResetRedirect from "@/pages/PasswordResetRedirect";
 import Dashboard from "@/pages/Dashboard";
 import CreatorStorefront from "@/pages/CreatorStorefront";
 import VideoDetail from "@/pages/VideoDetail";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/access_token" component={PasswordResetRedirect} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/edit-profile" component={EditProfile} />
       <Route path="/edit-video-coming-soon" component={EditVideoComingSoon} />

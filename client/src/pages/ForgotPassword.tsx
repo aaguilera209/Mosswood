@@ -21,6 +21,8 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
+      console.log('Sending password reset to:', email);
+      console.log('Current origin:', window.location.origin);
       await resetPassword(email);
       setEmailSent(true);
       toast({
@@ -28,6 +30,7 @@ export default function ForgotPassword() {
         description: "Check your email for a password reset link.",
       });
     } catch (error: any) {
+      console.error('Password reset error:', error);
       toast({
         title: "Error sending reset email",
         description: error.message || "Please check if your email is registered with us.",

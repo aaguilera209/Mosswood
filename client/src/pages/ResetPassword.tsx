@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +27,15 @@ export default function ResetPassword() {
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
     const errorDescription = urlParams.get('error_description');
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    
+    console.log('Reset password URL params:', {
+      error,
+      errorDescription,
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken
+    });
     
     if (error) {
       toast({
@@ -34,6 +44,25 @@ export default function ResetPassword() {
         variant: "destructive",
       });
       setLocation('/forgot-password');
+      return;
+    }
+
+    // If we have tokens, set the session
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      }).then(({ error: sessionError }) => {
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          toast({
+            title: "Session error",
+            description: "Failed to establish password reset session.",
+            variant: "destructive",
+          });
+          setLocation('/forgot-password');
+        }
+      });
     }
   }, []);
 
