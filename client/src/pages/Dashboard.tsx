@@ -830,16 +830,27 @@ function DashboardContent() {
         <StripeConnectSetup />
 
         {/* Delete Confirmation Dialog */}
-        <ConfirmDialog 
-          isOpen={!!deleteVideoId}
-          onClose={() => {
-            setDeleteVideoId(null);
-            setDeleteVideoTitle('');
-          }}
-          onConfirm={handleDeleteVideoConfirm}
-          title="Delete Video"
-          description={`Are you sure you want to delete "${deleteVideoTitle}"? This action cannot be undone.`}
-        />
+        <AlertDialog open={!!deleteVideoId} onOpenChange={(open) => !open && setDeleteVideoId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Video</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{deleteVideoTitle}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteVideoId(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteVideoConfirm}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete Video
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
