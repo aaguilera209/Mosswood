@@ -93,7 +93,16 @@
     display: none !important;
   }
 
-  /* Restore text selection for input fields */
+  /* Enable text selection for input fields */
+  input,
+  textarea {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+  }
+
+  /* Restore text selection styling for input fields */
   input::selection,
   textarea::selection {
     background: hsl(var(--primary) / 0.2) !important;
