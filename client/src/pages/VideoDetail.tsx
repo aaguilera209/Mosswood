@@ -133,7 +133,7 @@ export default function VideoDetail() {
       const updateProgress = () => {
         if (videoElement && !videoElement.paused) {
           setCurrentTime(videoElement.currentTime);
-          console.log('Smooth animation:', videoElement.currentTime);
+          // console.log('Smooth animation:', videoElement.currentTime);
           animationFrameRef.current = requestAnimationFrame(updateProgress);
         }
       };
@@ -152,6 +152,10 @@ export default function VideoDetail() {
       startProgressAnimation();
     } else {
       stopProgressAnimation();
+      // Only update time from video element when NOT using smooth animation
+      if (videoElement && !useSmoothAnimation) {
+        setCurrentTime(videoElement.currentTime);
+      }
     }
 
     return () => {
@@ -337,13 +341,9 @@ export default function VideoDetail() {
         }
       };
       const handleTimeUpdate = () => {
-        // Only update time if we're not using smooth animation
-        if (!useSmoothAnimation) {
-          setCurrentTime(video.currentTime);
-          console.log('TimeUpdate (chunky):', video.currentTime);
-        }
         // Always track video time updates for analytics
         trackTimeUpdate(video.currentTime);
+        // NEVER update currentTime here - let smooth animation handle it when playing
       };
       const handleProgress = () => {
         if (video.buffered.length > 0) {
@@ -357,13 +357,13 @@ export default function VideoDetail() {
           trackView(0);
         }
         // Enable smooth animation
-        console.log('Enabling smooth animation');
+        // console.log('Enabling smooth animation');
         setUseSmoothAnimation(true);
       };
       const handlePause = () => {
         setIsPlaying(false);
         // Disable smooth animation
-        console.log('Disabling smooth animation');
+        // console.log('Disabling smooth animation');
         setUseSmoothAnimation(false);
       };
       const handleError = () => {
