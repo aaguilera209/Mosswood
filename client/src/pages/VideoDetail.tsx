@@ -47,6 +47,7 @@ export default function VideoDetail() {
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const isDraggingRef = useRef(false);
   const animationFrameRef = useRef<number | null>(null);
+  const [useSmoothAnimation, setUseSmoothAnimation] = useState(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -121,6 +122,8 @@ export default function VideoDetail() {
       }
     };
   }, []);
+
+
 
   // Show video access controls based on user status
   const canWatchVideo = () => {
@@ -279,6 +282,15 @@ export default function VideoDetail() {
     }
   };
 
+  // Update smooth animation dependency
+  useEffect(() => {
+    if (useSmoothAnimation && isPlaying && videoElement) {
+      startProgressAnimation();
+    } else {
+      stopProgressAnimation();
+    }
+  }, [useSmoothAnimation, isPlaying, videoElement]);
+
 
 
   const handleVideoClick = () => {
@@ -317,8 +329,11 @@ export default function VideoDetail() {
         }
       };
       const handleTimeUpdate = () => {
-        setCurrentTime(video.currentTime);
-        // Track video time updates for analytics
+        // Only update time if we're not using smooth animation
+        if (!useSmoothAnimation) {
+          setCurrentTime(video.currentTime);
+        }
+        // Always track video time updates for analytics
         trackTimeUpdate(video.currentTime);
       };
       const handleProgress = () => {
@@ -332,12 +347,14 @@ export default function VideoDetail() {
         if (videoData?.id) {
           trackView(0);
         }
-        // Start smooth progress animation
+        // Enable smooth animation and start it
+        setUseSmoothAnimation(true);
         startProgressAnimation();
       };
       const handlePause = () => {
         setIsPlaying(false);
-        // Stop smooth progress animation
+        // Disable smooth animation and stop it
+        setUseSmoothAnimation(false);
         stopProgressAnimation();
       };
       const handleError = () => {
