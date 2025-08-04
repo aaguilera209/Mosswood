@@ -148,14 +148,10 @@ export default function VideoDetail() {
       }
     };
 
-    if (useSmoothAnimation && isPlaying && videoElement) {
+    if (isPlaying && videoElement) {
       startProgressAnimation();
     } else {
       stopProgressAnimation();
-      // Only update time from video element when NOT using smooth animation
-      if (videoElement && !useSmoothAnimation) {
-        setCurrentTime(videoElement.currentTime);
-      }
     }
 
     return () => {
@@ -343,7 +339,10 @@ export default function VideoDetail() {
       const handleTimeUpdate = () => {
         // Always track video time updates for analytics
         trackTimeUpdate(video.currentTime);
-        // NEVER update currentTime here - let smooth animation handle it when playing
+        // Only update time from timeupdate when video is paused (smooth animation handles it when playing)
+        if (video.paused) {
+          setCurrentTime(video.currentTime);
+        }
       };
       const handleProgress = () => {
         if (video.buffered.length > 0) {
@@ -357,14 +356,13 @@ export default function VideoDetail() {
           trackView(0);
         }
         // Enable smooth animation
-        // console.log('Enabling smooth animation');
         setUseSmoothAnimation(true);
       };
       const handlePause = () => {
         setIsPlaying(false);
-        // Disable smooth animation
-        // console.log('Disabling smooth animation');
+        // Disable smooth animation and update current time
         setUseSmoothAnimation(false);
+        setCurrentTime(video.currentTime);
       };
       const handleError = () => {
         setVideoPlaybackError('Failed to load video. Please try again later.');
