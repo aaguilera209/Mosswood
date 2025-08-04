@@ -46,6 +46,7 @@ export default function VideoDetail() {
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const isDraggingRef = useRef(false);
+  const animationFrameRef = useRef<number | null>(null);
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -246,6 +247,36 @@ export default function VideoDetail() {
     setIsPlaying(!isPlaying);
   };
 
+  // Smooth progress animation functions
+  const startProgressAnimation = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    const updateProgress = () => {
+      if (videoElement && !videoElement.paused) {
+        setCurrentTime(videoElement.currentTime);
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
+      }
+    };
+    
+    animationFrameRef.current = requestAnimationFrame(updateProgress);
+  };
+
+  const stopProgressAnimation = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  };
+
+  // Clean up animation frame on unmount
+  useEffect(() => {
+    return () => {
+      stopProgressAnimation();
+    };
+  }, []);
+
   const handleVideoClick = () => {
     // Don't toggle play/pause if volume is being dragged
     if (isDraggingRef.current) {
@@ -297,8 +328,14 @@ export default function VideoDetail() {
         if (videoData?.id) {
           trackView(0);
         }
+        // Start smooth progress animation
+        startProgressAnimation();
       };
-      const handlePause = () => setIsPlaying(false);
+      const handlePause = () => {
+        setIsPlaying(false);
+        // Stop smooth progress animation
+        stopProgressAnimation();
+      };
       const handleError = () => {
         setVideoPlaybackError('Failed to load video. Please try again later.');
         setIsVideoLoading(false);
@@ -558,7 +595,7 @@ export default function VideoDetail() {
                   }}
                 >
                   <div 
-                    className="bg-red-600 h-1 rounded-full relative transition-all"
+                    className="bg-red-600 h-1 rounded-full relative transition-all duration-75 ease-linear"
                     style={{ 
                       width: videoDuration ? `${(currentTime / videoDuration) * 100}%` : '0%' 
                     }}
