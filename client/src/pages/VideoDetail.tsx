@@ -113,6 +113,15 @@ export default function VideoDetail() {
     }
   }, [videoApiData]);
 
+  // Clean up animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
   // Show video access controls based on user status
   const canWatchVideo = () => {
     if (!videoData) return false;
@@ -270,12 +279,7 @@ export default function VideoDetail() {
     }
   };
 
-  // Clean up animation frame on unmount
-  useEffect(() => {
-    return () => {
-      stopProgressAnimation();
-    };
-  }, []);
+
 
   const handleVideoClick = () => {
     // Don't toggle play/pause if volume is being dragged
