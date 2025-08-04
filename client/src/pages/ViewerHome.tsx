@@ -10,69 +10,37 @@ import FeaturedCreatorsCarousel from '@/components/FeaturedCreatorsCarousel.jsx'
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 
-// Mock featured creators data - expanded to demonstrate carousel scrolling
-const featuredCreators = [
-  {
-    username: 'maya-chen',
-    displayName: 'Maya Chen',
-    description: 'Digital art tutorials and creative process insights',
-    videoCount: 12,
-    rating: 4.9,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true
-  },
-  {
-    username: 'alex-rivera',
-    displayName: 'Alex Rivera',
-    description: 'Photography workshops and behind-the-scenes content',
-    videoCount: 8,
-    rating: 4.8,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true
-  },
-  {
-    username: 'sarah-thompson',
-    displayName: 'Sarah Thompson',
-    description: 'Music production and sound design tutorials',
-    videoCount: 15,
-    rating: 4.9,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: false
-  },
-  {
-    username: 'jamie-park',
-    displayName: 'Jamie Park',
-    description: 'Web development and coding tutorials',
-    videoCount: 22,
-    rating: 4.7,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true
-  },
-  {
-    username: 'lily-wang',
-    displayName: 'Lily Wang',
-    description: 'Fashion design and styling masterclasses',
-    videoCount: 18,
-    rating: 4.8,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true
-  },
-  {
-    username: 'marcus-johnson',
-    displayName: 'Marcus Johnson',
-    description: 'Fitness training and wellness coaching',
-    videoCount: 25,
-    rating: 4.9,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: false
-  }
-];
+// Real featured creators from database
 
 export default function ViewerHome() {
   const { user, profile, becomeCreator } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Fetch real creators from database
+  const { data: creators = [], isLoading: creatorsLoading } = useQuery({
+    queryKey: ['/api/creators'],
+    queryFn: async () => {
+      const response = await fetch('/api/creators');
+      if (!response.ok) {
+        throw new Error('Failed to fetch creators');
+      }
+      return response.json();
+    }
+  });
+
+  // Transform creators for the carousel component
+  const featuredCreators = creators.map((creator: any) => ({
+    username: creator.username,
+    displayName: creator.display_name,
+    description: creator.bio || 'Creative professional sharing amazing content',
+    videoCount: creator.video_count || 0,
+    rating: creator.rating || 4.5,
+    thumbnail: creator.avatar_url || '/api/placeholder/300/200',
+    isVerified: creator.is_verified || false
+  }));
 
   const handleBecomeCreator = async () => {
     // For testing without authentication, simulate the flow

@@ -1294,6 +1294,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .eq('display_name', decodedIdentifier)
             .single();
           profile = profileByName;
+          
+          // If still not found, try to match by URL-friendly username
+          if (!profile) {
+            const { data: allProfiles } = await supabase
+              .from('profiles')
+              .select('*');
+            
+            // Find profile where URL-friendly version of display_name matches
+            profile = allProfiles?.find(p => {
+              const urlFriendlyName = (p.display_name || p.email?.split('@')[0] || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+              return urlFriendlyName === decodedIdentifier;
+            }) || null;
+          }
         }
       }
       
