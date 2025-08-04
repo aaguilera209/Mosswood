@@ -7,88 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Play, Search, Star, Users, Filter, Grid, List } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { useQuery } from '@tanstack/react-query';
 
-// Mock creators data
-const mockCreators = [
-  {
-    username: 'maya',
-    displayName: 'Maya Chen',
-    description: 'Digital art tutorials and creative process insights',
-    videoCount: 12,
-    rating: 4.9,
-    followerCount: 2400,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true,
-    category: 'Art & Design',
-    priceRange: '$15-45'
-  },
-  {
-    username: 'alex',
-    displayName: 'Alex Rivera', 
-    description: 'Photography workshops and behind-the-scenes content',
-    videoCount: 8,
-    rating: 4.8,
-    followerCount: 1800,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true,
-    category: 'Photography',
-    priceRange: '$20-35'
-  },
-  {
-    username: 'sarah',
-    displayName: 'Sarah Thompson',
-    description: 'Music production and sound design tutorials',
-    videoCount: 15,
-    rating: 4.9,
-    followerCount: 3200,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: false,
-    category: 'Music',
-    priceRange: '$25-60'
-  },
-  {
-    username: 'marcus',
-    displayName: 'Marcus Johnson',
-    description: 'Business strategy and entrepreneurship insights',
-    videoCount: 20,
-    rating: 4.7,
-    followerCount: 5600,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true,
-    category: 'Business',
-    priceRange: '$30-80'
-  },
-  {
-    username: 'elena',
-    displayName: 'Elena Rodriguez',
-    description: 'Cooking tutorials and culinary techniques',
-    videoCount: 18,
-    rating: 4.8,
-    followerCount: 4100,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: false,
-    category: 'Cooking',
-    priceRange: '$12-25'
-  },
-  {
-    username: 'david',
-    displayName: 'David Kim',
-    description: 'Web development and programming tutorials',
-    videoCount: 25,
-    rating: 4.9,
-    followerCount: 7800,
-    thumbnail: '/api/placeholder/300/200',
-    isVerified: true,
-    category: 'Technology',
-    priceRange: '$20-50'
-  }
-];
+
 
 export default function ExplorePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Fetch real creators from the database
+  const { data: creators, isLoading, error } = useQuery({
+    queryKey: ['/api/creators'],
+  });
 
   const categories = ['all', 'Art & Design', 'Photography', 'Music', 'Business', 'Cooking', 'Technology'];
   const sortOptions = [
@@ -98,23 +30,24 @@ export default function ExplorePage() {
     { value: 'videos', label: 'Most Videos' }
   ];
 
-  const filteredCreators = mockCreators.filter(creator => {
-    const matchesSearch = creator.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         creator.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCreators = Array.isArray(creators) ? creators.filter((creator: any) => {
+    const matchesSearch = creator.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         creator.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         creator.username?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || creator.category === selectedCategory;
     return matchesSearch && matchesCategory;
-  }).sort((a, b) => {
+  }).sort((a: any, b: any) => {
     switch (sortBy) {
       case 'rating':
-        return b.rating - a.rating;
+        return (b.rating || 4.5) - (a.rating || 4.5);
       case 'videos':
-        return b.videoCount - a.videoCount;
+        return (b.video_count || 0) - (a.video_count || 0);
       case 'newest':
-        return a.username.localeCompare(b.username); // Mock sorting
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
       default:
-        return b.followerCount - a.followerCount;
+        return (b.follower_count || 0) - (a.follower_count || 0);
     }
-  });
+  }) : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -192,12 +125,25 @@ export default function ExplorePage() {
         </div>
 
         {/* Creators Grid/List */}
-        {filteredCreators.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <div className="aspect-video bg-muted rounded-t-lg" />
+                <CardContent className="p-6">
+                  <div className="h-4 bg-muted rounded mb-2" />
+                  <div className="h-3 bg-muted rounded mb-4 w-3/4" />
+                  <div className="h-10 bg-muted rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredCreators.length > 0 ? (
           <div className={viewMode === 'grid' 
             ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             : "space-y-6"
           }>
-            {filteredCreators.map((creator) => (
+            {filteredCreators.map((creator: any) => (
               <Card key={creator.username} className={`group hover:shadow-lg transition-shadow ${
                 viewMode === 'list' ? 'flex flex-row overflow-hidden' : ''
               }`}>
@@ -206,13 +152,20 @@ export default function ExplorePage() {
                     ? 'w-48 h-32 flex-shrink-0' 
                     : 'aspect-video rounded-t-lg'
                 }`}>
+                  {creator.avatar_url && (
+                    <img 
+                      src={creator.avatar_url} 
+                      alt={creator.display_name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-2 left-2 text-white">
                     <div className="flex items-center space-x-1 mb-1">
                       <h3 className={`font-semibold ${viewMode === 'list' ? 'text-sm' : 'text-lg'}`}>
-                        {creator.displayName}
+                        {creator.display_name || creator.username}
                       </h3>
-                      {creator.isVerified && (
+                      {creator.is_verified && (
                         <Badge variant="verified" className="text-xs">
                           <Star className="w-2 h-2 mr-1" />
                           Verified
@@ -223,12 +176,12 @@ export default function ExplorePage() {
                   <div className="absolute top-2 right-2">
                     <Badge variant="secondary" className="bg-black/50 text-white text-xs">
                       <Play className="w-2 h-2 mr-1" />
-                      {creator.videoCount}
+                      {creator.video_count || 0}
                     </Badge>
                   </div>
                   <div className="absolute top-2 left-2">
                     <Badge variant="secondary" className="bg-primary text-primary-foreground text-xs">
-                      {creator.category}
+                      {creator.category || 'Creator'}
                     </Badge>
                   </div>
                 </div>
@@ -237,21 +190,21 @@ export default function ExplorePage() {
                   <p className={`text-muted-foreground mb-4 ${
                     viewMode === 'list' ? 'text-sm line-clamp-2' : ''
                   }`}>
-                    {creator.description}
+                    {creator.bio || 'Creative professional sharing amazing content'}
                   </p>
                   
                   <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-1">
                         <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span>{creator.rating}</span>
+                        <span>{creator.rating || 4.5}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Users className="w-3 h-3" />
-                        <span>{creator.followerCount.toLocaleString()}</span>
+                        <span>{(creator.follower_count || 0).toLocaleString()}</span>
                       </div>
                     </div>
-                    <span className="font-semibold">{creator.priceRange}</span>
+                    <span className="font-semibold">{creator.price_range || 'Various prices'}</span>
                   </div>
                   
                   <Link href={`/creator/${creator.username}`}>
