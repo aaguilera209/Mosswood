@@ -196,14 +196,21 @@ export default function ExplorePage() {
                   
                   <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
                     <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span>{creator.rating || 4.5}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Users className="w-3 h-3" />
-                        <span>{(creator.follower_count || 0).toLocaleString()}</span>
-                      </div>
+                      {creator.rating && (
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span>{creator.rating}</span>
+                        </div>
+                      )}
+                      {creator.follower_count && (
+                        <div className="flex items-center space-x-1">
+                          <Users className="w-3 h-3" />
+                          <span>{creator.follower_count.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {!creator.rating && !creator.follower_count && (
+                        <span className="text-muted-foreground">New creator</span>
+                      )}
                     </div>
                     <span className="font-semibold">{creator.price_range || 'Various prices'}</span>
                   </div>

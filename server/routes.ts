@@ -1470,8 +1470,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatar_url: creator.avatar_url,
         email: creator.email,
         video_count: 0,
-        rating: Math.round((4.5 + Math.random() * 0.5) * 10) / 10,
-        follower_count: Math.floor(Math.random() * 1000) + 50,
+        rating: null, // Will be calculated from actual reviews when available
+        follower_count: null, // Will be calculated from actual followers when available
         category: 'Creator',
         price_range: 'Various prices',
         is_verified: false,

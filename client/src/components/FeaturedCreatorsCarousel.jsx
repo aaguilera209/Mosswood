@@ -113,16 +113,23 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                     {creator.description || 'Creative content creator'}
                   </p>
                   
-                  {/* Stats */}
+                  {/* Stats - only show if authentic data exists */}
                   <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span>{creator.rating || '4.8'}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>{creator.followers || '1.2k'} followers</span>
-                    </div>
+                    {creator.rating && (
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span>{creator.rating}</span>
+                      </div>
+                    )}
+                    {creator.followers && (
+                      <div className="flex items-center space-x-1">
+                        <Users className="w-4 h-4" />
+                        <span>{creator.followers} followers</span>
+                      </div>
+                    )}
+                    {!creator.rating && !creator.followers && (
+                      <span className="text-muted-foreground">New creator</span>
+                    )}
                   </div>
                   
                   {/* Visit Storefront button */}

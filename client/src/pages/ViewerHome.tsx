@@ -37,7 +37,7 @@ export default function ViewerHome() {
     displayName: creator.display_name,
     description: creator.bio || 'Creative professional sharing amazing content',
     videoCount: creator.video_count || 0,
-    rating: creator.rating || 4.5,
+    rating: creator.rating, // Don't provide fallback for authentic data
     thumbnail: creator.avatar_url || '/api/placeholder/300/200',
     isVerified: creator.is_verified || false
   }));
