@@ -132,8 +132,9 @@ export default function VideoDetail() {
       
       const updateProgress = () => {
         if (videoElement && !videoElement.paused) {
-          setCurrentTime(videoElement.currentTime);
-          // console.log('Smooth animation:', videoElement.currentTime);
+          const newTime = videoElement.currentTime;
+          setCurrentTime(newTime);
+          console.log('Progress update:', newTime, 'duration:', videoDuration);
           animationFrameRef.current = requestAnimationFrame(updateProgress);
         }
       };
@@ -627,6 +628,7 @@ export default function VideoDetail() {
                     style={{ 
                       width: videoDuration ? `${(currentTime / videoDuration) * 100}%` : '0%' 
                     }}
+                    data-debug={`currentTime: ${currentTime}, videoDuration: ${videoDuration}, width: ${videoDuration ? (currentTime / videoDuration) * 100 : 0}%`}
                   >
                     <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
