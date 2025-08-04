@@ -300,10 +300,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const completed = video?.duration ? (watch_duration / video.duration) >= 0.9 : false;
       const watched_30_seconds = watch_duration >= 30;
 
-      // Insert or update view record
+      // Insert view record (each session is unique)
       const { error } = await supabase
         .from('video_views')
-        .upsert({
+        .insert({
           video_id,
           viewer_id,
           session_id,
@@ -313,8 +313,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           completed,
           watched_30_seconds,
           is_returning_viewer
-        }, {
-          onConflict: 'session_id, video_id'
         });
 
       if (error) {
