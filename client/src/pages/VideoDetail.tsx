@@ -295,7 +295,7 @@ export default function VideoDetail() {
         setIsPlaying(true);
         // Track video view when user starts playing
         if (videoData?.id) {
-          trackView();
+          trackView(0);
         }
       };
       const handlePause = () => setIsPlaying(false);
@@ -418,9 +418,9 @@ export default function VideoDetail() {
                     preload="metadata"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <source src={videoData.videoUrl} type="video/mp4" />
-                    <source src={videoData.videoUrl} type="video/webm" />
-                    <source src={videoData.videoUrl} type="video/quicktime" />
+                    <source src={videoData.video_url} type="video/mp4" />
+                    <source src={videoData.video_url} type="video/webm" />
+                    <source src={videoData.video_url} type="video/quicktime" />
                     Your browser does not support the video tag.
                   </video>
                   
@@ -527,7 +527,7 @@ export default function VideoDetail() {
                     e.stopPropagation();
                     const rect = e.currentTarget.getBoundingClientRect();
                     const clickX = e.clientX - rect.left;
-                    const newTime = (clickX / rect.width) * (videoDuration || videoData?.duration || 0);
+                    const newTime = (clickX / rect.width) * (videoDuration || Number(videoData?.duration) || 0);
                     handleSeek(newTime);
                   }}
                   onMouseDown={(e) => {
@@ -541,7 +541,7 @@ export default function VideoDetail() {
                         moveEvent.preventDefault();
                         const rect = startElement.getBoundingClientRect();
                         const clickX = moveEvent.clientX - rect.left;
-                        const newTime = (clickX / rect.width) * (videoDuration || videoData?.duration || 0);
+                        const newTime = (clickX / rect.width) * (videoDuration || Number(videoData?.duration) || 0);
                         handleSeek(newTime);
                       }
                     };
@@ -560,7 +560,7 @@ export default function VideoDetail() {
                   <div 
                     className="bg-red-600 h-1 rounded-full relative transition-all"
                     style={{ 
-                      width: videoData?.duration ? `${(currentTime / videoData.duration) * 100}%` : '0%' 
+                      width: videoData?.duration ? `${(currentTime / Number(videoData.duration)) * 100}%` : '0%' 
                     }}
                   >
                     <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -679,7 +679,7 @@ export default function VideoDetail() {
                     
                     {/* Time Display - YouTube Style */}
                     <span className="text-white text-sm font-medium">
-                      {formatDuration(currentTime)} / {formatDuration(videoDuration || videoData?.duration)}
+                      {formatDuration(currentTime)} / {formatDuration(videoDuration || Number(videoData?.duration))}
                     </span>
                   </div>
                   
@@ -806,7 +806,7 @@ export default function VideoDetail() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-4 text-muted-foreground dark:text-gray-300">
                   <span className="text-amber-400 font-semibold">
-                    Duration: {formatDuration(videoDuration || videoData?.duration)}
+                    Duration: {formatDuration(videoDuration || Number(videoData?.duration))}
                   </span>
                   <span>by {creatorUsername || 'Creator'}</span>
                 </div>
