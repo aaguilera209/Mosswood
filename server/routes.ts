@@ -1262,18 +1262,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Database connection not available" });
       }
       
-      // Try to find profile by email first, then by ID
-      let query = supabase.from('profiles').select('*');
+      // Decode URL encoding first
+      const decodedIdentifier = decodeURIComponent(identifier);
       
-      if (identifier.includes('@')) {
-        query = query.eq('email', identifier);
+      // Try to find profile by email first, then by ID, then by display_name
+      let profile = null;
+      
+      if (decodedIdentifier.includes('@')) {
+        // Email lookup
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', decodedIdentifier)
+          .single();
+        profile = data;
       } else {
-        query = query.eq('id', identifier);
+        // Try ID first
+        const { data: profileById } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', decodedIdentifier)
+          .single();
+          
+        if (profileById) {
+          profile = profileById;
+        } else {
+          // Try display_name
+          const { data: profileByName } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('display_name', decodedIdentifier)
+            .single();
+          profile = profileByName;
+        }
       }
       
-      const { data: profile, error } = await query.single();
-      
-      if (error || !profile) {
+      if (!profile) {
         return res.status(404).json({ error: 'Profile not found' });
       }
       
@@ -1405,47 +1429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all creators for explore page
-  app.get("/api/explore-creators", async (req, res) => {
-    try {
-      if (!supabase) {
-        return res.status(500).json({ error: "Database connection not available" });
-      }
-
-      const { data: creators, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'creator');
-
-      if (error) {
-        console.error('Error fetching creators:', error);
-        return res.status(500).json({ error: 'Failed to fetch creators' });
-      }
-
-      // Transform for frontend
-      const formattedCreators = (creators || []).map(creator => ({
-        id: creator.id,
-        username: creator.display_name || creator.email?.split('@')[0] || 'creator',
-        display_name: creator.display_name || creator.email?.split('@')[0] || 'Creator',
-        bio: creator.bio || 'Content creator on Mosswood',
-        avatar_url: creator.avatar_url,
-        email: creator.email,
-        video_count: 0, // Will be counted separately
-        rating: 4.5 + Math.random() * 0.5,
-        follower_count: Math.floor(Math.random() * 1000) + 50,
-        category: 'Creator',
-        price_range: 'Various prices',
-        is_verified: false,
-        social_links: creator.social_links || {},
-        created_at: creator.created_at
-      }));
-
-      res.json(formattedCreators);
-    } catch (error: any) {
-      console.error('Error in explore creators API:', error);
-      res.status(500).json({ error: 'Internal server error: ' + error.message });
-    }
-  });
+  // Remove duplicate explore-creators endpoint
 
   // Get all creators for explore page - fixed version
   app.get("/api/creators", async (req, res) => {
@@ -1467,13 +1451,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Transform for frontend using exact same pattern as profile endpoint
       const formattedCreators = (creators || []).map(creator => ({
         id: creator.id,
-        username: creator.display_name || creator.email?.split('@')[0] || 'creator',
+        username: (creator.display_name || creator.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         display_name: creator.display_name || creator.email?.split('@')[0] || 'Creator',
         bio: creator.bio || 'Content creator on Mosswood',
         avatar_url: creator.avatar_url,
         email: creator.email,
         video_count: 0,
-        rating: 4.5 + Math.random() * 0.5,
+        rating: Math.round((4.5 + Math.random() * 0.5) * 10) / 10,
         follower_count: Math.floor(Math.random() * 1000) + 50,
         category: 'Creator',
         price_range: 'Various prices',
