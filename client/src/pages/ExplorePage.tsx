@@ -33,6 +33,7 @@ export default function ExplorePage() {
   const filteredCreators = Array.isArray(creators) ? creators.filter((creator: any) => {
     const matchesSearch = creator.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          creator.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         creator.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          creator.username?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || creator.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -144,7 +145,7 @@ export default function ExplorePage() {
             : "space-y-6"
           }>
             {filteredCreators.map((creator: any) => (
-              <Card key={creator.username} className={`group hover:shadow-lg transition-shadow ${
+              <Card key={creator.id} className={`group hover:shadow-lg transition-shadow ${
                 viewMode === 'list' ? 'flex flex-row overflow-hidden' : ''
               }`}>
                 <div className={`bg-muted relative overflow-hidden ${
