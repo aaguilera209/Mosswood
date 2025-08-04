@@ -114,7 +114,7 @@ export default function VideoDetail() {
     }
   }, [videoApiData]);
 
-  // Clean up animation frame on unmount
+  // Clean up animation frame on unmount and handle smooth animation
   useEffect(() => {
     return () => {
       if (animationFrameRef.current) {
@@ -122,6 +122,41 @@ export default function VideoDetail() {
       }
     };
   }, []);
+
+  // Handle smooth animation updates
+  useEffect(() => {
+    const startProgressAnimation = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      
+      const updateProgress = () => {
+        if (videoElement && !videoElement.paused) {
+          setCurrentTime(videoElement.currentTime);
+          animationFrameRef.current = requestAnimationFrame(updateProgress);
+        }
+      };
+      
+      animationFrameRef.current = requestAnimationFrame(updateProgress);
+    };
+
+    const stopProgressAnimation = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+
+    if (useSmoothAnimation && isPlaying && videoElement) {
+      startProgressAnimation();
+    } else {
+      stopProgressAnimation();
+    }
+
+    return () => {
+      stopProgressAnimation();
+    };
+  }, [useSmoothAnimation, isPlaying, videoElement]);
 
 
 
@@ -259,37 +294,9 @@ export default function VideoDetail() {
     setIsPlaying(!isPlaying);
   };
 
-  // Smooth progress animation functions
-  const startProgressAnimation = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    
-    const updateProgress = () => {
-      if (videoElement && !videoElement.paused) {
-        setCurrentTime(videoElement.currentTime);
-        animationFrameRef.current = requestAnimationFrame(updateProgress);
-      }
-    };
-    
-    animationFrameRef.current = requestAnimationFrame(updateProgress);
-  };
 
-  const stopProgressAnimation = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-  };
 
-  // Update smooth animation dependency
-  useEffect(() => {
-    if (useSmoothAnimation && isPlaying && videoElement) {
-      startProgressAnimation();
-    } else {
-      stopProgressAnimation();
-    }
-  }, [useSmoothAnimation, isPlaying, videoElement]);
+
 
 
 
@@ -347,15 +354,13 @@ export default function VideoDetail() {
         if (videoData?.id) {
           trackView(0);
         }
-        // Enable smooth animation and start it
+        // Enable smooth animation
         setUseSmoothAnimation(true);
-        startProgressAnimation();
       };
       const handlePause = () => {
         setIsPlaying(false);
-        // Disable smooth animation and stop it
+        // Disable smooth animation
         setUseSmoothAnimation(false);
-        stopProgressAnimation();
       };
       const handleError = () => {
         setVideoPlaybackError('Failed to load video. Please try again later.');
