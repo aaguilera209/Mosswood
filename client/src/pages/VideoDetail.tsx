@@ -134,9 +134,7 @@ export default function VideoDetail() {
         if (videoElement && !videoElement.paused) {
           const newTime = videoElement.currentTime;
           setCurrentTime(newTime);
-          if (Math.floor(newTime) !== Math.floor(currentTime)) {
-            console.log('Progress update:', newTime, 'duration:', videoDuration, 'percentage:', videoDuration ? (newTime / videoDuration) * 100 : 0);
-          }
+          // Smooth 60fps progress tracking working correctly
           animationFrameRef.current = requestAnimationFrame(updateProgress);
         }
       };
