@@ -224,6 +224,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to check video views data
+  app.get("/api/debug-views/:creatorId", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+      
+      const creatorId = req.params.creatorId;
+      
+      // Get creator's videos
+      const { data: videos } = await supabase
+        .from('videos')
+        .select('id, title')
+        .eq('creator_id', creatorId);
+      
+      const videoIds = videos?.map(v => v.id) || [];
+      
+      // Get all views for these videos
+      const { data: allViews, error: viewsError } = await supabase
+        .from('video_views')
+        .select('*')
+        .in('video_id', videoIds);
+      
+      // Get recent views (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: recentViews, error: recentError } = await supabase
+        .from('video_views')
+        .select('*')
+        .in('video_id', videoIds)
+        .gte('created_at', thirtyDaysAgo.toISOString());
+      
+      return res.json({
+        creatorId,
+        videoIds,
+        totalVideos: videos?.length || 0,
+        allViewsCount: allViews?.length || 0,
+        recentViewsCount: recentViews?.length || 0,
+        allViews: allViews || [],
+        recentViews: recentViews || [],
+        viewsError: viewsError?.message,
+        recentError: recentError?.message
+      });
+      
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Test endpoint to check video_views table existence
   app.get("/api/test-analytics", async (req: Request, res: Response) => {
     try {
@@ -395,18 +445,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const videoIds = videos.map(v => v.id);
 
-      // Get aggregated analytics
-      const { data: analytics } = await supabase
-        .from('analytics_daily')
-        .select('*')
-        .in('video_id', videoIds)
-        .gte('date', startDateStr)
-        .lte('date', endDateStr);
-
-      // Get detailed view data for device breakdown and trends
+      // Get detailed view data for all calculations (no analytics_daily needed for Phase 1)
       const { data: viewData } = await supabase
         .from('video_views')
-        .select('device_type, completed, watched_30_seconds, created_at, video_id')
+        .select('device_type, completed, watched_30_seconds, created_at, video_id, watch_duration, is_returning_viewer, session_id')
         .in('video_id', videoIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
@@ -427,13 +469,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .gte('subscribed_at', startDate.toISOString())
         .lte('subscribed_at', endDate.toISOString());
 
-      // Calculate overview metrics
-      const totalViews = analytics?.reduce((sum, a) => sum + a.total_views, 0) || 0;
-      const totalRevenue = analytics?.reduce((sum, a) => sum + a.revenue, 0) || 0;
-      const totalPurchases = analytics?.reduce((sum, a) => sum + a.purchases, 0) || 0;
-      const totalCompletions = analytics?.reduce((sum, a) => sum + a.completions, 0) || 0;
-      const newViewers = analytics?.reduce((sum, a) => sum + a.new_viewers, 0) || 0;
-      const returningViewers = analytics?.reduce((sum, a) => sum + a.returning_viewers, 0) || 0;
+      // Calculate overview metrics from real-time view data
+      const totalViews = viewData?.length || 0;
+      const totalRevenue = purchaseData?.reduce((sum, p) => sum + p.amount, 0) || 0;
+      const totalPurchases = purchaseData?.length || 0;
+      const totalCompletions = viewData?.filter(v => v.completed).length || 0;
+      const newViewers = viewData?.filter(v => !v.is_returning_viewer).length || 0;
+      const returningViewers = viewData?.filter(v => v.is_returning_viewer).length || 0;
 
       const avgCompletionRate = totalViews > 0 ? Math.round((totalCompletions / totalViews) * 100) : 0;
       const avgRevenuePerViewer = totalViews > 0 ? Math.round((totalRevenue / 100) / totalViews * 100) / 100 : 0;
@@ -448,11 +490,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Video performance
       const videoPerformance = videos.map(video => {
-        const videoAnalytics = analytics?.filter(a => a.video_id === video.id) || [];
-        const views = videoAnalytics.reduce((sum, a) => sum + a.total_views, 0);
-        const revenue = videoAnalytics.reduce((sum, a) => sum + a.revenue, 0);
-        const purchases = videoAnalytics.reduce((sum, a) => sum + a.purchases, 0);
-        const completions = videoAnalytics.reduce((sum, a) => sum + a.completions, 0);
+        const videoViews = viewData?.filter(v => v.video_id === video.id) || [];
+        const videoPurchases = purchaseData?.filter(p => p.video_id === video.id) || [];
+        const views = videoViews.length;
+        const revenue = videoPurchases.reduce((sum, p) => sum + p.amount, 0);
+        const purchases = videoPurchases.length;
+        const completions = videoViews.filter(v => v.completed).length;
 
         return {
           id: video.id,
@@ -481,16 +524,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + (timeframe === '7d' ? 1 : 7));
 
-        const weekAnalytics = analytics?.filter(a => {
-          const aDate = new Date(a.date);
-          return aDate >= weekStart && aDate < weekEnd;
+        const weekViews = viewData?.filter(v => {
+          const vDate = new Date(v.created_at);
+          return vDate >= weekStart && vDate < weekEnd;
         }) || [];
 
-        const weekWatchTime = weekAnalytics.reduce((sum, a) => sum + a.watch_time_total, 0);
+        const weekWatchTime = weekViews.reduce((sum, v) => sum + (v.watch_duration || 0), 0);
         
         watchTimeTrend.push({
           date: weekStart.toISOString().split('T')[0],
-          avgWatchTime: weekWatchTime > 0 ? Math.round(weekWatchTime / Math.max(1, weekAnalytics.length)) : 0
+          avgWatchTime: weekViews.length > 0 ? Math.round(weekWatchTime / weekViews.length) : 0
         });
       }
 

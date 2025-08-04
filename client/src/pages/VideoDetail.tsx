@@ -560,7 +560,7 @@ export default function VideoDetail() {
                   <div 
                     className="bg-red-600 h-1 rounded-full relative transition-all"
                     style={{ 
-                      width: videoData?.duration ? `${(currentTime / Number(videoData.duration)) * 100}%` : '0%' 
+                      width: videoDuration ? `${(currentTime / videoDuration) * 100}%` : '0%' 
                     }}
                   >
                     <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
