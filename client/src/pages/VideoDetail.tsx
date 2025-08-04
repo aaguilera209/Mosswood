@@ -134,7 +134,9 @@ export default function VideoDetail() {
         if (videoElement && !videoElement.paused) {
           const newTime = videoElement.currentTime;
           setCurrentTime(newTime);
-          console.log('Progress update:', newTime, 'duration:', videoDuration);
+          if (Math.floor(newTime) !== Math.floor(currentTime)) {
+            console.log('Progress update:', newTime, 'duration:', videoDuration, 'percentage:', videoDuration ? (newTime / videoDuration) * 100 : 0);
+          }
           animationFrameRef.current = requestAnimationFrame(updateProgress);
         }
       };
@@ -624,11 +626,12 @@ export default function VideoDetail() {
                   }}
                 >
                   <div 
-                    className="bg-red-600 h-1 rounded-full relative transition-all duration-75 ease-linear"
+                    className="h-1 rounded-full relative"
                     style={{ 
-                      width: videoDuration ? `${(currentTime / videoDuration) * 100}%` : '0%' 
+                      width: videoDuration && videoDuration > 0 ? `${Math.min((currentTime / videoDuration) * 100, 100)}%` : '0%',
+                      backgroundColor: '#dc2626',
+                      transition: 'none'
                     }}
-                    data-debug={`currentTime: ${currentTime}, videoDuration: ${videoDuration}, width: ${videoDuration ? (currentTime / videoDuration) * 100 : 0}%`}
                   >
                     <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
