@@ -224,6 +224,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to check video_views table existence
+  app.get("/api/test-analytics", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+      
+      // Test if video_views table exists by trying to query it
+      const { data, error } = await supabase
+        .from('video_views')
+        .select('*')
+        .limit(1);
+      
+      if (error) {
+        return res.json({ 
+          tableExists: false, 
+          error: error.message,
+          needsMigration: true 
+        });
+      }
+      
+      return res.json({ 
+        tableExists: true, 
+        rowCount: data?.length || 0,
+        message: "Analytics table ready"
+      });
+      
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Track video view endpoint
   app.post("/api/track-view", async (req: Request, res: Response) => {
     try {
@@ -286,16 +318,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
       if (error) {
-        console.error('View tracking error:', error);
-        return res.status(500).json({ error: "Failed to track view" });
+        console.error('View tracking error details:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        return res.status(500).json({ 
+          error: "Failed to track view",
+          details: error.message || 'Unknown database error'
+        });
       }
 
-      // Update daily analytics asynchronously
-      const today = new Date().toISOString().split('T')[0];
-      await supabase.rpc('update_daily_analytics', {
-        p_video_id: video_id,
-        p_date: today
-      });
+      // Note: Daily analytics aggregation can be implemented later if needed
+      // For now, we'll rely on real-time queries of the video_views table
 
       res.json({ success: true });
     } catch (error: any) {
