@@ -236,6 +236,20 @@ function DashboardContent() {
     enabled: !!user?.id
   });
 
+  // Fetch creator statistics
+  const { data: creatorStats } = useQuery({
+    queryKey: ['creator-stats', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/creator-stats/${user.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch creator stats');
+      }
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
   const handleLogout = async () => {
     try {
       await signOut();
