@@ -383,13 +383,7 @@ function DashboardContent() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-foreground">Overview</h2>
               <div className="flex items-center space-x-4">
-                <Button variant="outline" size="sm" onClick={() => {
-                  const storefrontUrl = `/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
-                  window.open(storefrontUrl, '_blank');
-                }}>
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View Storefront
-                </Button>
+
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Clock className="w-4 h-4" />
                   <span>Last updated: just now</span>
@@ -551,6 +545,25 @@ function DashboardContent() {
                           src={`/api/video-thumbnail/${video.id}.jpg`}
                           alt={video.title}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                                  <div class="text-center">
+                                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                                      <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                      </svg>
+                                    </div>
+                                    <p class="text-xs text-muted-foreground">No thumbnail</p>
+                                  </div>
+                                </div>
+                              `;
+                            }
+                          }}
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
                           <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

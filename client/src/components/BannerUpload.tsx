@@ -133,7 +133,7 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
         disabled={uploadMutation.isPending}
       >
         <Upload className="w-4 h-4 mr-2" />
-        {uploadMutation.isPending ? 'Uploading...' : 'Choose Banner Image'}
+        {uploadMutation.isPending ? 'Uploading...' : 'Choose Image'}
       </Button>
       
       {selectedFile && (

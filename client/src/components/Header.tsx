@@ -91,6 +91,14 @@ export function Header() {
                         Edit Profile
                       </Link>
                     </DropdownMenuItem>
+                    {profile?.role === 'creator' && (
+                      <DropdownMenuItem asChild>
+                        <Link href={`/creator/${profile?.display_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'creator'}`} className="flex items-center w-full">
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          View Storefront
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     {profile?.role === 'viewer' && (
                       <DropdownMenuItem asChild>
                         <Link href="/library" className="flex items-center w-full">

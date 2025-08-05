@@ -65,10 +65,26 @@ export function AnalyticsCharts({ data, isLoading }: AnalyticsChartsProps) {
   }
 
   // Prepare device breakdown data for pie chart
+  const totalDeviceViews = data.deviceBreakdown.desktop + data.deviceBreakdown.mobile + data.deviceBreakdown.tablet;
   const deviceData = [
-    { name: 'Desktop', value: data.deviceBreakdown.desktop, color: COLORS[0] },
-    { name: 'Mobile', value: data.deviceBreakdown.mobile, color: COLORS[1] },
-    { name: 'Tablet', value: data.deviceBreakdown.tablet, color: COLORS[2] }
+    { 
+      name: 'Desktop', 
+      value: data.deviceBreakdown.desktop, 
+      percentage: totalDeviceViews > 0 ? Math.round((data.deviceBreakdown.desktop / totalDeviceViews) * 100) : 0,
+      color: COLORS[0] 
+    },
+    { 
+      name: 'Mobile', 
+      value: data.deviceBreakdown.mobile, 
+      percentage: totalDeviceViews > 0 ? Math.round((data.deviceBreakdown.mobile / totalDeviceViews) * 100) : 0,
+      color: COLORS[1] 
+    },
+    { 
+      name: 'Tablet', 
+      value: data.deviceBreakdown.tablet, 
+      percentage: totalDeviceViews > 0 ? Math.round((data.deviceBreakdown.tablet / totalDeviceViews) * 100) : 0,
+      color: COLORS[2] 
+    }
   ].filter(item => item.value > 0);
 
   // Prepare conversion funnel data
