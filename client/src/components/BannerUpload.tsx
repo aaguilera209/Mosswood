@@ -125,26 +125,38 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
         className="hidden"
       />
       
-      <Button
-        onClick={() => fileInputRef.current?.click()}
-        variant="outline"
-        size="sm"
-        className="bg-background/90 hover:bg-background text-foreground border-border"
-        disabled={uploadMutation.isPending}
-      >
-        <Upload className="w-4 h-4 mr-2" />
-        {uploadMutation.isPending ? 'Uploading...' : 'Choose Image'}
-      </Button>
-      
-      {selectedFile && (
-        <Button 
-          onClick={handleUpload} 
-          disabled={uploadMutation.isPending}
+      {!selectedFile ? (
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          variant="outline"
           size="sm"
-          className="ml-2 bg-primary hover:bg-primary/90"
+          className="bg-background/90 hover:bg-background text-foreground border-border"
+          disabled={uploadMutation.isPending}
         >
-          {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+          <Upload className="w-4 h-4 mr-2" />
+          {uploadMutation.isPending ? 'Uploading...' : 'Choose Image'}
         </Button>
+      ) : (
+        <div className="flex gap-2">
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            size="sm"
+            className="bg-background/90 hover:bg-background text-foreground border-border"
+            disabled={uploadMutation.isPending}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Choose Different
+          </Button>
+          <Button 
+            onClick={handleUpload} 
+            disabled={uploadMutation.isPending}
+            size="sm"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+          </Button>
+        </div>
       )}
     </div>
   );

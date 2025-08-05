@@ -870,73 +870,75 @@ function DashboardContent() {
               <h2 className="text-2xl font-semibold text-foreground">Profile Settings</h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Banner Upload */}
+            <div className="space-y-6">
+              {/* Banner Upload - Full Width */}
               <BannerUpload 
-                currentBannerUrl={null}
+                currentBannerUrl={profile?.banner_url}
                 onUploadSuccess={(bannerUrl) => {
                   console.log('Banner uploaded successfully:', bannerUrl);
                 }}
               />
 
-              {/* Profile Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <User className="w-5 h-5" />
-                    <span>Profile Information</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Display Name</label>
-                    <p className="text-base">{profile?.display_name || profile?.email?.split('@')[0] || 'Creator'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <p className="text-base">{profile?.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Bio</label>
-                    <p className="text-base">{profile?.bio || 'No bio added yet'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Role</label>
-                    <p className="text-base capitalize">{profile?.role}</p>
-                  </div>
-                  <Button variant="outline" className="w-full">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile Information
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Storefront Link */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Storefront</CardTitle>
-                  <CardDescription>Share your public creator page</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-muted rounded-lg">
-                      <code className="text-sm">
-                        {window.location.origin}/creator/{(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
-                      </code>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Profile Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <User className="w-5 h-5" />
+                      <span>Profile Information</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Display Name</label>
+                      <p className="text-base">{profile?.display_name || profile?.email?.split('@')[0] || 'Creator'}</p>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
-                        const storefrontUrl = `/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
-                        window.open(storefrontUrl, '_blank');
-                      }}
-                    >
-                      View Your Storefront
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Email</label>
+                      <p className="text-base">{profile?.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Bio</label>
+                      <p className="text-base">{profile?.bio || 'No bio added yet'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Role</label>
+                      <p className="text-base capitalize">{profile?.role}</p>
+                    </div>
+                    <Button variant="outline" className="w-full">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile Information
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Storefront Link */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Your Storefront</CardTitle>
+                    <CardDescription>Share your public creator page</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-muted rounded-lg">
+                        <code className="text-sm break-all">
+                          {window.location.origin}/creator/{(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                        </code>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => {
+                          const storefrontUrl = `/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+                          window.open(storefrontUrl, '_blank');
+                        }}
+                      >
+                        View Your Storefront
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
