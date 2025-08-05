@@ -482,10 +482,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscriberConversionRate = totalViews > 0 ? Math.round(((subscriberData?.length || 0) / totalViews) * 100 * 100) / 100 : 0;
 
       // Device breakdown
+      const totalViewsForDevices = viewData?.length || 1; // Prevent division by zero
       const deviceBreakdown = {
-        mobile: viewData?.filter(v => v.device_type === 'mobile').length || 0,
-        desktop: viewData?.filter(v => v.device_type === 'desktop').length || 0,
-        tablet: viewData?.filter(v => v.device_type === 'tablet').length || 0
+        mobile: Math.round(((viewData?.filter(v => v.device_type === 'mobile').length || 0) / totalViewsForDevices) * 100),
+        desktop: Math.round(((viewData?.filter(v => v.device_type === 'desktop').length || 0) / totalViewsForDevices) * 100), 
+        tablet: Math.round(((viewData?.filter(v => v.device_type === 'tablet').length || 0) / totalViewsForDevices) * 100)
       };
 
       // Video performance
@@ -1737,20 +1738,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
       const color = colors[parseInt(videoId) % colors.length];
       
-      // Create SVG thumbnail
-      const svg = `
-        <svg width="320" height="180" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-              <stop offset="100%" style="stop-color:${color}80;stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <rect width="320" height="180" fill="url(#grad)" />
-          <circle cx="160" cy="90" r="30" fill="white" opacity="0.9"/>
-          <polygon points="150,75 150,105 175,90" fill="${color}"/>
-        </svg>
-      `;
+      // Create SVG thumbnail with better styling
+      const svg = `<svg width="320" height="180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad${videoId}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${color}99;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#grad${videoId})" />
+  <circle cx="160" cy="90" r="25" fill="white" opacity="0.95"/>
+  <polygon points="153,80 153,100 172,90" fill="${color}"/>
+</svg>`;
       
       res.setHeader('Content-Type', 'image/svg+xml');
       res.setHeader('Cache-Control', 'public, max-age=3600');
@@ -1912,6 +1911,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Thumbnail generation error:', error);
       res.status(500).json({ error: 'Failed to generate thumbnail' });
+    }
+  });
+
+  // Setup Supabase storage buckets
+  app.post("/api/setup-storage", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      // Create avatars bucket
+      const { error: avatarBucketError } = await supabase.storage.createBucket('avatars', {
+        public: true,
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp']
+      });
+
+      // Create banners bucket  
+      const { error: bannerBucketError } = await supabase.storage.createBucket('banners', {
+        public: true,
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp']
+      });
+
+      const created = [];
+      if (!avatarBucketError || avatarBucketError.message.includes('already exists')) {
+        created.push('avatars');
+      }
+      if (!bannerBucketError || bannerBucketError.message.includes('already exists')) {
+        created.push('banners');
+      }
+
+      res.json({
+        success: true,
+        message: 'Storage buckets setup complete',
+        created,
+        avatarBucketError: avatarBucketError?.message,
+        bannerBucketError: bannerBucketError?.message
+      });
+
+    } catch (error: any) {
+      console.error('Storage setup error:', error);
+      res.status(500).json({ error: 'Failed to setup storage' });
     }
   });
 

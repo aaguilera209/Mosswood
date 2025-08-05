@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { type Profile } from '@/../../shared/schema';
+import { BannerUpload } from '@/components/BannerUpload';
 
 export default function CreatorStorefront() {
   const { user, profile } = useAuth();
@@ -151,6 +152,19 @@ export default function CreatorStorefront() {
         ) : (
           <div className="w-full h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/40 dark:from-primary/10 dark:to-primary/20">
             <div className="absolute inset-0 bg-black/20" />
+          </div>
+        )}
+        
+        {/* Banner Upload Button for Creator Only */}
+        {isOwnPage && (
+          <div className="absolute top-4 right-4">
+            <BannerUpload 
+              currentBannerUrl={creatorProfile?.banner_url}
+              onUploadSuccess={(bannerUrl) => {
+                // Refresh the page to show updated banner
+                window.location.reload();
+              }}
+            />
           </div>
         )}
         

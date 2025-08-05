@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Upload, Plus, Play, MoreHorizontal, LogOut, BarChart3, Users, DollarSign, TrendingUp, Clock, Eye, ShoppingCart, Gift, Calendar, Mail, MapPin, Repeat, ArrowUp, ArrowDown, Edit, Trash2, User } from 'lucide-react';
+import { Upload, Plus, Play, MoreHorizontal, LogOut, BarChart3, Users, DollarSign, TrendingUp, Clock, Eye, ShoppingCart, Gift, Calendar, Mail, MapPin, Repeat, ArrowUp, ArrowDown, Edit, Trash2, User, ExternalLink } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { VideoUploadModal } from '@/components/VideoUploadModal';
@@ -366,65 +366,76 @@ function DashboardContent() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Quick Stats */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-foreground">Overview</h2>
+              <div className="flex items-center space-x-4">
+                <Button variant="outline" size="sm" onClick={() => {
+                  const storefrontUrl = `/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+                  window.open(storefrontUrl, '_blank');
+                }}>
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View Storefront
+                </Button>
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  <span>Last updated: just now</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Real-time Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">${mockAnalytics.overview.totalRevenue.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-green-600 flex items-center">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      +{mockAnalytics.overview.growthMetrics.revenueGrowth}%
-                    </span>
-                  </p>
-                </CardContent>
-              </Card>
-              
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Views</CardTitle>
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockAnalytics.overview.totalViews.toLocaleString()}</div>
+                  <div className="text-2xl font-bold">{creatorStats?.total_views || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    <span className="text-green-600 flex items-center">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      +{mockAnalytics.overview.growthMetrics.viewsGrowth}%
-                    </span>
+                    Real-time data
                   </p>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
+                  <Play className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockAnalytics.overview.totalPurchases}</div>
+                  <div className="text-2xl font-bold">{creatorStats?.video_count || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    <span className="text-green-600 flex items-center">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      +{mockAnalytics.overview.growthMetrics.purchasesGrowth}%
-                    </span>
+                    Published content
                   </p>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium">Followers</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{creatorStats?.followers || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Growing audience
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Engagement</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockAnalytics.overview.overallConversionRate}%</div>
+                  <div className="text-2xl font-bold">
+                    {creatorStats?.video_count > 0 ? 
+                      Math.round((creatorStats?.total_views / creatorStats?.video_count) || 0) : 0}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Above industry average
+                    Avg views per video
                   </p>
                 </CardContent>
               </Card>
