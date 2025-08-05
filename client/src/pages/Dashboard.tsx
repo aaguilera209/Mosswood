@@ -870,18 +870,9 @@ function DashboardContent() {
               <h2 className="text-2xl font-semibold text-foreground">Profile Settings</h2>
             </div>
 
-            <div className="space-y-6">
-              {/* Banner Upload - Full Width */}
-              <BannerUpload 
-                currentBannerUrl={profile?.banner_url}
-                onUploadSuccess={(bannerUrl) => {
-                  console.log('Banner uploaded successfully:', bannerUrl);
-                }}
-              />
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Profile Information */}
-                <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Profile Information */}
+              <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
                       <User className="w-5 h-5" />
@@ -910,10 +901,10 @@ function DashboardContent() {
                       Edit Profile Information
                     </Button>
                   </CardContent>
-                </Card>
+              </Card>
 
-                {/* Storefront Link */}
-                <Card>
+              {/* Storefront Link */}
+              <Card>
                   <CardHeader>
                     <CardTitle>Your Storefront</CardTitle>
                     <CardDescription>Share your public creator page</CardDescription>
@@ -937,8 +928,7 @@ function DashboardContent() {
                       </Button>
                     </div>
                   </CardContent>
-                </Card>
-              </div>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>

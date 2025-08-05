@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'wouter';
-import { User, Settings, LogOut, ChevronDown, BarChart3 } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, BarChart3, Eye } from 'lucide-react';
 
 export function Header() {
   const { user, profile } = useAuth();
@@ -94,7 +94,7 @@ export function Header() {
                     {profile?.role === 'creator' && (
                       <DropdownMenuItem asChild>
                         <Link href={`/creator/${profile?.display_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'creator'}`} className="flex items-center w-full">
-                          <BarChart3 className="w-4 h-4 mr-2" />
+                          <Eye className="w-4 h-4 mr-2" />
                           View Storefront
                         </Link>
                       </DropdownMenuItem>
