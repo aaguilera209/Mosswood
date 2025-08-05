@@ -85,12 +85,6 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem asChild>
-                      <Link href="/edit-profile" className="flex items-center w-full">
-                        <User className="w-4 h-4 mr-2" />
-                        Edit Profile
-                      </Link>
-                    </DropdownMenuItem>
                     {profile?.role === 'creator' && (
                       <DropdownMenuItem asChild>
                         <Link href={`/creator/${profile?.display_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'creator'}`} className="flex items-center w-full">
@@ -99,6 +93,12 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem asChild>
+                      <Link href="/edit-profile" className="flex items-center w-full">
+                        <User className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Link>
+                    </DropdownMenuItem>
                     {profile?.role === 'viewer' && (
                       <DropdownMenuItem asChild>
                         <Link href="/library" className="flex items-center w-full">

@@ -343,21 +343,22 @@ export default function CreatorStorefront() {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
                             const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                                  <div class="text-center">
-                                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                                      <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                      </svg>
-                                    </div>
-                                    <p class="text-xs text-muted-foreground">No thumbnail</p>
+                            if (parent && !parent.querySelector('.fallback-thumbnail')) {
+                              target.style.display = 'none';
+                              const fallback = document.createElement('div');
+                              fallback.className = 'fallback-thumbnail w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center';
+                              fallback.innerHTML = `
+                                <div class="text-center">
+                                  <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
                                   </div>
+                                  <p class="text-xs text-muted-foreground">Video Thumbnail</p>
                                 </div>
                               `;
+                              parent.appendChild(fallback);
                             }
                           }}
                         />

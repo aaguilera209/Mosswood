@@ -37,6 +37,7 @@ export default function VideoDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [volume, setVolume] = useState(100);
+  const [isMuted, setIsMuted] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
