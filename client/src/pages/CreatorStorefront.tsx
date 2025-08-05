@@ -20,20 +20,31 @@ export default function CreatorStorefront() {
   // Fetch creator profile data
   const { data: creatorData, isLoading: creatorLoading } = useQuery({
     queryKey: ['/api/profile', params?.username],
-    queryFn: () => apiRequest('GET', `/api/profile/${encodeURIComponent(params?.username || '')}`),
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/profile/${encodeURIComponent(params?.username || '')}`);
+      return response.json();
+    },
     enabled: !!params?.username,
   });
 
   // Fetch creator's videos
   const { data: videosData, isLoading: videosLoading } = useQuery({
-    queryKey: ['/api/videos'],
-    queryFn: () => apiRequest('GET', '/api/videos'),
+    queryKey: ['/api/videos', creatorData?.profile?.id],
+    queryFn: async () => {
+      if (!creatorData?.profile?.id) return { videos: [] };
+      const response = await apiRequest('GET', `/api/videos?creator_id=${creatorData.profile.id}`);
+      return response.json();
+    },
+    enabled: !!creatorData?.profile?.id,
   });
 
   // Fetch user's purchases
   const { data: purchasesData } = useQuery({
     queryKey: ['/api/purchases', user?.email],
-    queryFn: () => apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user?.email || '')}`),
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/purchases?email=${encodeURIComponent(user?.email || '')}`);
+      return response.json();
+    },
     enabled: !!user?.email,
   });
 
