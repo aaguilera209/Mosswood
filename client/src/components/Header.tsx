@@ -41,11 +41,20 @@ export function Header() {
             {user ? (
               <>
                 {profile?.role === 'creator' && (
-                  <Link href="/dashboard">
-                    <Button variant="outline" size="sm">
-                      Dashboard
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/dashboard">
+                      <Button variant="outline" size="sm">
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Link href={`/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}>
+                      <Button variant="outline" size="sm">
+                        <Eye className="w-4 h-4 mr-2" />
+                        Storefront
+                      </Button>
+                    </Link>
+                  </>
                 )}
                 
                 {/* User Profile Dropdown */}

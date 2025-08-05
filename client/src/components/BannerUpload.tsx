@@ -18,6 +18,8 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  console.log('BannerUpload: Component rendered, profile:', profile?.id);
+
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!profile?.id) {
