@@ -153,12 +153,20 @@ export default function ExplorePage() {
                     ? 'w-48 h-32 flex-shrink-0' 
                     : 'aspect-video rounded-t-lg'
                 }`}>
-                  {creator.avatar_url && (
+                  {creator.banner_url ? (
+                    <img 
+                      src={creator.banner_url} 
+                      alt={`${creator.display_name}'s banner`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : creator.avatar_url ? (
                     <img 
                       src={creator.avatar_url} 
                       alt={creator.display_name}
                       className="absolute inset-0 w-full h-full object-cover"
                     />
+                  ) : (
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-2 left-2 text-white">

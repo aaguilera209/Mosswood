@@ -48,11 +48,23 @@ export default function CreatorStorefront() {
     enabled: !!user?.email,
   });
 
+  // Fetch creator statistics (followers, views, video count)
+  const { data: statsData } = useQuery({
+    queryKey: ['/api/creator-stats', creatorData?.profile?.id],
+    queryFn: async () => {
+      if (!creatorData?.profile?.id) return null;
+      const response = await apiRequest('GET', `/api/creator-stats/${creatorData.profile.id}`);
+      return response.json();
+    },
+    enabled: !!creatorData?.profile?.id,
+  });
+
   const creatorProfile = creatorData?.profile as Profile | null;
   const creatorVideos = videosData?.videos?.filter((video: any) => 
     video.creator_id === creatorProfile?.id
   ) || [];
   const purchasedVideoIds = purchasesData?.purchases?.map((p: any) => p.video_id) || [];
+  const creatorStats = statsData || { followers: 0, total_views: 0, video_count: 0 };
   
   // Check if current user is the creator viewing their own page
   const isOwnPage = profile?.role === 'creator' && creatorProfile && profile?.id === creatorProfile.id;
@@ -65,6 +77,14 @@ export default function CreatorStorefront() {
 
   const handleFollow = () => {
     console.log('Following creator:', creatorProfile?.display_name);
+  };
+
+  const handleContact = () => {
+    if (creatorProfile?.contact_email) {
+      window.location.href = `mailto:${creatorProfile.contact_email}?subject=Contact from Mosswood`;
+    } else {
+      console.log('No contact email available for this creator');
+    }
   };
 
   const getSocialIcon = (platform: string) => {
@@ -118,10 +138,21 @@ export default function CreatorStorefront() {
 
       {/* Hero Banner Section */}
       <div className="relative">
-        {/* Banner Image - use default gradient if no custom banner */}
-        <div className="w-full h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/40 dark:from-primary/10 dark:to-primary/20">
-          <div className="absolute inset-0 bg-black/20" />
-        </div>
+        {/* Banner Image - use custom banner or default gradient */}
+        {creatorProfile?.banner_url ? (
+          <div className="w-full h-80 md:h-96 relative">
+            <img 
+              src={creatorProfile.banner_url} 
+              alt={`${creatorProfile.display_name}'s banner`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/20" />
+          </div>
+        ) : (
+          <div className="w-full h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/40 dark:from-primary/10 dark:to-primary/20">
+            <div className="absolute inset-0 bg-black/20" />
+          </div>
+        )}
         
         {/* Creator Name Overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -204,13 +235,13 @@ export default function CreatorStorefront() {
               )}
               
               {creatorProfile.contact_email && (
-                <a 
-                  href={`mailto:${creatorProfile.contact_email}`}
+                <button 
+                  onClick={handleContact}
                   className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   <span>Contact</span>
-                </a>
+                </button>
               )}
               
               {/* Social Links */}
@@ -231,23 +262,23 @@ export default function CreatorStorefront() {
             </div>
           </div>
 
-          {/* Creator Stats - can be expanded later */}
+          {/* Creator Stats - real data from database */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{creatorVideos.length}</div>
+                <div className="text-2xl font-bold text-primary">{creatorStats.video_count}</div>
                 <div className="text-sm text-muted-foreground">Videos</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">-</div>
+                <div className="text-2xl font-bold text-primary">{creatorStats.followers}</div>
                 <div className="text-sm text-muted-foreground">Followers</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">-</div>
+                <div className="text-2xl font-bold text-primary">{creatorStats.total_views}</div>
                 <div className="text-sm text-muted-foreground">Views</div>
               </CardContent>
             </Card>

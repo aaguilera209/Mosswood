@@ -1483,6 +1483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         display_name: creator.display_name || creator.email?.split('@')[0] || 'Creator',
         bio: creator.bio || 'Content creator on Mosswood',
         avatar_url: creator.avatar_url,
+        banner_url: creator.banner_url,
         email: creator.email,
         video_count: videoCounts[creator.id] || 0,
         rating: null, // Will be calculated from actual reviews when available
@@ -1498,6 +1499,214 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error in creators API:', error);
       res.status(500).json({ error: 'Internal server error: ' + error.message });
+    }
+  });
+
+  // Get creator statistics (followers, views, videos count)
+  app.get("/api/creator-stats/:creatorId", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const creatorId = req.params.creatorId;
+
+      // Get follower count
+      const { data: followersData, error: followersError } = await supabase
+        .from('followers')
+        .select('*')
+        .eq('creator_id', creatorId);
+
+      // Get total views for creator's videos
+      const { data: viewsData, error: viewsError } = await supabase
+        .from('video_views')
+        .select('video_id')
+        .in('video_id', supabase
+          .from('videos')
+          .select('id')
+          .eq('creator_id', creatorId)
+        );
+
+      // Get video count
+      const { data: videosData, error: videosError } = await supabase
+        .from('videos')
+        .select('id')
+        .eq('creator_id', creatorId);
+
+      if (followersError) {
+        console.error('Error fetching followers:', followersError);
+      }
+      if (viewsError) {
+        console.error('Error fetching views:', viewsError);
+      }
+      if (videosError) {
+        console.error('Error fetching videos:', videosError);
+      }
+
+      const stats = {
+        followers: followersData?.length || 0,
+        total_views: viewsData?.length || 0,
+        video_count: videosData?.length || 0
+      };
+
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching creator stats:', error);
+      res.status(500).json({ error: 'Failed to fetch creator statistics' });
+    }
+  });
+
+  // Follow/unfollow a creator
+  app.post("/api/follow/:creatorId", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const creatorId = req.params.creatorId;
+      const { followerId, action } = req.body; // action: 'follow' or 'unfollow'
+
+      if (!followerId) {
+        return res.status(400).json({ error: "Follower ID is required" });
+      }
+
+      if (action === 'follow') {
+        const { error } = await supabase
+          .from('followers')
+          .insert({ follower_id: followerId, creator_id: creatorId });
+
+        if (error) {
+          console.error('Error following creator:', error);
+          return res.status(500).json({ error: 'Failed to follow creator' });
+        }
+      } else if (action === 'unfollow') {
+        const { error } = await supabase
+          .from('followers')
+          .delete()
+          .eq('follower_id', followerId)
+          .eq('creator_id', creatorId);
+
+        if (error) {
+          console.error('Error unfollowing creator:', error);
+          return res.status(500).json({ error: 'Failed to unfollow creator' });
+        }
+      } else {
+        return res.status(400).json({ error: "Invalid action. Use 'follow' or 'unfollow'" });
+      }
+
+      res.json({ success: true, action });
+    } catch (error: any) {
+      console.error('Error managing follow:', error);
+      res.status(500).json({ error: 'Failed to process follow request' });
+    }
+  });
+
+  // Upload banner image for creator
+  app.post("/api/upload-banner", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { fileName, fileData, contentType, userId } = req.body;
+      
+      if (!fileName || !fileData || !userId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Convert base64 to buffer
+      const buffer = Buffer.from(fileData, 'base64');
+      const filePath = `banners/${userId}/${fileName}`;
+
+      console.log('Banner upload attempt:', { fileName, filePath, size: buffer.length });
+
+      const { data, error } = await supabase.storage
+        .from('avatars') // Using avatars bucket for banner images
+        .upload(filePath, buffer, {
+          contentType,
+          cacheControl: '3600',
+          upsert: true, // Allow replacing existing banners
+        });
+
+      if (error) {
+        console.error('Supabase banner upload error:', error);
+        return res.status(500).json({ error: `Banner upload failed: ${error.message}` });
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with banner URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ banner_url: publicUrlData.publicUrl })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Failed to update profile banner URL:', updateError);
+        return res.status(500).json({ error: 'Failed to save banner URL' });
+      }
+
+      res.json({ 
+        success: true, 
+        path: data.path,
+        publicUrl: publicUrlData.publicUrl 
+      });
+
+    } catch (error: any) {
+      console.error('Banner upload error:', error);
+      res.status(500).json({ error: 'Failed to upload banner' });
+    }
+  });
+
+  // Generate video thumbnail from video frame
+  app.post("/api/generate-thumbnail/:videoId", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const videoId = parseInt(req.params.videoId);
+      
+      if (isNaN(videoId)) {
+        return res.status(400).json({ error: "Invalid video ID" });
+      }
+
+      // Get video info
+      const { data: video, error: videoError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', videoId)
+        .single();
+
+      if (videoError || !video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+
+      // For now, return a placeholder thumbnail URL or use a default thumbnail generation method
+      // In a production environment, you'd use a service like ffmpeg to extract frames
+      const thumbnailUrl = `${video.video_url}#t=1`; // HTML5 video poster trick
+
+      // Update video with thumbnail URL
+      const { error: updateError } = await supabase
+        .from('videos')
+        .update({ thumbnail_url: thumbnailUrl })
+        .eq('id', videoId);
+
+      if (updateError) {
+        console.error('Failed to update video thumbnail:', updateError);
+        return res.status(500).json({ error: 'Failed to save thumbnail URL' });
+      }
+
+      res.json({ 
+        success: true, 
+        thumbnailUrl: thumbnailUrl 
+      });
+
+    } catch (error: any) {
+      console.error('Thumbnail generation error:', error);
+      res.status(500).json({ error: 'Failed to generate thumbnail' });
     }
   });
 

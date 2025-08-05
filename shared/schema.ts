@@ -53,6 +53,7 @@ export const profiles = pgTable("profiles", {
     [key: string]: string | undefined;
   }>(),
   contact_email: text("contact_email"),
+  banner_url: text("banner_url"),
   stripe_account_id: text("stripe_account_id"),
   stripe_connect_enabled: boolean("stripe_connect_enabled").default(false),
   stripe_onboarding_complete: boolean("stripe_onboarding_complete").default(false),
@@ -100,6 +101,13 @@ export const analytics_daily = pgTable("analytics_daily", {
   mobile_views: integer("mobile_views").notNull().default(0),
   desktop_views: integer("desktop_views").notNull().default(0),
   created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const followers = pgTable("followers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  follower_id: uuid("follower_id").notNull(), // profile id of the follower
+  creator_id: uuid("creator_id").notNull(), // profile id of the creator being followed
+  followed_at: timestamp("followed_at", { withTimezone: true }).defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -161,6 +169,11 @@ export const insertAnalyticsDailySchema = createInsertSchema(analytics_daily).om
   created_at: true,
 });
 
+export const insertFollowerSchema = createInsertSchema(followers).omit({
+  id: true,
+  followed_at: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Video = typeof videos.$inferSelect;
@@ -176,3 +189,5 @@ export type EmailSubscriber = typeof email_subscribers.$inferSelect;
 export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
 export type AnalyticsDaily = typeof analytics_daily.$inferSelect;
 export type InsertAnalyticsDaily = z.infer<typeof insertAnalyticsDailySchema>;
+export type Follower = typeof followers.$inferSelect;
+export type InsertFollower = z.infer<typeof insertFollowerSchema>;

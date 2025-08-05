@@ -8,7 +8,7 @@ export function Footer() {
           <Logo showText={false} className="justify-center" />
         </div>
         <p className="text-muted-foreground text-sm">
-          © 2024 Mosswood. Empowering creators worldwide.
+          © 2025 Mosswood. Empowering creators worldwide.
         </p>
         
         <div className="flex justify-center space-x-6 mt-6">
