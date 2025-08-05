@@ -71,7 +71,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                 {/* Image container */}
                 <div className="relative flex-shrink-0 h-48 bg-muted">
                   <img 
-                    src={`https://picsum.photos/400/300?random=${index + 1}`} 
+                    src={creator.thumbnail || `https://picsum.photos/400/300?random=${index + 1}`} 
                     alt={`${creator.displayName || creator.name} thumbnail`}
                     className="w-full h-full object-cover"
                   />

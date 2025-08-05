@@ -467,7 +467,7 @@ function DashboardContent() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockVideos.filter(v => v.status === 'Published').sort((a, b) => b.revenue - a.revenue).slice(0, 3).map((video) => (
+                    {analyticsData?.videoPerformance?.slice(0, 3).map((video) => (
                       <div key={video.id} className="flex items-center justify-between">
                         <div className="flex-1">
                           <p className="font-medium line-clamp-1">{video.title}</p>
@@ -475,10 +475,15 @@ function DashboardContent() {
                         </div>
                         <div className="text-right">
                           <p className="font-medium">${video.revenue.toLocaleString()}</p>
-                          <p className="text-sm text-muted-foreground">{video.conversionRate}% conv.</p>
+                          <p className="text-sm text-muted-foreground">{video.completionRate}% completion</p>
                         </div>
                       </div>
-                    ))}
+                    )) || (
+                      <div className="text-center py-4 text-muted-foreground">
+                        <p>No video performance data available yet</p>
+                        <p className="text-sm">Upload videos to see analytics</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -492,18 +497,11 @@ function DashboardContent() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Total Promo Revenue</span>
-                      <span className="font-bold">${mockAnalytics.overview.promoCodeRevenue.toLocaleString()}</span>
+                      <span className="font-bold">$0</span>
                     </div>
-                    <div className="space-y-2">
-                      {mockPromoCodes.filter(code => code.totalRedemptions > 0).map((code) => (
-                        <div key={code.id} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{code.code}</span>
-                          <div className="text-right">
-                            <span className="font-medium">${code.revenueGenerated.toLocaleString()}</span>
-                            <span className="text-muted-foreground ml-2">({code.totalRedemptions} uses)</span>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p>No promo codes created yet</p>
+                      <p className="text-sm">Create discount codes to boost sales</p>
                     </div>
                   </div>
                 </CardContent>

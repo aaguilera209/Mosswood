@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +16,6 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const uploadMutation = useMutation({
@@ -61,8 +59,7 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
         description: "Your banner has been uploaded successfully.",
       });
       
-      // Clear preview state
-      setPreviewUrl(null);
+      // Clear state
       setSelectedFile(null);
       
       // Reset file input
@@ -110,13 +107,6 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
     }
 
     setSelectedFile(file);
-    
-    // Create preview URL
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleUpload = () => {
@@ -125,109 +115,37 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
     }
   };
 
-  const clearPreview = () => {
-    setPreviewUrl(null);
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <ImageIcon className="w-5 h-5" />
-          <span>Storefront Banner</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Current Banner Display */}
-        {currentBannerUrl && !previewUrl && (
-          <div className="relative">
-            <p className="text-sm text-muted-foreground mb-2">Current Banner:</p>
-            <div className="aspect-[3/1] bg-muted rounded-lg overflow-hidden">
-              <img 
-                src={currentBannerUrl} 
-                alt="Current banner"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Preview Display */}
-        {previewUrl && (
-          <div className="relative">
-            <p className="text-sm text-muted-foreground mb-2">Preview:</p>
-            <div className="aspect-[3/1] bg-muted rounded-lg overflow-hidden relative">
-              <img 
-                src={previewUrl} 
-                alt="Banner preview"
-                className="w-full h-full object-cover"
-              />
-              <Button
-                size="sm"
-                variant="destructive"
-                className="absolute top-2 right-2"
-                onClick={clearPreview}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Upload Controls */}
-        <div className="space-y-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          
-          {!selectedFile && (
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              variant="outline"
-              className="w-full"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Choose Banner Image
-            </Button>
-          )}
-
-          {selectedFile && (
-            <div className="flex space-x-2">
-              <Button
-                onClick={handleUpload}
-                disabled={uploadMutation.isPending}
-                className="flex-1"
-              >
-                {uploadMutation.isPending ? (
-                  <div className="animate-spin w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2" />
-                ) : (
-                  <Upload className="w-4 h-4 mr-2" />
-                )}
-                {uploadMutation.isPending ? 'Uploading...' : 'Upload Banner'}
-              </Button>
-              <Button
-                onClick={clearPreview}
-                variant="outline"
-                disabled={uploadMutation.isPending}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Upload a banner image for your storefront (recommended: 1200x400px, max 5MB)
-        </p>
-      </CardContent>
-    </Card>
+    <div className="inline-block">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      
+      <Button
+        onClick={() => fileInputRef.current?.click()}
+        variant="outline"
+        size="sm"
+        className="bg-background/90 hover:bg-background text-foreground border-border"
+        disabled={uploadMutation.isPending}
+      >
+        <Upload className="w-4 h-4 mr-2" />
+        {uploadMutation.isPending ? 'Uploading...' : 'Choose Banner Image'}
+      </Button>
+      
+      {selectedFile && (
+        <Button 
+          onClick={handleUpload} 
+          disabled={uploadMutation.isPending}
+          size="sm"
+          className="ml-2 bg-primary hover:bg-primary/90"
+        >
+          {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+        </Button>
+      )}
+    </div>
   );
 }
