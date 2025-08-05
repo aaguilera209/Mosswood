@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { VideoUploadModal } from '@/components/VideoUploadModal';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { StripeConnectSetup } from '@/components/StripeConnectSetup';
+import { BannerUpload } from '@/components/BannerUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
@@ -355,11 +356,12 @@ function DashboardContent() {
 
         {/* Dashboard Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="videos">Videos</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -522,8 +524,15 @@ function DashboardContent() {
                         className="relative aspect-video bg-gray-900 dark:bg-gray-800 rounded-t-lg overflow-hidden cursor-pointer"
                         onClick={(e) => handleVideoClick(video.id, e)}
                       >
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Play className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <img 
+                          src={`/api/video-thumbnail/${video.id}.jpg`}
+                          alt={video.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                          <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="w-6 h-6 text-black ml-1" />
+                          </div>
                         </div>
                         {/* Duration Badge */}
                         {video.duration && (
@@ -818,6 +827,82 @@ function DashboardContent() {
               </Card>
             </div>
           </TabsContent>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-foreground">Profile Settings</h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Banner Upload */}
+              <BannerUpload 
+                currentBannerUrl={null}
+                onUploadSuccess={(bannerUrl) => {
+                  console.log('Banner uploaded successfully:', bannerUrl);
+                }}
+              />
+
+              {/* Profile Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <User className="w-5 h-5" />
+                    <span>Profile Information</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Display Name</label>
+                    <p className="text-base">{profile?.display_name || profile?.email?.split('@')[0] || 'Creator'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                    <p className="text-base">{profile?.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Bio</label>
+                    <p className="text-base">{profile?.bio || 'No bio added yet'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Role</label>
+                    <p className="text-base capitalize">{profile?.role}</p>
+                  </div>
+                  <Button variant="outline" className="w-full">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile Information
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Storefront Link */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Storefront</CardTitle>
+                  <CardDescription>Share your public creator page</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <code className="text-sm">
+                        {window.location.origin}/creator/{(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                      </code>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        const storefrontUrl = `/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+                        window.open(storefrontUrl, '_blank');
+                      }}
+                    >
+                      View Your Storefront
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* Video Upload Modal */}
@@ -858,7 +943,7 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <ProtectedRoute requiredRole="creator">
+    <ProtectedRoute requireRole="creator">
       <DashboardContent />
     </ProtectedRoute>
   );

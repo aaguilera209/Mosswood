@@ -1517,21 +1517,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select('*')
         .eq('creator_id', creatorId);
 
-      // Get total views for creator's videos
-      const { data: viewsData, error: viewsError } = await supabase
-        .from('video_views')
-        .select('video_id')
-        .in('video_id', supabase
-          .from('videos')
-          .select('id')
-          .eq('creator_id', creatorId)
-        );
-
-      // Get video count
-      const { data: videosData, error: videosError } = await supabase
+      // Get creator's video IDs first
+      const { data: creatorVideos, error: creatorVideosError } = await supabase
         .from('videos')
         .select('id')
         .eq('creator_id', creatorId);
+
+      let viewsData = [];
+      let viewsError = null;
+      
+      // Only query views if creator has videos
+      if (creatorVideos && creatorVideos.length > 0) {
+        const videoIds = creatorVideos.map(video => video.id);
+        const result = await supabase
+          .from('video_views')
+          .select('video_id')
+          .in('video_id', videoIds || []);
+        
+        viewsData = result.data;
+        viewsError = result.error;
+      }
 
       if (followersError) {
         console.error('Error fetching followers:', followersError);
@@ -1539,14 +1544,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (viewsError) {
         console.error('Error fetching views:', viewsError);
       }
-      if (videosError) {
-        console.error('Error fetching videos:', videosError);
+      if (creatorVideosError) {
+        console.error('Error fetching videos:', creatorVideosError);
       }
 
       const stats = {
         followers: followersData?.length || 0,
         total_views: viewsData?.length || 0,
-        video_count: videosData?.length || 0
+        video_count: creatorVideos?.length || 0
       };
 
       res.json(stats);
@@ -1660,6 +1665,207 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Banner upload endpoint
+  app.post("/api/upload-banner", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { fileName, fileData, contentType, userId } = req.body;
+      
+      if (!fileName || !fileData || !userId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Convert base64 to buffer
+      const buffer = Buffer.from(fileData, 'base64');
+      const filePath = `banners/${userId}/${fileName}`;
+
+      console.log('Banner upload attempt:', { fileName, filePath, size: buffer.length });
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, buffer, {
+          contentType,
+          cacheControl: '3600',
+          upsert: true, // Allow overwriting existing banners
+        });
+
+      if (error) {
+        console.error('Banner upload error:', error);
+        return res.status(500).json({ error: `Upload failed: ${error.message}` });
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update user profile with banner URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ banner_url: publicUrlData.publicUrl })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Failed to update profile banner:', updateError);
+        return res.status(500).json({ error: 'Failed to save banner URL to profile' });
+      }
+
+      res.json({ 
+        success: true, 
+        path: data.path,
+        publicUrl: publicUrlData.publicUrl 
+      });
+
+    } catch (error: any) {
+      console.error('Banner upload error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Serve video thumbnails
+  app.get("/api/video-thumbnail/:filename", async (req: Request, res: Response) => {
+    try {
+      const filename = req.params.filename;
+      const videoId = filename.replace('.jpg', '');
+      
+      // Generate a simple colored thumbnail based on video ID
+      const colors = [
+        '#007B82', '#0d1b2a', '#ff914d', '#1DA1F2', '#00bfa6',
+        '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b'
+      ];
+      const color = colors[parseInt(videoId) % colors.length];
+      
+      // Create SVG thumbnail
+      const svg = `
+        <svg width="320" height="180" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+              <stop offset="100%" style="stop-color:${color}80;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <rect width="320" height="180" fill="url(#grad)" />
+          <circle cx="160" cy="90" r="30" fill="white" opacity="0.9"/>
+          <polygon points="150,75 150,105 175,90" fill="${color}"/>
+        </svg>
+      `;
+      
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(svg);
+      
+    } catch (error: any) {
+      console.error('Thumbnail serving error:', error);
+      res.status(500).json({ error: 'Failed to serve thumbnail' });
+    }
+  });
+
+  // Track video views
+  app.post("/api/track-view/:videoId", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const videoId = parseInt(req.params.videoId);
+      const { viewerId } = req.body;
+      
+      if (isNaN(videoId)) {
+        return res.status(400).json({ error: "Invalid video ID" });
+      }
+
+      // Insert view record
+      const { error } = await supabase
+        .from('video_views')
+        .insert([{
+          video_id: videoId,
+          viewer_id: viewerId || null,
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent')
+        }]);
+
+      if (error) {
+        console.error('Failed to track video view:', error);
+        return res.status(500).json({ error: 'Failed to track view' });
+      }
+
+      res.json({ success: true });
+
+    } catch (error: any) {
+      console.error('View tracking error:', error);
+      res.status(500).json({ error: 'Failed to track view' });
+    }
+  });
+
+  // Create necessary database tables if they don't exist
+  app.post("/api/setup-database", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      // Check if followers table exists
+      const { error: followersError } = await supabase
+        .from('followers')
+        .select('id')
+        .limit(1);
+
+      // Check if video_views table exists
+      const { error: viewsError } = await supabase
+        .from('video_views')
+        .select('id')
+        .limit(1);
+
+      let tablesNeeded = [];
+      if (followersError) tablesNeeded.push('followers');
+      if (viewsError) tablesNeeded.push('video_views');
+
+      if (tablesNeeded.length > 0) {
+        return res.json({
+          tablesNeeded,
+          message: "Database setup needed",
+          sql: `
+            -- Create followers table
+            CREATE TABLE IF NOT EXISTS followers (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              follower_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+              creator_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+              followed_at TIMESTAMPTZ DEFAULT NOW(),
+              UNIQUE(follower_id, creator_id)
+            );
+
+            -- Create video_views table
+            CREATE TABLE IF NOT EXISTS video_views (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+              viewer_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+              viewed_at TIMESTAMPTZ DEFAULT NOW(),
+              ip_address INET,
+              user_agent TEXT
+            );
+
+            -- Add banner_url to profiles if not exists
+            ALTER TABLE profiles ADD COLUMN IF NOT EXISTS banner_url TEXT;
+            
+            -- Create indexes for performance
+            CREATE INDEX IF NOT EXISTS idx_followers_creator ON followers(creator_id);
+            CREATE INDEX IF NOT EXISTS idx_followers_follower ON followers(follower_id);
+            CREATE INDEX IF NOT EXISTS idx_video_views_video ON video_views(video_id);
+            CREATE INDEX IF NOT EXISTS idx_video_views_viewer ON video_views(viewer_id);
+          `
+        });
+      }
+
+      res.json({ message: "Database is properly set up" });
+
+    } catch (error: any) {
+      console.error('Database setup check error:', error);
+      res.status(500).json({ error: "Database setup check failed", details: error.message });
+    }
+  });
+
   // Generate video thumbnail from video frame
   app.post("/api/generate-thumbnail/:videoId", async (req: Request, res: Response) => {
     try {
@@ -1684,9 +1890,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video not found" });
       }
 
-      // For now, return a placeholder thumbnail URL or use a default thumbnail generation method
-      // In a production environment, you'd use a service like ffmpeg to extract frames
-      const thumbnailUrl = `${video.video_url}#t=1`; // HTML5 video poster trick
+      // Create a better thumbnail URL using video ID for consistent thumbnails
+      const thumbnailUrl = `/api/video-thumbnail/${videoId}.jpg`;
 
       // Update video with thumbnail URL
       const { error: updateError } = await supabase

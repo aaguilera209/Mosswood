@@ -323,17 +323,11 @@ export default function CreatorStorefront() {
                   return (
                     <Card key={video.id} className="group cursor-pointer hover:shadow-lg transition-shadow">
                       <div className="relative aspect-video bg-muted overflow-hidden rounded-t-lg">
-                        {video.thumbnail_url ? (
-                          <img 
-                            src={video.thumbnail_url} 
-                            alt={video.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                            <Play className="w-12 h-12 text-primary/60" />
-                          </div>
-                        )}
+                        <img 
+                          src={`/api/video-thumbnail/${video.id}.jpg`}
+                          alt={video.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                         
                         {/* Price Badge */}
                         <div className="absolute top-2 right-2">
