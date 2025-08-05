@@ -133,7 +133,14 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                   </div>
                   
                   {/* Visit Storefront button */}
-                  <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white">
+                  <Button 
+                    className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.location.href = `/creator/${creator.username}`;
+                    }}
+                  >
                     Visit Storefront
                   </Button>
                 </div>
