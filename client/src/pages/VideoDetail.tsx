@@ -365,7 +365,17 @@ export default function VideoDetail() {
         setUseSmoothAnimation(false);
         setCurrentTime(video.currentTime);
       };
-      const handleError = () => {
+      const handleError = (event: Event) => {
+        console.error('Video playback error:', event);
+        const target = event.target as HTMLVideoElement;
+        if (target?.error) {
+          console.error('Video error details:', {
+            code: target.error.code,
+            message: target.error.message,
+            networkState: target.networkState,
+            readyState: target.readyState
+          });
+        }
         setVideoPlaybackError('Failed to load video. Please try again later.');
         setIsVideoLoading(false);
       };
@@ -482,6 +492,9 @@ export default function VideoDetail() {
                     poster={videoData.thumbnail || undefined}
                     controls={false} // We'll use custom controls
                     preload="metadata"
+                    playsInline // Essential for mobile playback
+                    webkitPlaysInline={true} // Legacy iOS support
+                    muted={isMuted} // Some browsers require muted for autoplay
                     onClick={(e) => e.stopPropagation()}
                   >
                     <source src={videoData.video_url} type="video/mp4" />
