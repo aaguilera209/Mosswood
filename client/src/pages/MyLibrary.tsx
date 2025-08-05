@@ -200,15 +200,11 @@ function MyLibraryContent() {
                   onClick={() => handleVideoClick(video.id)}
                 >
                   <div className="relative">
-                    {/* Always show elegant video title card since thumbnails are empty */}
-                    <div className="w-full h-48 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center rounded-t-lg">
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <Play className="w-6 h-6 text-primary" />
-                        </div>
-                        <p className="text-xs text-muted-foreground px-2 font-medium">{video.title}</p>
-                      </div>
-                    </div>
+                    <img 
+                      src={`/api/video-thumbnail/${video.id}.jpg`} 
+                      alt={video.title}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
                     <div className="absolute top-2 right-2">
                       <Badge className="bg-green-500 text-white">
                         Purchased

@@ -6,9 +6,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'wouter';
 import { User, Settings, LogOut, ChevronDown, BarChart3, Eye } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 export function Header() {
   const { user, profile } = useAuth();
+  const [location] = useLocation();
+  
+  // Check if we're on the storefront page to hide the storefront button
+  const isOnStorefront = location.startsWith('/creator/');
   
 
 
@@ -48,12 +53,14 @@ export function Header() {
                         Dashboard
                       </Button>
                     </Link>
-                    <Link href={`/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" />
-                        Storefront
-                      </Button>
-                    </Link>
+                    {!isOnStorefront && (
+                      <Link href={`/creator/${(profile?.display_name || profile?.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye className="w-4 h-4 mr-2" />
+                          Storefront
+                        </Button>
+                      </Link>
+                    )}
                   </>
                 )}
                 

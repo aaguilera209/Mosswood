@@ -146,13 +146,21 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
       
       {!selectedFile ? (
         <Button
-          onClick={() => {
-            console.log('BannerUpload: Choose Image button clicked');
-            fileInputRef.current?.click();
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('BannerUpload: Choose Image button clicked, fileInputRef:', fileInputRef.current);
+            if (fileInputRef.current) {
+              fileInputRef.current.click();
+              console.log('BannerUpload: File input click() called');
+            } else {
+              console.error('BannerUpload: fileInputRef.current is null');
+            }
           }}
           variant="outline"
           size="sm"
           className="bg-background/90 hover:bg-background text-foreground border-border"
+          type="button"
           disabled={uploadMutation.isPending}
         >
           <Upload className="w-4 h-4 mr-2" />

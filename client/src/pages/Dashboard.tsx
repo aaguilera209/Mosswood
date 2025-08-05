@@ -541,15 +541,11 @@ function DashboardContent() {
                         className="relative aspect-video bg-gray-900 dark:bg-gray-800 rounded-t-lg overflow-hidden cursor-pointer"
                         onClick={(e) => handleVideoClick(video.id, e)}
                       >
-                        {/* Always show placeholder with title since we don't have real thumbnails yet */}
-                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <Play className="w-6 h-6 text-primary" />
-                            </div>
-                            <p className="text-xs text-muted-foreground px-2">{video.title}</p>
-                          </div>
-                        </div>
+                        <img 
+                          src={`/api/video-thumbnail/${video.id}.jpg`}
+                          alt={video.title}
+                          className="w-full h-full object-cover"
+                        />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
                           <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Play className="w-6 h-6 text-black ml-1" />
