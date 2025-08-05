@@ -123,8 +123,12 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
   };
 
   const handleUpload = () => {
+    console.log('BannerUpload: Upload button clicked, selectedFile:', selectedFile);
     if (selectedFile) {
+      console.log('BannerUpload: Starting upload mutation');
       uploadMutation.mutate(selectedFile);
+    } else {
+      console.error('BannerUpload: No file selected for upload');
     }
   };
 

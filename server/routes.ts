@@ -1666,64 +1666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Banner upload endpoint
-  app.post("/api/upload-banner", async (req: Request, res: Response) => {
-    try {
-      if (!supabase) {
-        return res.status(500).json({ error: "Database connection not available" });
-      }
 
-      const { fileName, fileData, contentType, userId } = req.body;
-      
-      if (!fileName || !fileData || !userId) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      // Convert base64 to buffer
-      const buffer = Buffer.from(fileData, 'base64');
-      const filePath = `banners/${userId}/${fileName}`;
-
-      console.log('Banner upload attempt:', { fileName, filePath, size: buffer.length });
-
-      const { data, error } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, buffer, {
-          contentType,
-          cacheControl: '3600',
-          upsert: true, // Allow overwriting existing banners
-        });
-
-      if (error) {
-        console.error('Banner upload error:', error);
-        return res.status(500).json({ error: `Upload failed: ${error.message}` });
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Update user profile with banner URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ banner_url: publicUrlData.publicUrl })
-        .eq('id', userId);
-
-      if (updateError) {
-        console.error('Failed to update profile banner:', updateError);
-        return res.status(500).json({ error: 'Failed to save banner URL to profile' });
-      }
-
-      res.json({ 
-        success: true, 
-        path: data.path,
-        publicUrl: publicUrlData.publicUrl 
-      });
-
-    } catch (error: any) {
-      console.error('Banner upload error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
 
   // Serve video thumbnails
   app.get("/api/video-thumbnail/:filename", async (req: Request, res: Response) => {
