@@ -1461,6 +1461,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to fetch creators' });
       }
 
+      // Get video counts for all creators
+      const { data: videos, error: videosError } = await supabase
+        .from('videos')
+        .select('creator_id');
+
+      if (videosError) {
+        console.error('Error fetching video counts:', videosError);
+      }
+
+      // Count videos per creator
+      const videoCounts = (videos || []).reduce((acc: Record<string, number>, video: any) => {
+        acc[video.creator_id] = (acc[video.creator_id] || 0) + 1;
+        return acc;
+      }, {});
+
       // Transform for frontend using exact same pattern as profile endpoint
       const formattedCreators = (creators || []).map(creator => ({
         id: creator.id,
@@ -1469,7 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bio: creator.bio || 'Content creator on Mosswood',
         avatar_url: creator.avatar_url,
         email: creator.email,
-        video_count: 0,
+        video_count: videoCounts[creator.id] || 0,
         rating: null, // Will be calculated from actual reviews when available
         follower_count: null, // Will be calculated from actual followers when available
         category: 'Creator',
