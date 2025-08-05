@@ -83,11 +83,18 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
   });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('BannerUpload: File input changed', event.target.files);
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('BannerUpload: No file selected');
+      return;
+    }
+
+    console.log('BannerUpload: File selected:', file.name, file.type, file.size);
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
+      console.log('BannerUpload: Invalid file type:', file.type);
       toast({
         title: "Invalid File",
         description: "Please select an image file (JPG, PNG, etc.)",
@@ -98,6 +105,7 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
 
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
+      console.log('BannerUpload: File too large:', file.size);
       toast({
         title: "File Too Large",
         description: "Please select an image smaller than 5MB",
@@ -106,7 +114,12 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
       return;
     }
 
+    console.log('BannerUpload: File validated, setting state');
     setSelectedFile(file);
+    toast({
+      title: "File Selected",
+      description: `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB). Click Upload to proceed.`,
+    });
   };
 
   const handleUpload = () => {
@@ -127,7 +140,10 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
       
       {!selectedFile ? (
         <Button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            console.log('BannerUpload: Choose Image button clicked');
+            fileInputRef.current?.click();
+          }}
           variant="outline"
           size="sm"
           className="bg-background/90 hover:bg-background text-foreground border-border"

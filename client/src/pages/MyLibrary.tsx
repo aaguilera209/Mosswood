@@ -68,11 +68,12 @@ function MyLibraryContent() {
 
 
 
-  // Transform purchases to include video details
-  const purchasedVideos: PurchasedVideo[] = purchases.map(purchase => {
-    const videoData = getVideoById(purchase.video_id);
-    return {
-      id: purchase.video_id,
+  // Transform purchases to include video details, filtering out non-existent videos
+  const purchasedVideos: PurchasedVideo[] = purchases
+    .map(purchase => {
+      const videoData = getVideoById(purchase.video_id);
+      return {
+        id: purchase.video_id,
       title: videoData?.title || 'Unknown Video',
       creator: videoData?.creator || 'Unknown Creator',
       thumbnail: videoData?.thumbnail || '',
@@ -81,7 +82,8 @@ function MyLibraryContent() {
       purchaseDate: new Date(purchase.purchased_at).toLocaleDateString(),
       amount: purchase.amount / 100 // Convert cents to dollars
     };
-  });
+  })
+  .filter(video => video.title !== 'Unknown Video'); // Filter out videos that don't exist
 
   const handleVideoClick = (videoId: number) => {
     setLocation(`/video/${videoId}`);
@@ -202,6 +204,26 @@ function MyLibraryContent() {
                       src={video.thumbnail} 
                       alt={video.title}
                       className="w-full h-48 object-cover rounded-t-lg"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        const parent = target.parentElement;
+                        if (parent && !parent.querySelector('.library-thumbnail-fallback')) {
+                          target.style.display = 'none';
+                          const fallback = document.createElement('div');
+                          fallback.className = 'library-thumbnail-fallback w-full h-48 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center rounded-t-lg';
+                          fallback.innerHTML = `
+                            <div class="text-center">
+                              <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                              </div>
+                              <p class="text-xs text-muted-foreground">Video Thumbnail</p>
+                            </div>
+                          `;
+                          parent.appendChild(fallback);
+                        }
+                      }}
                     />
                     <div className="absolute top-2 right-2">
                       <Badge className="bg-green-500 text-white">
