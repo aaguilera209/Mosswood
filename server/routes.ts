@@ -151,6 +151,11 @@ async function generateFallbackThumbnail(videoId: string, videoTitle: string, re
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Simple auth check endpoint
+  app.get("/api/auth-check", (req: Request, res: Response) => {
+    res.json({ authenticated: true });
+  });
+
   // Backend video file upload endpoint
   app.post("/api/upload-video", async (req: Request, res: Response) => {
     try {

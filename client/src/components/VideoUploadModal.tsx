@@ -149,11 +149,26 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
 
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to upload videos",
+        title: "Authentication Required", 
+        description: "Please refresh the page and log in to upload videos",
         variant: "destructive",
       });
       return;
+    }
+
+    // Double-check user authentication before upload
+    try {
+      const authCheck = await fetch('/api/auth-check');
+      if (!authCheck.ok) {
+        toast({
+          title: "Session Expired",
+          description: "Please refresh the page and log in again",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch (error) {
+      console.warn('Auth check failed, continuing with upload');
     }
 
     console.log('User authenticated:', { id: user.id, email: user.email });
@@ -200,15 +215,28 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       let videoUrl: string;
       
       // Convert file to base64 for backend upload
+      console.log('Converting file to base64...');
+      setUploadProgress(10);
+      
       const fileReader = new FileReader();
       const fileBase64 = await new Promise<string>((resolve, reject) => {
         fileReader.onload = () => {
           const result = fileReader.result as string;
           // Remove data:video/mp4;base64, prefix
           const base64 = result.split(',')[1];
+          console.log(`Base64 conversion complete, size: ${base64.length} characters`);
           resolve(base64);
         };
-        fileReader.onerror = reject;
+        fileReader.onerror = (error) => {
+          console.error('FileReader error:', error);
+          reject(error);
+        };
+        fileReader.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = Math.round((event.loaded / event.total) * 30);
+            setUploadProgress(10 + progress); // Progress from 10% to 40%
+          }
+        };
         fileReader.readAsDataURL(formData.file!);
       });
 
@@ -221,6 +249,12 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
         fileSize: fileBase64.length
       });
 
+      // Increase timeout based on file size (minimum 2 minutes, more for larger files)
+      const fileSizeMB = formData.file!.size / (1024 * 1024);
+      const timeoutMs = Math.max(120000, fileSizeMB * 10000); // 2 min minimum, +10s per MB
+      
+      console.log(`File size: ${fileSizeMB.toFixed(2)}MB, timeout set to: ${timeoutMs/1000}s`);
+      
       const uploadResponse = await Promise.race([
         apiRequest('POST', '/api/upload-video', {
           fileName,
@@ -229,7 +263,7 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
           userId: user.id
         }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Backend upload timeout after 30 seconds')), 30000)
+          setTimeout(() => reject(new Error(`Backend upload timeout after ${timeoutMs/1000} seconds`)), timeoutMs)
         )
       ]);
       
@@ -248,7 +282,7 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       console.log('Video URL from backend:', videoUrl);
 
       console.log('File uploaded successfully via backend');
-      setUploadProgress(50);
+      setUploadProgress(70);
 
       // Parse tags from comma-separated string
       const tagsArray = formData.tags
