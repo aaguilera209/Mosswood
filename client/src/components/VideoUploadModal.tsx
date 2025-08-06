@@ -156,6 +156,8 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       return;
     }
 
+    console.log('User authenticated:', { id: user.id, email: user.email });
+
     setIsUploading(true);
     setUploadProgress(0);
     
@@ -212,6 +214,13 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
 
       console.log('File converted to base64, uploading via backend...');
       
+      console.log('Making backend upload request with data:', {
+        fileName,
+        contentType: formData.file!.type,
+        userId: user.id,
+        fileSize: fileBase64.length
+      });
+
       const uploadResponse = await Promise.race([
         apiRequest('POST', '/api/upload-video', {
           fileName,
@@ -287,11 +296,21 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
 
     } catch (error: any) {
       console.error('Upload error:', error);
-      toast({
-        title: "Upload Failed",
-        description: error.message || "There was an error uploading your video. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Specific handling for authentication errors
+      if (error.message?.includes('refresh_token_not_found') || error.message?.includes('JWT') || error.message?.includes('authentication')) {
+        toast({
+          title: "Authentication Error",
+          description: "Your session has expired. Please refresh the page and log in again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Upload Failed",
+          description: error.message || "There was an error uploading your video. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsUploading(false);
       setUploadProgress(0);

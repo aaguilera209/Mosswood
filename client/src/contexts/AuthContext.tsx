@@ -42,14 +42,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setLoading(false);
       }
+    }).catch((error) => {
+      console.error('Initial session error:', error);
+      setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
+        
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+        }
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Direct profile loading without await
           loadProfile(session.user.id);
         } else {
           setProfile(null);
