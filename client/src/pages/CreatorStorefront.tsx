@@ -338,9 +338,17 @@ export default function CreatorStorefront() {
                     <Card key={video.id} className="group cursor-pointer hover:shadow-lg transition-shadow">
                       <div className="relative aspect-video overflow-hidden rounded-t-lg">
                         <img 
-                          src={`/api/video-thumbnail/${video.id}.jpg`}
+                          src={`/api/video-thumbnail/${video.id}.jpg?t=${Date.now()}`}
                           alt={video.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          style={{ background: 'transparent' }}
+                          onLoad={(e) => {
+                            console.log(`Thumbnail loaded successfully for video ${video.id}`);
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              parent.style.background = 'transparent';
+                            }
+                          }}
                           onError={(e) => {
                             console.error(`Failed to load thumbnail for video ${video.id}`);
                             e.currentTarget.style.display = 'none';

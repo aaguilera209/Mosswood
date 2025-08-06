@@ -201,9 +201,17 @@ function MyLibraryContent() {
                 >
                   <div className="relative">
                     <img 
-                      src={`/api/video-thumbnail/${video.id}.jpg`} 
+                      src={`/api/video-thumbnail/${video.id}.jpg?t=${Date.now()}`} 
                       alt={video.title}
                       className="w-full h-48 object-cover rounded-t-lg"
+                      style={{ background: 'transparent' }}
+                      onLoad={(e) => {
+                        console.log(`Thumbnail loaded successfully for video ${video.id}`);
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.style.background = 'transparent';
+                        }
+                      }}
                       onError={(e) => {
                         console.error(`Failed to load thumbnail for video ${video.id}`);
                         e.currentTarget.style.display = 'none';
