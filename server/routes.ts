@@ -510,6 +510,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Track view milestones (30 seconds, completion) without creating new view records
+  app.post("/api/track-view-milestone", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { video_id, session_id, milestone, watch_duration } = req.body;
+
+      // Validate required fields
+      if (!video_id || !session_id || !milestone) {
+        return res.status(400).json({ error: "video_id, session_id, and milestone are required" });
+      }
+
+      // Update the existing view record for this session with milestone data
+      const updateData: any = { watch_duration };
+      
+      if (milestone === '30_seconds') {
+        updateData.watched_30_seconds = true;
+      } else if (milestone === 'completion') {
+        updateData.completed = true;
+      }
+
+      const { error } = await supabase
+        .from('video_views')
+        .update(updateData)
+        .eq('video_id', video_id)
+        .eq('session_id', session_id);
+
+      if (error) {
+        console.error('Milestone tracking error:', error);
+        return res.status(500).json({ 
+          error: "Failed to track milestone",
+          details: error.message || 'Unknown database error'
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Track milestone error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get analytics data for a creator
   app.get("/api/analytics/:creatorId", async (req: Request, res: Response) => {
     try {
@@ -591,33 +635,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .lte('subscribed_at', endDate.toISOString());
 
       // Calculate overview metrics from real-time view data
-      const totalViews = viewData?.length || 0;
+      // Count unique sessions instead of total records to get accurate view counts
+      const uniqueSessions = new Set(viewData?.map(v => v.session_id) || []);
+      const totalViews = uniqueSessions.size;
       const totalRevenue = purchaseData?.reduce((sum, p) => sum + p.amount, 0) || 0;
       const totalPurchases = purchaseData?.length || 0;
-      const totalCompletions = viewData?.filter(v => v.completed).length || 0;
-      const newViewers = viewData?.filter(v => !v.is_returning_viewer).length || 0;
-      const returningViewers = viewData?.filter(v => v.is_returning_viewer).length || 0;
+      
+      // For completion rate, count unique sessions that completed 
+      const completedSessions = new Set(viewData?.filter(v => v.completed).map(v => v.session_id) || []);
+      const totalCompletions = completedSessions.size;
+      
+      // For new/returning viewers, also count unique sessions
+      const newViewerSessions = new Set(viewData?.filter(v => !v.is_returning_viewer).map(v => v.session_id) || []);
+      const returningViewerSessions = new Set(viewData?.filter(v => v.is_returning_viewer).map(v => v.session_id) || []);
+      const newViewers = newViewerSessions.size;
+      const returningViewers = returningViewerSessions.size;
 
       const avgCompletionRate = totalViews > 0 ? Math.round((totalCompletions / totalViews) * 100) : 0;
       const avgRevenuePerViewer = totalViews > 0 ? Math.round((totalRevenue / 100) / totalViews * 100) / 100 : 0;
       const subscriberConversionRate = totalViews > 0 ? Math.round(((subscriberData?.length || 0) / totalViews) * 100 * 100) / 100 : 0;
 
-      // Device breakdown
-      const totalViewsForDevices = viewData?.length || 1; // Prevent division by zero
+      // Device breakdown - count unique sessions by device type
+      const totalViewsForDevices = totalViews || 1; // Prevent division by zero, use unique session count
+      const mobileSessionIds = new Set(viewData?.filter(v => v.device_type === 'mobile').map(v => v.session_id) || []);
+      const desktopSessionIds = new Set(viewData?.filter(v => v.device_type === 'desktop').map(v => v.session_id) || []);
+      const tabletSessionIds = new Set(viewData?.filter(v => v.device_type === 'tablet').map(v => v.session_id) || []);
+      
       const deviceBreakdown = {
-        mobile: Math.round(((viewData?.filter(v => v.device_type === 'mobile').length || 0) / totalViewsForDevices) * 100),
-        desktop: Math.round(((viewData?.filter(v => v.device_type === 'desktop').length || 0) / totalViewsForDevices) * 100), 
-        tablet: Math.round(((viewData?.filter(v => v.device_type === 'tablet').length || 0) / totalViewsForDevices) * 100)
+        mobile: Math.round((mobileSessionIds.size / totalViewsForDevices) * 100),
+        desktop: Math.round((desktopSessionIds.size / totalViewsForDevices) * 100), 
+        tablet: Math.round((tabletSessionIds.size / totalViewsForDevices) * 100)
       };
 
       // Video performance
       const videoPerformance = videos.map(video => {
         const videoViews = viewData?.filter(v => v.video_id === video.id) || [];
         const videoPurchases = purchaseData?.filter(p => p.video_id === video.id) || [];
-        const views = videoViews.length;
+        
+        // Count unique sessions for this video instead of total records
+        const uniqueVideoSessions = new Set(videoViews.map(v => v.session_id));
+        const views = uniqueVideoSessions.size;
+        
         const revenue = videoPurchases.reduce((sum, p) => sum + p.amount, 0);
         const purchases = videoPurchases.length;
-        const completions = videoViews.filter(v => v.completed).length;
+        
+        // Count unique sessions that completed for this video
+        const completedVideoSessions = new Set(videoViews.filter(v => v.completed).map(v => v.session_id));
+        const completions = completedVideoSessions.size;
 
         return {
           id: video.id,
@@ -651,22 +715,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return vDate >= weekStart && vDate < weekEnd;
         }) || [];
 
+        // Count unique sessions for the week and their total watch time
+        const weekSessionIds = new Set(weekViews.map(v => v.session_id));
         const weekWatchTime = weekViews.reduce((sum, v) => sum + (v.watch_duration || 0), 0);
         
         watchTimeTrend.push({
           date: weekStart.toISOString().split('T')[0],
-          avgWatchTime: weekViews.length > 0 ? Math.round(weekWatchTime / weekViews.length) : 0
+          avgWatchTime: weekSessionIds.size > 0 ? Math.round(weekWatchTime / weekSessionIds.size) : 0
         });
       }
 
-      // Conversion funnel
-      const watched30Sec = viewData?.filter(v => v.watched_30_seconds).length || 0;
-      const completed = viewData?.filter(v => v.completed).length || 0;
+      // Conversion funnel - count unique sessions for each milestone
+      const watched30SecSessions = new Set(viewData?.filter(v => v.watched_30_seconds).map(v => v.session_id) || []);
+      const funnelCompletedSessions = new Set(viewData?.filter(v => v.completed).map(v => v.session_id) || []);
 
       const conversionFunnel = {
         views: totalViews,
-        watched30Sec,
-        completed,
+        watched30Sec: watched30SecSessions.size,
+        completed: funnelCompletedSessions.size,
         purchased: totalPurchases
       };
 
@@ -1679,7 +1745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const videoIds = creatorVideos.map(video => video.id);
         const result = await supabase
           .from('video_views')
-          .select('video_id')
+          .select('video_id, session_id')
           .in('video_id', videoIds || []);
         
         viewsData = result.data;
@@ -1696,9 +1762,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error fetching videos:', creatorVideosError);
       }
 
+      // Count unique sessions for accurate view count
+      const uniqueViewSessions = new Set(viewsData?.map(v => v.session_id) || []);
+      
       const stats = {
         followers: followersData?.length || 0,
-        total_views: viewsData?.length || 0,
+        total_views: uniqueViewSessions.size,
         video_count: creatorVideos?.length || 0
       };
 

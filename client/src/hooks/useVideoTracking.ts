@@ -13,6 +13,7 @@ export function useVideoTracking({ videoId, videoDuration }: VideoTrackingOption
   const trackingDataRef = useRef({
     watchDuration: 0,
     lastTrackedTime: 0,
+    hasTrackedInitialView: false,
     hasTracked30Seconds: false,
     hasTrackedCompletion: false
   });
@@ -23,6 +24,7 @@ export function useVideoTracking({ videoId, videoDuration }: VideoTrackingOption
     trackingDataRef.current = {
       watchDuration: 0,
       lastTrackedTime: 0,
+      hasTrackedInitialView: false,
       hasTracked30Seconds: false,
       hasTrackedCompletion: false
     };
@@ -32,26 +34,14 @@ export function useVideoTracking({ videoId, videoDuration }: VideoTrackingOption
     try {
       const tracking = trackingDataRef.current;
       
-      // Update watch duration (only count forward progress)
-      if (currentTime > tracking.lastTrackedTime) {
-        tracking.watchDuration += (currentTime - tracking.lastTrackedTime);
-        tracking.lastTrackedTime = currentTime;
-      }
-
-      // Track initial view and milestones
-      const shouldTrack = 
-        currentTime === 0 || // Initial view
-        (!tracking.hasTracked30Seconds && tracking.watchDuration >= 30) || // 30 second milestone
-        (!tracking.hasTrackedCompletion && videoDuration && (tracking.watchDuration / videoDuration) >= 0.9); // Completion
-
-      if (shouldTrack) {
-        if (tracking.watchDuration >= 30) tracking.hasTracked30Seconds = true;
-        if (videoDuration && (tracking.watchDuration / videoDuration) >= 0.9) tracking.hasTrackedCompletion = true;
-
+      // Only track the initial view once when video starts playing
+      if (!tracking.hasTrackedInitialView && currentTime >= 0) {
+        tracking.hasTrackedInitialView = true;
+        
         await apiRequest('POST', '/api/track-view', {
           video_id: videoId,
           session_id: sessionIdRef.current,
-          watch_duration: Math.floor(tracking.watchDuration),
+          watch_duration: 0,
           device_type: getDeviceType(),
           browser: getBrowser(),
           viewer_id: user?.id || null
@@ -65,25 +55,41 @@ export function useVideoTracking({ videoId, videoDuration }: VideoTrackingOption
   const trackTimeUpdate = async (currentTime: number) => {
     const tracking = trackingDataRef.current;
     
-    // Update watch duration for continuous tracking
+    // Update watch duration for continuous tracking (only count forward progress)
     if (currentTime > tracking.lastTrackedTime) {
       tracking.watchDuration += (currentTime - tracking.lastTrackedTime);
       tracking.lastTrackedTime = currentTime;
     }
 
-    // Send periodic updates every 10 seconds of watch time
-    if (Math.floor(tracking.watchDuration) % 10 === 0 && Math.floor(tracking.watchDuration) > 0) {
+    // Track milestones only once per session
+    const shouldTrack30Seconds = !tracking.hasTracked30Seconds && tracking.watchDuration >= 30;
+    const shouldTrackCompletion = !tracking.hasTrackedCompletion && videoDuration && (tracking.watchDuration / videoDuration) >= 0.9;
+
+    if (shouldTrack30Seconds) {
+      tracking.hasTracked30Seconds = true;
       try {
-        await apiRequest('POST', '/api/track-view', {
+        await apiRequest('POST', '/api/track-view-milestone', {
           video_id: videoId,
           session_id: sessionIdRef.current,
-          watch_duration: Math.floor(tracking.watchDuration),
-          device_type: getDeviceType(),
-          browser: getBrowser(),
-          viewer_id: user?.id || null
+          milestone: '30_seconds',
+          watch_duration: Math.floor(tracking.watchDuration)
         });
       } catch (error) {
-        console.error('Failed to update view tracking:', error);
+        console.error('Failed to track 30-second milestone:', error);
+      }
+    }
+
+    if (shouldTrackCompletion) {
+      tracking.hasTrackedCompletion = true;
+      try {
+        await apiRequest('POST', '/api/track-view-milestone', {
+          video_id: videoId,
+          session_id: sessionIdRef.current,
+          milestone: 'completion',
+          watch_duration: Math.floor(tracking.watchDuration)
+        });
+      } catch (error) {
+        console.error('Failed to track completion milestone:', error);
       }
     }
   };
