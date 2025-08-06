@@ -4,6 +4,20 @@
 
 Mosswood is a full-stack web application designed as "the platform layer for creative ownership." It aims to empower content creators by providing a React-based platform where they can host their work, own their audience, and monetize on their own terms without intermediaries or algorithms. The project's vision is to create a direct-to-audience ecosystem for creative content.
 
+## Recent Changes (August 2025)
+
+### Video Thumbnail System - RESOLVED
+- **Issue**: Video thumbnails were displaying colored gradients instead of real video frame captures
+- **Solution**: Implemented authentic FFmpeg-based thumbnail generation extracting JPEG frames at 5-second mark from uploaded videos
+- **Technical Details**: Server generates 8KB JPEG images from actual video files, added cache busting and proper error handling
+- **Status**: ✅ Confirmed working - console logs show "Thumbnail loaded successfully" for all videos
+
+### Library Data Cleanup - RESOLVED  
+- **Issue**: Phantom "Sustainable Fashion Workshop" video appeared in user library despite video not existing
+- **Solution**: Removed orphaned purchase record for non-existent video ID 14, improved filtering logic
+- **Technical Details**: Added DELETE endpoint for purchases, enhanced library filtering to exclude invalid video references
+- **Status**: ✅ Confirmed working - library now shows zero purchases as expected
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
