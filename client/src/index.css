@@ -81,8 +81,15 @@
   [data-state="closed"] {
     outline: none !important;
     box-shadow: none !important;
-    border: none !important;
     resize: none !important;
+  }
+  
+  /* Exception for banner upload buttons - preserve their borders */
+  button:focus:not(.banner-upload-btn),
+  button:focus-visible:not(.banner-upload-btn),
+  [role="button"]:focus:not(.banner-upload-btn),
+  [role="button"]:focus-visible:not(.banner-upload-btn) {
+    border: none !important;
   }
 
   /* Remove corner markers/resize handles */
