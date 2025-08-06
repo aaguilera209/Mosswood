@@ -328,9 +328,16 @@ export default function VideoDetail() {
       setVideoElement(video);
       
       // Video event listeners
-      const handleLoadStart = () => setIsVideoLoading(true);
-      const handleLoadedData = () => {
+      const handleLoadStart = () => {
+        console.log('Video load start');
+        setIsVideoLoading(true);
+      };
+      
+      // Use canplaythrough for better mobile compatibility instead of loadeddata
+      const handleCanPlayThrough = () => {
+        console.log('Video can play through');
         setIsVideoLoading(false);
+        setVideoPlaybackError(null);
         // Always get duration from actual video metadata for accuracy
         if (video.duration && !isNaN(video.duration) && video.duration > 0) {
           const realDuration = Math.floor(video.duration);
@@ -338,6 +345,20 @@ export default function VideoDetail() {
           console.log('Video duration loaded:', realDuration, 'seconds');
         }
       };
+      
+      // Also listen to loadedmetadata as a fallback
+      const handleLoadedMetadata = () => {
+        console.log('Video metadata loaded');
+        if (isVideoLoading) {
+          setIsVideoLoading(false);
+          setVideoPlaybackError(null);
+        }
+        if (video.duration && !isNaN(video.duration) && video.duration > 0) {
+          const realDuration = Math.floor(video.duration);
+          setVideoDuration(realDuration);
+        }
+      };
+      
       const handleTimeUpdate = () => {
         // Always track video time updates for analytics
         trackTimeUpdate(video.currentTime);
@@ -352,7 +373,9 @@ export default function VideoDetail() {
         }
       };
       const handlePlay = () => {
+        console.log('Video play started');
         setIsPlaying(true);
+        setIsVideoLoading(false); // Ensure loading is off when playing
         // Track video view when user starts playing
         if (videoData?.id) {
           trackView(0);
@@ -361,6 +384,7 @@ export default function VideoDetail() {
         setUseSmoothAnimation(true);
       };
       const handlePause = () => {
+        console.log('Video paused');
         setIsPlaying(false);
         // Disable smooth animation and update current time
         setUseSmoothAnimation(false);
@@ -381,8 +405,10 @@ export default function VideoDetail() {
         setIsVideoLoading(false);
       };
 
+      // Add event listeners with better mobile support
       video.addEventListener('loadstart', handleLoadStart);
-      video.addEventListener('loadeddata', handleLoadedData);
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('canplaythrough', handleCanPlayThrough);
       video.addEventListener('timeupdate', handleTimeUpdate);
       video.addEventListener('progress', handleProgress);
       video.addEventListener('play', handlePlay);
@@ -391,6 +417,11 @@ export default function VideoDetail() {
 
       // Set volume
       video.volume = volume / 100;
+      
+      // Set initial loading state based on ready state
+      if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
+        setIsVideoLoading(false);
+      }
 
       // Store cleanup function to be called later if needed
       // (Note: Not returned to avoid React ref callback warning)
@@ -430,7 +461,8 @@ export default function VideoDetail() {
       case 'fullscreen':
         return 'w-full h-full object-contain';
       default:
-        return 'w-full aspect-video rounded-lg';
+        // Better mobile responsiveness with min-height
+        return 'w-full aspect-video rounded-lg min-h-[200px] md:min-h-[300px]';
     }
   };
 
@@ -449,21 +481,23 @@ export default function VideoDetail() {
     <div className={getPageClasses()}>
       {/* Header - hidden in fullscreen */}
       {playbackMode !== 'fullscreen' && (
-        <header className="border-b border-border px-6 py-4">
+        <header className="border-b border-border px-4 md:px-6 py-3 md:py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <Link href="/dashboard" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Dashboard</span>
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
             </Link>
-            <div className="flex items-center space-x-4">
-              <Logo showText={true} className="text-2xl" />
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <Logo showText={false} className="text-xl md:text-2xl md:block" />
+              <Logo showText={true} className="hidden md:block text-xl md:text-2xl" />
               <ThemeToggle />
             </div>
           </div>
         </header>
       )}
 
-      <div className={`bg-background ${playbackMode === 'fullscreen' ? '' : 'px-6 py-8'}`}>
+      <div className={`bg-background ${playbackMode === 'fullscreen' ? '' : 'px-2 md:px-6 py-4 md:py-8'}`}>
 
 
         {/* Video Player Section */}
@@ -494,7 +528,7 @@ export default function VideoDetail() {
                     controls={false} // We'll use custom controls
                     preload="metadata"
                     playsInline // Essential for mobile playback
-                    webkitPlaysInline={true} // Legacy iOS support
+                    x-webkit-airplay="allow"
                     muted={isMuted} // Some browsers require muted for autoplay
                     onClick={(e) => e.stopPropagation()}
                   >
