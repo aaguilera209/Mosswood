@@ -872,9 +872,6 @@ function DashboardContent() {
           onClose={handleCloseUploadModal} 
         />
 
-        {/* Stripe Connect Setup */}
-        <StripeConnectSetup />
-
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={!!deleteVideoId} onOpenChange={(open) => !open && setDeleteVideoId(null)}>
           <AlertDialogContent>
