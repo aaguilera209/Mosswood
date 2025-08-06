@@ -79,6 +79,9 @@ export default function VideoDetail() {
     videoDuration: videoDuration || undefined
   });
   
+  // Detect mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
   // Also check URL parameters for recent purchases (to handle immediate post-purchase access)
   const urlParams = new URLSearchParams(window.location.search);
   const recentPurchase = urlParams.get('purchased') === 'true';
@@ -311,11 +314,24 @@ export default function VideoDetail() {
     }
     
     if (canWatchVideo()) {
+      // Force loading state off for mobile compatibility
+      if (isVideoLoading) {
+        console.log('Force clearing loading state on click');
+        setIsVideoLoading(false);
+      }
+      
       if (videoElement) {
         if (isPlaying) {
           videoElement.pause();
         } else {
-          videoElement.play();
+          // Use play() with promise handling for better mobile support
+          const playPromise = videoElement.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.error('Play failed:', error);
+              setVideoPlaybackError('Video playback failed. Try again.');
+            });
+          }
         }
       }
     } else {
@@ -422,6 +438,13 @@ export default function VideoDetail() {
       if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
         setIsVideoLoading(false);
       }
+      
+      // Aggressive mobile fallback: Force loading state to false much sooner
+      const mobileLoadTimeout = setTimeout(() => {
+        console.log('Mobile fallback: Forcing loading state to false');
+        setIsVideoLoading(false);
+        setVideoPlaybackError(null);
+      }, isMobile ? 1000 : 3000); // 1 second for mobile, 3 seconds for desktop
 
       // Store cleanup function to be called later if needed
       // (Note: Not returned to avoid React ref callback warning)
@@ -503,9 +526,10 @@ export default function VideoDetail() {
         {/* Video Player Section */}
         <div className={`${getVideoContainerClasses()} ${playbackMode === 'theater' ? 'bg-black rounded-lg overflow-hidden' : ''}`}>
           <div 
-            className="relative group cursor-pointer"
+            className="relative group cursor-pointer touch-manipulation"
             onMouseEnter={() => setShowControls(true)}
             onMouseLeave={() => setShowControls(false)}
+            onTouchStart={() => setShowControls(true)}
             onClick={(e) => {
               // Don't toggle play/pause if volume is being dragged
               if (isDraggingRef.current) {
@@ -514,6 +538,12 @@ export default function VideoDetail() {
                 return;
               }
               handleVideoClick();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              if (!isDraggingRef.current) {
+                handleVideoClick();
+              }
             }}
           >
             {/* HTML5 Video Player or Access Control */}
@@ -526,11 +556,13 @@ export default function VideoDetail() {
                     className="w-full h-full object-contain"
                     poster={videoData.thumbnail || undefined}
                     controls={false} // We'll use custom controls
-                    preload="metadata"
+                    preload="auto" // Changed from metadata to auto for mobile
                     playsInline // Essential for mobile playback
+                    webkit-playsinline="true" // iOS compatibility
                     x-webkit-airplay="allow"
                     muted={isMuted} // Some browsers require muted for autoplay
                     onClick={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
                   >
                     <source src={videoData.video_url} type="video/mp4" />
                     <source src={videoData.video_url} type="video/webm" />
@@ -538,12 +570,26 @@ export default function VideoDetail() {
                     Your browser does not support the video tag.
                   </video>
                   
-                  {/* Video Loading State */}
+                  {/* Video Loading State with mobile optimization */}
                   {isVideoLoading && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <div className="text-center text-white">
                         <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
-                        <p>Loading video...</p>
+                        <p className="text-sm md:text-base">{isMobile ? 'Tap to play' : 'Loading video...'}</p>
+                        {isMobile && (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('Mobile force play button clicked');
+                              setIsVideoLoading(false);
+                              handleVideoClick();
+                            }}
+                            className="mt-2 bg-primary hover:bg-primary/90"
+                            size="sm"
+                          >
+                            Play Video
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -577,7 +623,7 @@ export default function VideoDetail() {
                   
                   {/* Play Button Overlay (shown when video is paused and not loading) */}
                   {!isPlaying && !isVideoLoading && !videoPlaybackError && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <div className="bg-white/90 hover:bg-white transition-colors rounded-full p-4 cursor-pointer">
                         <Play className="w-8 h-8 text-black ml-1" />
                       </div>
