@@ -39,37 +39,88 @@ const FRONTEND_URL = process.env.REPLIT_DOMAIN
 
 // Helper function to generate video thumbnail using FFmpeg
 async function generateVideoThumbnail(videoPath: string, videoId: string, videoTitle: string, res: Response): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const outputPath = `/tmp/thumb_${videoId}.jpg`;
     
-    ffmpeg(videoPath)
-      .screenshot({
-        timestamps: ['10%'], // Extract frame at 10% into video
-        filename: `thumb_${videoId}.jpg`,
-        folder: '/tmp/',
-        size: '320x180'
-      })
-      .on('end', async () => {
-        try {
-          const buffer = await fs.readFile(outputPath);
-          res.setHeader('Content-Type', 'image/jpeg');
-          res.setHeader('Cache-Control', 'public, max-age=86400');
-          res.send(buffer);
-          
-          // Clean up temp file
-          await fs.unlink(outputPath).catch(() => {});
-          resolve();
-        } catch (error) {
-          console.error('Error reading thumbnail:', error);
-          await generateFallbackThumbnail(videoId, videoTitle, res);
-          resolve();
+    try {
+      // For Supabase storage URLs, we need to download the file first
+      if (videoPath.startsWith('http')) {
+        console.log(`Downloading video for thumbnail generation: ${videoPath}`);
+        const videoResponse = await fetch(videoPath);
+        if (!videoResponse.ok) {
+          throw new Error(`Failed to download video: ${videoResponse.status}`);
         }
-      })
-      .on('error', async (error) => {
-        console.error('FFmpeg thumbnail generation failed:', error);
-        await generateFallbackThumbnail(videoId, videoTitle, res);
-        resolve();
-      });
+        
+        const videoBuffer = await videoResponse.arrayBuffer();
+        const tempVideoPath = `/tmp/video_${videoId}.mp4`;
+        await fs.writeFile(tempVideoPath, Buffer.from(videoBuffer));
+        
+        // Now extract thumbnail from local file
+        ffmpeg(tempVideoPath)
+          .screenshot({
+            timestamps: ['00:00:05'], // Extract frame at 5 seconds
+            filename: `thumb_${videoId}.jpg`,
+            folder: '/tmp/',
+            size: '320x180'
+          })
+          .on('end', async () => {
+            try {
+              const buffer = await fs.readFile(outputPath);
+              res.setHeader('Content-Type', 'image/jpeg');
+              res.setHeader('Cache-Control', 'public, max-age=86400');
+              res.send(buffer);
+              
+              // Clean up temp files
+              await fs.unlink(outputPath).catch(() => {});
+              await fs.unlink(tempVideoPath).catch(() => {});
+              resolve();
+            } catch (error) {
+              console.error('Error reading thumbnail:', error);
+              await generateFallbackThumbnail(videoId, videoTitle, res);
+              resolve();
+            }
+          })
+          .on('error', async (error) => {
+            console.error('FFmpeg thumbnail generation failed:', error);
+            await generateFallbackThumbnail(videoId, videoTitle, res);
+            await fs.unlink(tempVideoPath).catch(() => {});
+            resolve();
+          });
+      } else {
+        // Handle local file paths
+        ffmpeg(videoPath)
+          .screenshot({
+            timestamps: ['00:00:05'],
+            filename: `thumb_${videoId}.jpg`,
+            folder: '/tmp/',
+            size: '320x180'
+          })
+          .on('end', async () => {
+            try {
+              const buffer = await fs.readFile(outputPath);
+              res.setHeader('Content-Type', 'image/jpeg');
+              res.setHeader('Cache-Control', 'public, max-age=86400');
+              res.send(buffer);
+              
+              await fs.unlink(outputPath).catch(() => {});
+              resolve();
+            } catch (error) {
+              console.error('Error reading thumbnail:', error);
+              await generateFallbackThumbnail(videoId, videoTitle, res);
+              resolve();
+            }
+          })
+          .on('error', async (error) => {
+            console.error('FFmpeg thumbnail generation failed:', error);
+            await generateFallbackThumbnail(videoId, videoTitle, res);
+            resolve();
+          });
+      }
+    } catch (error) {
+      console.error('Video download failed:', error);
+      await generateFallbackThumbnail(videoId, videoTitle, res);
+      resolve();
+    }
   });
 }
 
@@ -1751,7 +1802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get video data including file path
       const { data: video, error: videoError } = await supabase
         .from('videos')
-        .select('title, file_path, thumbnail_url')
+        .select('title, video_url, thumbnail_url')
         .eq('id', videoId)
         .single();
 
@@ -1775,11 +1826,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Try to generate thumbnail from video file if available
-      // For now, we'll use fallback since video files are stored in Supabase storage
-      // In production, you'd download the video file first or use a cloud service
-      console.log(`Generating thumbnail for video ${videoId}: ${video.title}`);
-      await generateFallbackThumbnail(videoId, video.title, res);
+      // Generate real video thumbnail using FFmpeg
+      if (video.video_url) {
+        console.log(`Generating real video thumbnail for ${videoId}: ${video.title} from ${video.video_url}`);
+        await generateVideoThumbnail(video.video_url, videoId, video.title, res);
+      } else {
+        console.log(`No video file available for ${videoId}, using fallback thumbnail`);
+        await generateFallbackThumbnail(videoId, video.title, res);
+      }
       
     } catch (error: any) {
       console.error('Thumbnail serving error:', error);

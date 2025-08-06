@@ -91,6 +91,18 @@
   [role="button"]:focus-visible:not(.banner-upload-btn) {
     border: none !important;
   }
+  
+  /* Ensure banner upload buttons keep their borders in all states */
+  .banner-upload-btn {
+    border: 1px solid hsl(var(--border)) !important;
+  }
+  
+  .banner-upload-btn:hover,
+  .banner-upload-btn:focus,
+  .banner-upload-btn:active {
+    border: 1px solid hsl(var(--border)) !important;
+    background-color: hsl(var(--background)) !important;
+  }
 
   /* Remove corner markers/resize handles */
   *:focus::before,

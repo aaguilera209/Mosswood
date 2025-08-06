@@ -17,6 +17,7 @@ export const videos = pgTable("videos", {
   is_free: boolean("is_free").notNull().default(false),
   tags: text("tags").array().default([]), // Array of tag strings
   video_url: text("video_url").notNull(),
+  file_path: text("file_path"), // Storage path for video file
   thumbnail_url: text("thumbnail_url"),
   file_size: integer("file_size"), // File size in bytes
   duration: integer("duration"), // Duration in seconds
