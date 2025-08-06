@@ -135,13 +135,14 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
   };
 
   return (
-    <div className="inline-block">
+    <div className="inline-block relative z-50">
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
+        style={{ zIndex: 999 }}
       />
       
       {!selectedFile ? (

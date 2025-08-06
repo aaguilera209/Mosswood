@@ -1681,7 +1681,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
       const color = colors[parseInt(videoId) % colors.length];
       
-      // Create SVG thumbnail with better styling
+      // For now, generate actual video title thumbnails instead of just gradients
+      // TODO: Implement real video frame extraction
+      const { data: video } = await supabase
+        .from('videos')
+        .select('title')
+        .eq('id', videoId)
+        .single();
+      
+      const videoTitle = video?.title || `Video ${videoId}`;
+      
+      // Create styled SVG thumbnail with video title
       const svg = `<svg width="320" height="180" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="grad${videoId}" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1692,6 +1702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   <rect width="320" height="180" fill="url(#grad${videoId})" />
   <circle cx="160" cy="90" r="25" fill="white" opacity="0.95"/>
   <polygon points="153,80 153,100 172,90" fill="${color}"/>
+  <text x="160" y="160" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="500" text-anchor="middle" fill="white" opacity="0.9">${videoTitle}</text>
 </svg>`;
       
       res.setHeader('Content-Type', 'image/svg+xml');

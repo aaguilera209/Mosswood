@@ -157,7 +157,7 @@ export default function CreatorStorefront() {
         
         {/* Banner Upload Button for Creator Only */}
         {isOwnPage && (
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 z-50">
             <BannerUpload 
               currentBannerUrl={creatorProfile?.banner_url}
               onUploadSuccess={(bannerUrl) => {

@@ -61,6 +61,16 @@ export function Header() {
                         </Button>
                       </Link>
                     )}
+                    
+                    {/* Debug: Always show storefront button for testing */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <Link href={`/creator/alex-aguilera`}>
+                        <Button variant="outline" size="sm" className="bg-red-100 dark:bg-red-900">
+                          <Eye className="w-4 h-4 mr-2" />
+                          DEBUG Storefront
+                        </Button>
+                      </Link>
+                    )}
                   </>
                 )}
                 
