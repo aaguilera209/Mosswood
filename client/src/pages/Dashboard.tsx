@@ -828,7 +828,11 @@ function DashboardContent() {
                       <label className="text-sm font-medium text-muted-foreground">Role</label>
                       <p className="text-base capitalize">{profile?.role}</p>
                     </div>
-                    <Button variant="outline" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setLocation('/edit-profile')}
+                    >
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Profile Information
                     </Button>
