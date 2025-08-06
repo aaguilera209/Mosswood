@@ -19,65 +19,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { AnalyticsCharts } from '@/components/AnalyticsCharts';
 
-// Mock video data with enhanced analytics - TODO: Replace with actual data from backend
-const mockVideos = [
-  {
-    id: 1,
-    title: "My Creative Journey: From Beginner to Creator",
-    status: "Published",
-    thumbnail: null,
-    duration: "12:34",
-    views: 1250,
-    purchases: 89,
-    revenue: 891.00,
-    conversionRate: 7.1,
-    watchThroughRate: 78,
-    avgWatchTime: "9:47",
-    publishedAt: "2024-12-15"
-  },
-  {
-    id: 2,
-    title: "Behind the Scenes: Setting Up My Home Studio",
-    status: "Published", 
-    thumbnail: null,
-    duration: "8:22",
-    views: 892,
-    purchases: 67,
-    revenue: 670.00,
-    conversionRate: 7.5,
-    watchThroughRate: 82,
-    avgWatchTime: "6:51",
-    publishedAt: "2024-12-10"
-  },
-  {
-    id: 3,
-    title: "Tutorial: Advanced Video Editing Techniques",
-    status: "Draft",
-    thumbnail: null,
-    duration: "15:47",
-    views: 0,
-    purchases: 0,
-    revenue: 0,
-    conversionRate: 0,
-    watchThroughRate: 0,
-    avgWatchTime: "0:00",
-    publishedAt: null
-  },
-  {
-    id: 4,
-    title: "Q&A with My Community",
-    status: "Published",
-    thumbnail: null,
-    duration: "25:12",
-    views: 2100,
-    purchases: 134,
-    revenue: 1340.00,
-    conversionRate: 6.4,
-    watchThroughRate: 65,
-    avgWatchTime: "16:23",
-    publishedAt: "2024-12-05"
-  }
-];
+// Using real video data from backend
 
 // Mock promo code data
 const mockPromoCodes = [
@@ -341,6 +283,15 @@ function DashboardContent() {
               >
                 <User className="w-4 h-4" />
                 <span>Edit Profile</span>
+              </Button>
+              <Button
+                onClick={() => setLocation(`/creator/${profile?.display_name || profile?.email?.split('@')[0] || 'creator'}`)}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>Storefront</span>
               </Button>
               <ThemeToggle />
               <Button 
