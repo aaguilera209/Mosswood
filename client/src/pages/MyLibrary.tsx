@@ -204,6 +204,14 @@ function MyLibraryContent() {
                       src={`/api/video-thumbnail/${video.id}.jpg`} 
                       alt={video.title}
                       className="w-full h-48 object-cover rounded-t-lg"
+                      onError={(e) => {
+                        console.error(`Failed to load thumbnail for video ${video.id}`);
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.style.background = 'linear-gradient(135deg, #0d1b2a 0%, #007B82 100%)';
+                        }
+                      }}
                     />
                     <div className="absolute top-2 right-2">
                       <Badge className="bg-green-500 text-white">

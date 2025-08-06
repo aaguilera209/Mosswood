@@ -336,11 +336,19 @@ export default function CreatorStorefront() {
 
                   return (
                     <Card key={video.id} className="group cursor-pointer hover:shadow-lg transition-shadow">
-                      <div className="relative aspect-video bg-muted overflow-hidden rounded-t-lg">
+                      <div className="relative aspect-video overflow-hidden rounded-t-lg">
                         <img 
                           src={`/api/video-thumbnail/${video.id}.jpg`}
                           alt={video.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            console.error(`Failed to load thumbnail for video ${video.id}`);
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              parent.style.background = 'linear-gradient(135deg, #0d1b2a 0%, #007B82 100%)';
+                            }
+                          }}
                         />
                         
                         {/* Price Badge */}
