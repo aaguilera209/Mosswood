@@ -160,7 +160,7 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
           }}
           variant="outline"
           size="sm"
-          className="bg-background/90 hover:bg-background text-foreground border-border"
+          className="bg-background/90 hover:bg-background text-foreground border-border hover:border-border focus:border-border active:border-border"
           type="button"
           disabled={uploadMutation.isPending}
         >
@@ -173,7 +173,7 @@ export function BannerUpload({ currentBannerUrl, onUploadSuccess }: BannerUpload
             onClick={() => fileInputRef.current?.click()}
             variant="outline"
             size="sm"
-            className="bg-background/90 hover:bg-background text-foreground border-border"
+            className="bg-background/90 hover:bg-background text-foreground border-border hover:border-border focus:border-border active:border-border"
             disabled={uploadMutation.isPending}
           >
             <Upload className="w-4 h-4 mr-2" />
