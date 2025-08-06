@@ -1564,6 +1564,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete purchase record
+  app.delete("/api/purchases/:id", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const purchaseId = req.params.id;
+      
+      const { error } = await supabase
+        .from('purchases')
+        .delete()
+        .eq('id', purchaseId);
+
+      if (error) {
+        console.error('Purchase delete error:', error);
+        return res.status(500).json({ error: 'Failed to delete purchase' });
+      }
+
+      res.json({ success: true, message: 'Purchase deleted successfully' });
+    } catch (error: any) {
+      console.error('Purchase delete error:', error);
+      res.status(500).json({ error: 'Failed to delete purchase' });
+    }
+  });
+
   // Remove duplicate explore-creators endpoint
 
   // Get all creators for explore page - fixed version
@@ -1831,8 +1857,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Generating real video thumbnail for ${videoId}: ${video.title} from ${video.video_url}`);
         await generateVideoThumbnail(video.video_url, videoId, video.title, res);
       } else {
-        console.log(`No video file available for ${videoId}, using fallback thumbnail`);
-        await generateFallbackThumbnail(videoId, video.title, res);
+        console.log(`No video file available for ${videoId}, cannot generate thumbnail`);
+        return res.status(404).json({ error: 'Video file not available for thumbnail generation' });
       }
       
     } catch (error: any) {
