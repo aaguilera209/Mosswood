@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  // Check if user came from email confirmation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('confirmed') === 'true') {
+      toast({
+        title: "Email confirmed!",
+        description: "Your account is now active. Please sign in below.",
+      });
+    }
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

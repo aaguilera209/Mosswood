@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
         
         if (event === 'TOKEN_REFRESHED') {
@@ -61,6 +61,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
           setLoading(false);
           return;
+        }
+        
+        // Handle email confirmation - create profile if it doesn't exist
+        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+          console.log('User signed in with confirmed email');
+          
+          // Check if profile exists
+          try {
+            const response = await fetch(`/api/profile/${encodeURIComponent(session.user.email!)}`);
+            if (!response.ok) {
+              // Profile doesn't exist, create it
+              console.log('Creating profile for new user');
+              await fetch('/api/create-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: session.user.id,
+                  email: session.user.email
+                })
+              });
+            }
+          } catch (error) {
+            console.error('Error checking/creating profile:', error);
+          }
         }
         
         setUser(session?.user ?? null);
@@ -115,27 +139,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
+    // Configure signup to require email confirmation but redirect properly
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login?confirmed=true`
+      }
     });
 
     if (error) throw error;
 
-    // Create profile if user was created
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: data.user.id,
-            email: data.user.email!,
-            role: 'viewer', // Default to viewer role for new signups
-          },
-        ]);
-
-      if (profileError) throw profileError;
-    }
+    // Don't create profile immediately - wait for email confirmation
+    // Profile will be created via backend when user confirms email
+    console.log('Signup initiated, user needs to confirm email:', data.user?.email);
   };
 
   const signIn = async (email: string, password: string) => {

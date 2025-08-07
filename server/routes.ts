@@ -156,6 +156,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authenticated: true });
   });
 
+  // Profile creation endpoint for new users
+  app.post("/api/create-profile", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { userId, email } = req.body;
+      
+      if (!userId || !email) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Use service role client to bypass RLS for profile creation
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: userId,
+            email: email,
+            role: 'viewer', // Default role for new signups
+          },
+        ]);
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        return res.status(500).json({ error: `Failed to create profile: ${profileError.message}` });
+      }
+
+      res.json({ message: "Profile created successfully" });
+
+    } catch (error: any) {
+      console.error('Create profile error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Backend video file upload endpoint
   app.post("/api/upload-video", async (req: Request, res: Response) => {
     try {

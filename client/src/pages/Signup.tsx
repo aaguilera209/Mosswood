@@ -24,10 +24,10 @@ export default function Signup() {
     try {
       await signUp(email, password);
       toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
+        title: "Check your email!",
+        description: "We've sent you a confirmation link. Click it to complete your signup.",
       });
-      setLocation('/');
+      // Don't redirect immediately - stay on signup page with success message
     } catch (error: any) {
       toast({
         title: "Signup failed",
