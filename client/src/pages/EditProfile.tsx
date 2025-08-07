@@ -98,7 +98,8 @@ export default function EditProfile() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
       // Force refresh the page to update AuthContext
-      window.location.href = '/dashboard';
+      const redirectUrl = profile?.role === 'creator' ? '/dashboard' : '/';
+      window.location.href = redirectUrl;
     },
     onError: (error: any) => {
       toast({
@@ -293,10 +294,10 @@ export default function EditProfile() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <RouterLink href="/dashboard">
+            <RouterLink href={profile?.role === 'creator' ? '/dashboard' : '/'}>
               <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
+                {profile?.role === 'creator' ? 'Back to Dashboard' : 'Back to Home'}
               </Button>
             </RouterLink>
           </div>
@@ -468,7 +469,7 @@ export default function EditProfile() {
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-4 pt-6">
-                <RouterLink href="/dashboard">
+                <RouterLink href={profile?.role === 'creator' ? '/dashboard' : '/'}>
                   <Button type="button" variant="outline">
                     Cancel
                   </Button>
