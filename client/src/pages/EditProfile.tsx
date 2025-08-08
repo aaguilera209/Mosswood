@@ -87,19 +87,42 @@ export default function EditProfile() {
         throw new Error('Profile ID not found');
       }
       
-      const response = await apiRequest('PUT', `/api/profile/${profileId}`, data);
-      const result = await response.json();
-      return result;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Profile Updated", 
-        description: "Your profile has been successfully updated.",
+      // Check if this is a viewer becoming a creator (first-time profile setup)
+      const isViewerBecomingCreator = profile?.role === 'viewer' && 
+        data.display_name && 
+        data.bio && 
+        data.tagline;
+      
+      const response = await apiRequest('PUT', `/api/profile/${profileId}`, {
+        ...data,
+        // Include role update if viewer is completing their creator profile
+        ...(isViewerBecomingCreator && { role: 'creator' })
       });
+      const result = await response.json();
+      return { result, isViewerBecomingCreator };
+    },
+    onSuccess: (data) => {
+      const { isViewerBecomingCreator } = data;
+      
+      if (isViewerBecomingCreator) {
+        toast({
+          title: "Welcome to the creator community!",
+          description: "Your creator profile is complete. Redirecting to your dashboard...",
+        });
+      } else {
+        toast({
+          title: "Profile Updated", 
+          description: "Your profile has been successfully updated.",
+        });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
-      // Force refresh the page to update AuthContext
-      const redirectUrl = profile?.role === 'creator' ? '/dashboard' : '/';
-      window.location.href = redirectUrl;
+      
+      // Redirect appropriately
+      const redirectUrl = isViewerBecomingCreator || profile?.role === 'creator' ? '/dashboard' : '/';
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 1500); // Give user time to read the success message
     },
     onError: (error: any) => {
       toast({
@@ -307,8 +330,13 @@ export default function EditProfile() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <User className="w-5 h-5" />
-              <span>Edit Profile</span>
+              <span>{profile?.role === 'viewer' ? 'Set Up Your Creator Profile' : 'Edit Profile'}</span>
             </CardTitle>
+            {profile?.role === 'viewer' && (
+              <p className="text-muted-foreground">
+                Complete your profile to become a creator and start sharing your content.
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -482,10 +510,10 @@ export default function EditProfile() {
                   {(updateProfileMutation.isPending || uploadAvatarMutation.isPending) ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
+                      <span>{profile?.role === 'viewer' ? 'Becoming Creator...' : 'Saving...'}</span>
                     </div>
                   ) : (
-                    'Save Profile'
+                    profile?.role === 'viewer' ? 'Become a Creator' : 'Save Profile'
                   )}
                 </Button>
               </div>

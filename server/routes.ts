@@ -1563,10 +1563,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Database connection not available" });
       }
       
-      // First check if profile exists
+      // First check if profile exists and get current role
       const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, role')
         .eq('id', id)
         .single();
         
@@ -1575,13 +1575,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Profile not found' });
       }
       
-      // Validate the input data
-      const validatedData = updateProfileSchema.parse(profileData);
+      // Extract role from request if provided (for viewer -> creator transition)
+      const { role, ...restProfileData } = profileData;
+      
+      // Validate the input data (excluding role from validation)
+      const validatedData = updateProfileSchema.parse(restProfileData);
+      
+      // Prepare the update data
+      let updateData = validatedData;
+      
+      // Handle role transition: viewer -> creator
+      if (role === 'creator' && existingProfile.role === 'viewer') {
+        console.log(`Converting viewer ${id} to creator`);
+        updateData = { ...validatedData, role: 'creator' };
+      }
       
       // Update the profile
       const { data, error } = await supabase
         .from('profiles')
-        .update(validatedData)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();

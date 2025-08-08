@@ -43,30 +43,31 @@ export default function ViewerHome() {
   }));
 
   const handleBecomeCreator = async () => {
-    // For testing without authentication, simulate the flow
     if (!user) {
       toast({
-        title: "Demo: You're now a creator!",
-        description: "In a real app, you'd need to sign in first. Redirecting to dashboard...",
+        title: "Please sign in",
+        description: "You need to be signed in to become a creator.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if user is already a creator
+    if (profile?.role === 'creator') {
+      toast({
+        title: "You're already a creator!",
+        description: "Redirecting to your dashboard...",
       });
       setLocation('/dashboard');
       return;
     }
 
-    try {
-      await becomeCreator();
-      toast({
-        title: "You're now a creator!",
-        description: "Your dashboard is ready.",
-      });
-      setLocation('/dashboard');
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to become a creator.",
-        variant: "destructive",
-      });
-    }
+    // Redirect to Profile Builder instead of directly making them a creator
+    toast({
+      title: "Let's set up your creator profile!",
+      description: "Complete your profile to start creating.",
+    });
+    setLocation('/edit-profile');
   };
 
   return (
@@ -96,9 +97,11 @@ export default function ViewerHome() {
                     My Library
                   </Button>
                 </Link>
-                <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
-                  Become a Creator
-                </Button>
+                {profile?.role === 'viewer' && (
+                  <Button size="lg" variant="secondary" onClick={handleBecomeCreator}>
+                    Become a Creator
+                  </Button>
+                )}
               </>
             ) : (
               <>
