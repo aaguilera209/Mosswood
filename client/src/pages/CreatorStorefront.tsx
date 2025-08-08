@@ -3,10 +3,11 @@ import { useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Play, ExternalLink, Lock, Star, DollarSign, MapPin, Globe, User, Clock, Mail } from 'lucide-react';
+import { Play, ExternalLink, Lock, Star, DollarSign, MapPin, Globe, User, Clock, Mail, Upload } from 'lucide-react';
 import { FaTwitter, FaYoutube, FaGlobe, FaInstagram, FaTiktok } from 'react-icons/fa';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { VideoUploadModal } from '@/components/VideoUploadModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -17,6 +18,9 @@ import { BannerUpload } from '@/components/BannerUpload';
 export default function CreatorStorefront() {
   const { user, profile } = useAuth();
   const params = useParams();
+  
+  // Upload modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   
   // Fetch creator profile data
   const { data: creatorData, isLoading: creatorLoading } = useQuery({
@@ -86,6 +90,14 @@ export default function CreatorStorefront() {
     } else {
       console.log('No contact email available for this creator');
     }
+  };
+
+  const handleUploadVideo = () => {
+    setIsUploadModalOpen(true);
+  };
+
+  const handleCloseUploadModal = () => {
+    setIsUploadModalOpen(false);
   };
 
   const getSocialIcon = (platform: string) => {
@@ -319,9 +331,10 @@ export default function CreatorStorefront() {
                   <p className="text-muted-foreground">No videos uploaded yet.</p>
                   {isOwnPage && (
                     <Button
-                      onClick={() => window.location.href = '/dashboard'}
+                      onClick={handleUploadVideo}
                       className="mt-4"
                     >
+                      <Upload className="w-4 h-4 mr-2" />
                       Upload Your First Video
                     </Button>
                   )}
@@ -437,6 +450,13 @@ export default function CreatorStorefront() {
       </div>
 
       <Footer />
+      
+      {/* Video Upload Modal */}
+      <VideoUploadModal 
+        isOpen={isUploadModalOpen}
+        onClose={handleCloseUploadModal}
+        redirectTo="storefront"
+      />
     </div>
   );
 }

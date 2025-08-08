@@ -24,9 +24,10 @@ interface VideoUploadFormData {
 interface VideoUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  redirectTo?: 'dashboard' | 'storefront'; // Optional redirect destination
 }
 
-export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
+export function VideoUploadModal({ isOpen, onClose, redirectTo = 'dashboard' }: VideoUploadModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -278,13 +279,19 @@ export function VideoUploadModal({ isOpen, onClose }: VideoUploadModalProps) {
       setUploadProgress(100);
 
       // Show success toast
+      const successMessage = redirectTo === 'storefront' 
+        ? "Your video is now available on your storefront."
+        : "Your video is now available in your dashboard.";
+        
       toast({
         title: "Video Uploaded Successfully!",
-        description: "Your video is now available in your dashboard.",
+        description: successMessage,
       });
 
       // Invalidate videos query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['videos'] });
+      // Also invalidate creator-specific video queries for storefront refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
 
       // Close modal and reset form
       resetForm();
