@@ -13,6 +13,7 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const { signUp } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -23,11 +24,15 @@ export default function Signup() {
 
     try {
       await signUp(email, password);
+      setEmailSent(true);
       toast({
         title: "Check your email!",
         description: "We've sent you a confirmation link. Click it to complete your signup.",
+        duration: 8000,
       });
-      // Don't redirect immediately - stay on signup page with success message
+      // Clear form
+      setEmail('');
+      setPassword('');
     } catch (error: any) {
       toast({
         title: "Signup failed",
@@ -55,13 +60,43 @@ export default function Signup() {
         {/* Signup Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Create your account</CardTitle>
+            <CardTitle>{emailSent ? "Check your email!" : "Create your account"}</CardTitle>
             <CardDescription>
-              Start exploring and supporting creators
+              {emailSent 
+                ? "We've sent you a confirmation link. Click it to activate your account." 
+                : "Start exploring and supporting creators"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {emailSent ? (
+              <div className="text-center space-y-4 py-6">
+                <div className="text-6xl">📧</div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Check your email and click the confirmation link to complete your signup.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Don't see the email? Check your spam folder or try signing up again.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Link href="/login">
+                    <Button className="w-full">
+                      Go to Sign In
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => setEmailSent(false)}
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -91,6 +126,7 @@ export default function Signup() {
                 {loading ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
 
