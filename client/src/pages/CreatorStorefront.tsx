@@ -316,7 +316,7 @@ export default function CreatorStorefront() {
               <h3 className="text-xl font-semibold">Videos</h3>
               {isOwnPage && (
                 <Button
-                  onClick={() => window.location.href = '/dashboard'}
+                  onClick={() => window.location.href = '/dashboard?tab=videos'}
                   variant="outline"
                   size="sm"
                 >

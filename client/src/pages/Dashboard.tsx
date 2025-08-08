@@ -140,6 +140,10 @@ function DashboardContent() {
   const [, setLocation] = useLocation();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [deleteVideoId, setDeleteVideoId] = useState<number | null>(null);
+
+  // Get the tab parameter from URL search params
+  const urlParams = new URLSearchParams(window.location.search);
+  const defaultTab = urlParams.get('tab') || 'overview';
   const [deleteVideoTitle, setDeleteVideoTitle] = useState<string>('');
   const queryClient = useQueryClient();
   const [analyticsTimeframe, setAnalyticsTimeframe] = useState('30d');
@@ -320,7 +324,7 @@ function DashboardContent() {
         </div>
 
         {/* Dashboard Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="videos">Videos</TabsTrigger>
