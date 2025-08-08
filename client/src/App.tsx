@@ -24,6 +24,7 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 import PaymentCancel from "@/pages/PaymentCancel";
 import EditVideoComingSoon from "@/pages/EditVideoComingSoon";
 import EditProfile from "@/pages/EditProfile";
+import EmailConfirmation from "@/pages/EmailConfirmation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/access_token" component={PasswordResetRedirect} />
       <Route path="/manual-reset" component={ManualPasswordReset} />
+      <Route path="/confirm-email" component={EmailConfirmation} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/edit-profile">
         <ProtectedRoute>

@@ -139,12 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    // Configure signup to require email confirmation but redirect properly
+    // Configure signup to require email confirmation with proper redirect
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/login?confirmed=true`
+        emailRedirectTo: `${window.location.origin}/confirm-email`
       }
     });
 
