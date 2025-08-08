@@ -35,7 +35,7 @@ export default function ViewerHome() {
   const featuredCreators = creators.map((creator: any) => ({
     username: creator.username,
     displayName: creator.display_name,
-    description: creator.tagline || 'Creative professional sharing amazing content',
+    description: creator.tagline || creator.bio || 'New creator',
     videoCount: creator.video_count || 0,
     rating: creator.rating, // Don't provide fallback for authentic data
     thumbnail: creator.banner_url || '/api/placeholder/300/200',

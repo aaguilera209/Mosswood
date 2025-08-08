@@ -1750,6 +1750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: (creator.display_name || creator.email?.split('@')[0] || 'creator').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         display_name: creator.display_name || creator.email?.split('@')[0] || 'Creator',
         bio: creator.bio || 'Content creator on Mosswood',
+        tagline: creator.tagline, // Include tagline field for Featured Creators display
         avatar_url: creator.avatar_url,
         banner_url: creator.banner_url,
         email: creator.email,
