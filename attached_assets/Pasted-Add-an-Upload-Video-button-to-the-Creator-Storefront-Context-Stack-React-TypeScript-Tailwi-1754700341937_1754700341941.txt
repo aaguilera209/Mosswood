@@ -1,0 +1,54 @@
+Add an “Upload Video” button to the Creator Storefront
+
+Context
+- Stack: React + TypeScript + Tailwind, Supabase auth, existing Upload Video modal flow in Dashboard (Videos tab).
+- Page: CreatorStorefront (public page at /creator/:username)
+
+Goal
+- Show a primary “Upload Video” button on the creator’s own storefront (only when the logged‑in user is the owner).
+- Clicking it should open the existing Upload Video modal (preferred), or fall back to navigating to the Dashboard Videos tab with upload pre-opened.
+
+Requirements
+1) Visibility / Access
+   - Button only renders if: user is authenticated AND user.id === creator.profile.user_id (owner).
+   - Hide the button entirely for viewers and for other creators viewing someone else’s storefront.
+
+2) Placement & Styling
+   - Place next to the existing “Manage Videos” control in the storefront header actions row.
+   - Tailwind styling: primary emphasis (e.g., `bg-indigo-600 hover:bg-indigo-500 text-white`), rounded, md size.
+   - Mobile: stack primary (“Upload Video”) above secondary (“Manage Videos”) with spacing.
+
+3) Behavior (preferred)
+   - If the Upload modal component is already available in the app (used on Dashboard Videos):
+     - Import and mount the modal in the Storefront page (controlled via local state).
+     - On click, set `isUploadOpen = true`.
+     - Pass the same props the Dashboard uses (onSuccess callback, etc.).
+     - On successful upload, close modal and refresh the storefront video grid (invalidate/query refresh).
+
+   Fallback (if modal not easily re-usable right now):
+   - `navigate('/dashboard?tab=videos&upload=1')`
+   - In Dashboard Videos tab, read `upload=1` from querystring to auto-open the existing Upload modal.
+
+4) Data Refresh
+   - After successful upload, ensure the storefront video list re-fetches:
+     - If using TanStack Query, call `queryClient.invalidateQueries(['creatorVideos', creatorId])`
+     - Otherwise, trigger an existing fetch method to reload the grid.
+
+5) Accessibility
+   - Button must be keyboard focusable, have `aria-label="Upload video"`, and visible focus ring.
+   - Tooltip on hover/focus: “Upload a new video”.
+
+6) Types / Auth
+   - Use the existing Supabase auth client to get the current user.
+   - Use the existing `creator.profile.user_id` (or equivalent) for ownership check.
+   - TypeScript-safe props for the modal. No `any`.
+
+7) Testing Notes
+   - Owner sees both buttons; viewer sees neither “Upload Video” nor “Manage Videos”.
+   - Click “Upload Video” opens modal (or routes to Dashboard uploader).
+   - After upload completes, storefront grid shows the new video card without manual reload.
+
+Deliverables
+- Updated CreatorStorefront component (header actions area) with the new button and logic.
+- (If modal path) Imported and controlled Upload modal in this page + onSuccess refresh hook.
+- (If fallback path) Dashboard Videos tab honors `upload=1` query param to auto-open Upload modal.
