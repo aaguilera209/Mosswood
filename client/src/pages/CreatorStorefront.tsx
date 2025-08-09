@@ -315,13 +315,25 @@ export default function CreatorStorefront() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold">Videos</h3>
               {isOwnPage && (
-                <Button
-                  onClick={() => window.location.href = '/dashboard?tab=videos'}
-                  variant="outline"
-                  size="sm"
-                >
-                  Manage Videos
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <Button
+                    onClick={handleUploadVideo}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    size="sm"
+                    aria-label="Upload video"
+                    title="Upload a new video"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Video
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = '/dashboard?tab=videos'}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Manage Videos
+                  </Button>
+                </div>
               )}
             </div>
 
