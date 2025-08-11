@@ -1,0 +1,107 @@
+# Debug Featured Creators API - Backend Issues
+
+## Problem
+The Featured Creators section still shows "Loading creators..." despite fixing the useQuery. Browser console shows framework errors and the `/api/creators` endpoint appears to be failing.
+
+## Debugging Steps
+
+### 1. Check if `/api/creators` endpoint exists and works
+First, let's verify the API endpoint is working:
+
+**Test the endpoint directly:**
+- Open browser dev tools → Network tab
+- Refresh the homepage
+- Look for a request to `/api/creators`
+- Check if it returns 200 status and actual creator data
+
+### 2. Verify the creators API route file exists
+Check if this file exists: `server/routes/creators.ts` or `server/api/creators.ts`
+
+If missing, create it with:
+```javascript
+// server/routes/creators.ts or server/api/creators.ts
+import { Router } from 'express';
+
+const router = Router();
+
+// GET /api/creators - fetch featured creators
+router.get('/creators', async (req, res) => {
+  try {
+    // Replace with your actual database query
+    // Example with Supabase:
+    const { data: creators, error } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, bio, avatar_url')
+      .eq('is_creator', true)
+      .limit(6);
+
+    if (error) {
+      console.error('Database error:', error);
+      return res.status(500).json({ error: 'Failed to fetch creators' });
+    }
+
+    res.json(creators || []);
+  } catch (error) {
+    console.error('API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;
+```
+
+### 3. Ensure the route is registered in your main server file
+In your `server/index.ts` or main server file, make sure you have:
+```javascript
+import creatorsRoutes from './routes/creators';
+// or
+import creatorsRoutes from './api/creators';
+
+// Register the route
+app.use('/api', creatorsRoutes);
+```
+
+### 4. Check database connection
+Verify your Supabase connection is working by testing a simple query in your backend.
+
+### 5. Add temporary logging
+Add console.log in the useQuery to see what's happening:
+```javascript
+// In Home.tsx, temporarily add logging:
+const { data: creators = [], isLoading: creatorsLoading, error } = useQuery({
+  queryKey: ['creators'],
+  queryFn: async () => {
+    console.log('Fetching creators...'); // Add this
+    const response = await fetch('/api/creators');
+    console.log('Response status:', response.status); // Add this
+    if (!response.ok) {
+      console.error('Response not ok:', response.status, response.statusText); // Add this
+      throw new Error('Failed to fetch creators');
+    }
+    const data = await response.json();
+    console.log('Creators data:', data); // Add this
+    return data;
+  },
+  staleTime: 5 * 60 * 1000,
+  refetchOnWindowFocus: false,
+  retry: 2
+});
+
+// Also log the final state
+console.log('Creators state:', { creators, creatorsLoading, error });
+```
+
+### 6. Check server logs
+Look at your Replit console/server logs for any errors when the `/api/creators` endpoint is hit.
+
+## Expected Findings
+After these steps, you should see:
+1. Whether `/api/creators` endpoint exists and responds
+2. What error (if any) is being returned
+3. If the database query is working
+4. What data is actually being fetched
+
+## Quick Test
+Try visiting `https://your-replit-url.replit.dev/api/creators` directly in your browser. You should see JSON data with creator information.
+
+If that URL returns an error or 404, then the backend route is missing or misconfigured.

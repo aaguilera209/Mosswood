@@ -112,7 +112,7 @@ export default function Home() {
         </section>
 
         {/* Featured Creators Carousel */}
-        {(creators as any[]).length === 0 && !error ? (
+        {creators.length === 0 && !error ? (
           <div className="text-center py-12">
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading creators...</p>
