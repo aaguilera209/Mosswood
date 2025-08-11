@@ -1,0 +1,298 @@
+# Comprehensive Video Page Fix - All Issues
+
+## Problem Analysis
+1. **Video lookup failing** - "Video not found" even for Alex Aguilera (Stripe-enabled)
+2. **Layout corruption** - Duplicate logos, broken UI
+3. **Missing data** - Duration shows 0:00, no creator videos
+4. **UX inconsistency** - Same warning for different creator states
+
+## Fix 1: Debug and Fix Video Lookup
+
+### Check the video data structure first
+Add debugging to see what's actually happening:
+
+```javascript
+// In your payment route, add extensive logging
+console.log('=== PAYMENT DEBUG START ===');
+console.log('Video ID received:', videoId);
+console.log('Video ID type:', typeof videoId);
+
+// Test if video exists at all
+const { data: testVideo, error: testError } = await supabase
+  .from('videos')
+  .select('*')
+  .eq('id', parseInt(videoId))
+  .single();
+
+console.log('Direct video lookup result:', testVideo);
+console.log('Direct video lookup error:', testError);
+
+// Test if profiles join is working
+const { data: videoWithProfile, error: joinError } = await supabase
+  .from('videos')
+  .select(`
+    *,
+    profiles!videos_creator_id_fkey (
+      id,
+      username,
+      display_name,
+      stripe_account_id,
+      stripe_charges_enabled
+    )
+  `)
+  .eq('id', parseInt(videoId))
+  .single();
+
+console.log('Video with profile:', videoWithProfile);
+console.log('Join error:', joinError);
+console.log('=== PAYMENT DEBUG END ===');
+```
+
+### Fix the video lookup query
+Replace the current video lookup with this more robust version:
+
+```javascript
+// In /api/create-checkout-session
+try {
+  const videoId = parseInt(req.body.videoId);
+  
+  if (!videoId || isNaN(videoId)) {
+    return res.status(400).json({ error: 'Invalid video ID' });
+  }
+
+  // First get the video
+  const { data: video, error: videoError } = await supabase
+    .from('videos')
+    .select('*')
+    .eq('id', videoId)
+    .single();
+
+  if (videoError || !video) {
+    console.error('Video lookup error:', videoError);
+    return res.status(404).json({ error: 'Video not found' });
+  }
+
+  // Then get the creator profile
+  const { data: creator, error: creatorError } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, stripe_account_id, stripe_charges_enabled')
+    .eq('id', video.creator_id)
+    .single();
+
+  if (creatorError || !creator) {
+    console.error('Creator lookup error:', creatorError);
+    return res.status(404).json({ error: 'Creator not found' });
+  }
+
+  // Attach creator to video object
+  video.creator = creator;
+
+  // Continue with existing validation logic...
+```
+
+## Fix 2: Remove Duplicate Layout Elements
+
+### Check VideoDetail.tsx component structure
+Look for duplicate headers/navigation:
+
+```javascript
+// In VideoDetail.tsx - ensure you only have ONE of these:
+return (
+  <div>
+    {/* Remove any duplicate <Header /> components */}
+    {/* Remove any duplicate navigation */}
+    {/* Keep only the main content */}
+    
+    <div className="container mx-auto px-4 py-8">
+      {/* Video content here */}
+    </div>
+  </div>
+);
+```
+
+### Check your main layout
+Ensure the video page route doesn't double-wrap with layout:
+
+```javascript
+// If you have a layout wrapper, make sure video page doesn't duplicate it
+// Either use layout OR manual header, not both
+```
+
+## Fix 3: Add Video Duration Support
+
+### Update video upload to capture duration
+In your video upload component:
+
+```javascript
+// Add this function to capture video duration during upload
+const getVideoDuration = (file) => {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      resolve(Math.round(video.duration));
+    };
+    video.src = URL.createObjectURL(file);
+  });
+};
+
+// In your upload handler:
+const handleUpload = async (videoFile, formData) => {
+  // Get duration before upload
+  const duration = await getVideoDuration(videoFile);
+  
+  // Include duration in your video record
+  const videoData = {
+    ...formData,
+    duration_seconds: duration
+  };
+  
+  // Save to database with duration
+};
+```
+
+### Update database schema
+Add duration column if missing:
+
+```sql
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS duration_seconds INTEGER DEFAULT 0;
+```
+
+### Display duration properly
+In VideoDetail component:
+
+```javascript
+// Add duration formatting function
+const formatDuration = (seconds) => {
+  if (!seconds || seconds === 0) return 'Duration not available';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+// In your JSX:
+<span>Duration: {formatDuration(videoData.duration_seconds)}</span>
+```
+
+## Fix 4: Implement "More from Creator"
+
+### Create creator videos endpoint
+Create `/api/creators/[creatorId]/videos.ts`:
+
+```javascript
+// GET /api/creators/:creatorId/videos
+export default async function handler(req, res) {
+  const { creatorId } = req.query;
+  const { exclude } = req.query;
+  
+  try {
+    let query = supabase
+      .from('videos')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        price,
+        duration_seconds,
+        created_at
+      `)
+      .eq('creator_id', creatorId)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    
+    if (exclude) {
+      query = query.neq('id', parseInt(exclude));
+    }
+    
+    const { data: videos, error } = await query;
+    
+    if (error) throw error;
+    
+    res.json(videos || []);
+  } catch (error) {
+    console.error('Creator videos fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch creator videos' });
+  }
+}
+```
+
+### Add to VideoDetail component
+```javascript
+// In VideoDetail.tsx, add query for more videos
+const { data: moreVideos = [] } = useQuery({
+  queryKey: ['creator-videos', videoData?.creator_id, videoData?.id],
+  queryFn: async () => {
+    if (!videoData?.creator_id) return [];
+    
+    const response = await fetch(`/api/creators/${videoData.creator_id}/videos?exclude=${videoData.id}`);
+    if (!response.ok) throw new Error('Failed to fetch creator videos');
+    return response.json();
+  },
+  enabled: !!videoData?.creator_id
+});
+
+// In your JSX:
+<div className="mt-8">
+  <h3 className="text-xl font-bold mb-4">More from Creator</h3>
+  {moreVideos.length > 0 ? (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {moreVideos.map(video => (
+        <VideoCard key={video.id} video={video} />
+      ))}
+    </div>
+  ) : (
+    <p className="text-gray-500">No other videos from this creator yet.</p>
+  )}
+</div>
+```
+
+## Fix 5: Improve UX Messaging
+
+### Different messages for different states
+```javascript
+// In VideoDetail component, show appropriate message based on creator state
+const getPaymentMessage = () => {
+  if (!hasStripeSetup) {
+    return {
+      title: "Payment Setup in Progress",
+      message: "This creator is still setting up payments. Purchase will be available once setup is complete.",
+      type: "warning"
+    };
+  }
+  
+  if (hasPurchased) {
+    return null; // Show video player
+  }
+  
+  return {
+    title: "Purchase Required",
+    message: `Purchase this video for $${(videoData.price / 100).toFixed(2)} to start watching.`,
+    type: "purchase"
+  };
+};
+```
+
+## Testing Steps
+
+1. **Add the debugging code first** - See what's actually failing
+2. **Test with a simple video ID** - Use browser dev tools to check the actual ID being sent
+3. **Check database directly** - Verify Alex Aguilera's videos exist and have correct creator_id
+4. **Test each fix incrementally** - Don't change everything at once
+
+## Expected Results
+✅ Alex Aguilera's videos work for payment  
+✅ Single logo/header (no duplicates)  
+✅ Real video duration displayed  
+✅ "More from Creator" shows other videos  
+✅ Clear, different messaging for different creator states  
+
+Start with the debugging code to see exactly what's failing, then apply the fixes systematically.

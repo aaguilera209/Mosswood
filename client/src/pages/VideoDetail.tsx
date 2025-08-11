@@ -122,6 +122,19 @@ export default function VideoDetail() {
   const creatorProfile = videoApiData?.video?.profiles;
   const hasStripeSetup = creatorProfile?.stripe_account_id && creatorProfile?.stripe_charges_enabled;
 
+  // Fetch more videos from this creator
+  const { data: moreFromCreatorVideos = [] } = useQuery({
+    queryKey: ['creator-videos', videoData?.creator_id, videoData?.id],
+    queryFn: async () => {
+      if (!videoData?.creator_id) return [];
+      
+      const response = await apiRequest('GET', `/api/creators/${videoData.creator_id}/videos?exclude=${videoData.id}`);
+      if (!response.ok) throw new Error('Failed to fetch creator videos');
+      return response.json();
+    },
+    enabled: !!videoData?.creator_id
+  });
+
   // Clean up animation frame on unmount and handle smooth animation
   useEffect(() => {
     return () => {
@@ -1033,7 +1046,7 @@ export default function VideoDetail() {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {relatedVideos.map((video) => (
+                {moreFromCreatorVideos?.map((video: any) => (
                   <Card
                     key={video.id}
                     className="group bg-card border-border hover:bg-muted transition-all duration-200 hover:scale-105 cursor-pointer"
@@ -1043,7 +1056,7 @@ export default function VideoDetail() {
                       {/* Video Thumbnail */}
                       <div className="relative">
                         <img
-                          src={video.thumbnail}
+                          src={`/api/video-thumbnail/${video.id}.jpg?t=${Date.now()}`}
                           alt={video.title}
                           className="w-full aspect-video object-cover rounded-t-lg"
                           onError={(e) => {
@@ -1075,7 +1088,7 @@ export default function VideoDetail() {
                         
                         {/* Duration Badge */}
                         <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                          {video.duration}
+                          {formatDuration(video.duration)}
                         </div>
                       </div>
 
@@ -1086,7 +1099,7 @@ export default function VideoDetail() {
                         </h3>
                         
                         <div className="text-amber-400 font-semibold text-sm">
-                          {video.price === 0 ? 'Free' : `$${video.price.toFixed(2)}`}
+                          {video.price === 0 ? 'Free' : `$${(video.price / 100).toFixed(2)}`}
                         </div>
                       </div>
                     </CardContent>

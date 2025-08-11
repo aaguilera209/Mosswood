@@ -314,10 +314,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Manually fetch creator profile
+      // Manually fetch creator profile with Stripe info
       const { data: creatorProfile } = await supabase
         .from('profiles')
-        .select('display_name, email')
+        .select('display_name, email, stripe_account_id, stripe_charges_enabled')
         .eq('id', video.creator_id)
         .single();
 
@@ -334,6 +334,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Internal server error", 
         details: error.message 
       });
+    }
+  });
+
+  // Get creator's other videos
+  app.get("/api/creators/:creatorId/videos", async (req: Request, res: Response) => {
+    try {
+      const { creatorId } = req.params;
+      const { exclude } = req.query;
+      
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      let query = supabase
+        .from('videos')
+        .select(`
+          id,
+          title,
+          description,
+          thumbnail_url,
+          price,
+          duration,
+          created_at
+        `)
+        .eq('creator_id', creatorId)
+        .order('created_at', { ascending: false })
+        .limit(6);
+      
+      if (exclude) {
+        query = query.neq('id', parseInt(exclude as string));
+      }
+      
+      const { data: videos, error } = await query;
+      
+      if (error) {
+        console.error('Creator videos fetch error:', error);
+        return res.status(500).json({ error: "Failed to fetch creator videos" });
+      }
+      
+      res.json(videos || []);
+    } catch (error: any) {
+      console.error('Creator videos error:', error);
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -1226,9 +1269,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create Stripe Checkout session with platform fee
   app.post("/api/create-checkout-session", async (req: Request, res: Response) => {
     try {
+      console.log('=== PAYMENT DEBUG START ===');
+      console.log('Raw request body:', req.body);
+      
       const { videoId } = req.body;
+      console.log('Video ID received:', videoId);
+      console.log('Video ID type:', typeof videoId);
 
       if (!videoId) {
+        console.log('ERROR: videoId is missing');
         return res.status(400).json({ error: 'videoId is required' });
       }
 
@@ -1239,9 +1288,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Look up the video with creator details using proper database join
       if (!supabase) {
+        console.log('ERROR: Supabase connection not available');
         return res.status(500).json({ error: "Database connection not available" });
       }
 
+      const videoIdInt = parseInt(videoId);
+      console.log('Parsed video ID:', videoIdInt);
+      
+      // Test if video exists at all with basic query first
+      const { data: testVideo, error: testError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', videoIdInt)
+        .single();
+
+      console.log('Direct video lookup result:', testVideo);
+      console.log('Direct video lookup error:', testError);
+
+      // Test if profiles join is working
       const { data: video, error: videoError } = await supabase
         .from('videos')
         .select(`
@@ -1254,26 +1318,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             stripe_charges_enabled
           )
         `)
-        .eq('id', parseInt(videoId))
+        .eq('id', videoIdInt)
         .single();
 
+      console.log('Video with profile join:', video);
+      console.log('Profile join error:', videoError);
+
       if (videoError || !video) {
+        console.log('ERROR: Video lookup failed');
+        console.log('=== PAYMENT DEBUG END ===');
         return res.status(404).json({ error: 'Video not found' });
       }
 
       const creator = video.profiles;
+      console.log('Creator profile from join:', creator);
+      
       if (!creator) {
+        console.log('ERROR: Creator profile is missing from join');
+        console.log('=== PAYMENT DEBUG END ===');
         return res.status(404).json({ error: 'Creator not found' });
       }
 
+      console.log('Creator Stripe status:', {
+        stripe_account_id: creator.stripe_account_id,
+        stripe_charges_enabled: creator.stripe_charges_enabled
+      });
+
       // Check if creator has valid Stripe account
       if (!creator.stripe_account_id || !creator.stripe_charges_enabled) {
+        console.log('ERROR: Creator Stripe not configured properly');
+        console.log('=== PAYMENT DEBUG END ===');
         return res.status(400).json({ 
           error: 'Creator payouts not available',
           code: 'STRIPE_NOT_SETUP',
           message: 'This creator has not completed payment setup yet.'
         });
       }
+
+      console.log('SUCCESS: All validations passed, proceeding with payment');
+      console.log('=== PAYMENT DEBUG END ===');
 
       if (video.price === 0) {
         return res.status(400).json({ error: 'This video is free' });
