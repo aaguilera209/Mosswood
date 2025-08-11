@@ -156,6 +156,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authenticated: true });
   });
 
+  // Debug endpoint to check user status
+  app.get("/api/debug-user/:email", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Supabase not available" });
+      }
+
+      const email = req.params.email;
+      
+      // Check auth.users table via admin
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      const userExists = authData?.users?.find((u: any) => u.email === email);
+      
+      // Check profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      res.json({
+        email,
+        userExists: !!userExists,
+        userEmailConfirmed: userExists?.email_confirmed_at ? true : false,
+        userConfirmedAt: userExists?.email_confirmed_at,
+        profileExists: !!profile,
+        profileData: profile,
+        authError: authError?.message,
+        profileError: profileError?.message,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      console.error('Debug user error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Manual email confirmation endpoint for troubleshooting
+  app.post("/api/manual-confirm/:email", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Supabase not available" });
+      }
+
+      const email = req.params.email;
+      
+      // Find user by email
+      const { data: authData, error: listError } = await supabase.auth.admin.listUsers();
+      if (listError) {
+        return res.status(500).json({ error: `Failed to list users: ${listError.message}` });
+      }
+
+      const user = authData?.users?.find((u: any) => u.email === email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Manually confirm email
+      const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
+        user.id,
+        { email_confirm: true }
+      );
+
+      if (updateError) {
+        return res.status(500).json({ error: `Failed to confirm email: ${updateError.message}` });
+      }
+
+      res.json({
+        email,
+        userId: user.id,
+        confirmed: true,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      console.error('Manual confirm error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Profile creation endpoint for new users
   app.post("/api/create-profile", async (req: Request, res: Response) => {
     try {
