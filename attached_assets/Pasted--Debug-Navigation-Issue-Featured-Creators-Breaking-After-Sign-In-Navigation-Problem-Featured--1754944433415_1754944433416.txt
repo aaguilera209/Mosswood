@@ -1,0 +1,88 @@
+# Debug Navigation Issue - Featured Creators Breaking After Sign In Navigation
+
+## Problem
+Featured Creators loads correctly on initial homepage visit, but gets stuck in "Loading creators..." state when navigating back from sign-in page using browser back button.
+
+## Root Cause Analysis Needed
+
+### 1. Check if Home component is remounting unnecessarily
+Add this debugging code to `Home.tsx` at the top of the component:
+
+```javascript
+// Add this right after the imports in Home.tsx
+console.log('Home component rendered at:', new Date().toISOString());
+
+// Add this inside the Home component, right after the useState/useQuery declarations
+useEffect(() => {
+  console.log('Home component mounted/updated');
+  return () => {
+    console.log('Home component unmounting');
+  };
+}, []);
+```
+
+### 2. Check authentication state interference
+Look for any authentication-related useEffect or query invalidation that might be running on navigation. Check:
+
+- Is there any auth state change detection in `Home.tsx`?
+- Are there any `queryClient.invalidateQueries()` calls related to auth changes?
+- Is the user authentication state changing during navigation?
+
+### 3. Check React Router setup
+Verify the routing configuration:
+- Is the Home route wrapped in any authentication guards?
+- Are there any route-level useEffect hooks that might interfere?
+- Is the Home component being conditionally rendered based on auth state?
+
+### 4. Add navigation debugging
+Add this to track navigation behavior:
+
+```javascript
+// In Home.tsx, add this useEffect
+useEffect(() => {
+  console.log('Current pathname:', location.pathname);
+  console.log('Creators loading state:', creatorsLoading);
+  console.log('Creators data length:', creators?.length);
+  console.log('Error state:', error);
+}, [location.pathname, creatorsLoading, creators, error]);
+```
+
+### 5. Check for QueryClient configuration issues
+Look for any `queryClient` configuration that might be affecting navigation:
+- Default stale time settings
+- Query invalidation on focus/mount
+- Any global query defaults that might interfere
+
+### 6. Temporary fix: Force refetch on navigation
+As a temporary workaround, try adding this to the Home component:
+
+```javascript
+// Add this useEffect to force refetch when coming back to homepage
+useEffect(() => {
+  if (location.pathname === '/' && creators.length === 0 && !creatorsLoading) {
+    console.log('Forcing creators refetch due to navigation');
+    // If using React Query, you can use refetch from the useQuery
+    // refetch();
+  }
+}, [location.pathname]);
+```
+
+## Investigation Steps
+1. Add the debugging code above
+2. Test the navigation flow: Homepage → Sign In → Back button
+3. Check browser console for the debug messages
+4. Look for any patterns in when the component mounts/unmounts
+5. Check if there are any auth-related query invalidations happening
+
+## Expected Findings
+The debugging should reveal:
+- Whether the Home component is unmounting/remounting unnecessarily
+- If auth state changes are affecting the query
+- If there are any route-level interference issues
+- The exact point where the creators data gets lost
+
+## Files to Check
+- `client/src/pages/Home.tsx` (add debugging)
+- Your main router configuration file
+- Any authentication context/providers
+- QueryClient setup/configuration

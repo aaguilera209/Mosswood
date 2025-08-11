@@ -63,8 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
           setLoading(false);
           
-          // Clear React Query cache
-          queryClient.clear();
+          // Clear only user-specific queries, preserve public data like creators
+          queryClient.removeQueries({ queryKey: ['profile'] });
+          queryClient.removeQueries({ queryKey: ['user-videos'] });
+          queryClient.removeQueries({ queryKey: ['user-library'] });
+          queryClient.removeQueries({ queryKey: ['user-purchases'] });
+          queryClient.removeQueries({ queryKey: ['creator-stats'] });
           
           // Clear any localStorage that might persist auth state
           localStorage.removeItem('sb-kdtjkbgnntdtpcgdwmhg-auth-token');

@@ -6,11 +6,12 @@ Mosswood is a full-stack web application designed as "the platform layer for cre
 
 ## Recent Changes (August 2025)
 
-### Featured Creators Section Fix - RESOLVED ✅
-- **Issue**: Homepage Featured Creators section stuck on "Loading creators..." indefinitely
-- **Root Cause**: React Query useQuery configuration missing queryFn (fetch function)
-- **Solution**: Restored proper queryFn with fetch logic, updated caching configuration, and fixed TypeScript types
-- **Status**: ✅ Confirmed working - displays 3 creators (Dispatch 42, Garry Tan, Alex Aguilera) in carousel format
+### Featured Creators Navigation Fix - RESOLVED ✅
+- **Issue**: Featured Creators loading correctly initially but breaking when navigating back from sign-in page
+- **Root Cause**: `queryClient.clear()` in AuthContext was wiping ALL cache data on auth state changes, including public creators data
+- **Solution**: Replaced global cache clearing with selective removal of only user-specific queries (profile, library, purchases)
+- **Technical Details**: Preserved public data (creators, videos) while clearing private user data on sign out
+- **Status**: ✅ Fixed - Featured Creators now persists across navigation without unnecessary refetching
 
 ### Platform Fee System Implementation - NEW ✅
 - **Feature**: Added 10% platform fee to all Stripe payments using Stripe Connect
