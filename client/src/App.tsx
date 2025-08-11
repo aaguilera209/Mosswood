@@ -40,7 +40,11 @@ function Router() {
       <Route path="/access_token" component={PasswordResetRedirect} />
       <Route path="/manual-reset" component={ManualPasswordReset} />
       <Route path="/confirm-email" component={EmailConfirmation} />
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard">
+        <ProtectedRoute requireRole="creator">
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
       <Route path="/edit-profile">
         <ProtectedRoute>
           <EditProfile />
@@ -49,7 +53,11 @@ function Router() {
       <Route path="/edit-video-coming-soon" component={EditVideoComingSoon} />
       <Route path="/creator/:username" component={CreatorStorefront} />
       <Route path="/video/:id" component={VideoDetail} />
-      <Route path="/library" component={MyLibrary} />
+      <Route path="/library">
+        <ProtectedRoute>
+          <MyLibrary />
+        </ProtectedRoute>
+      </Route>
       <Route path="/explore" component={ExplorePage} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/payment-success" component={PaymentSuccess} />

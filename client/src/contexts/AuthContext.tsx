@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, type Profile } from '@/lib/supabase';
+import { queryClient } from '@/lib/queryClient';
 
 interface AuthContextType {
   user: SupabaseUser | null;
@@ -57,9 +58,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         if (event === 'SIGNED_OUT' || !session) {
+          console.log('User signed out - clearing all state');
           setUser(null);
           setProfile(null);
           setLoading(false);
+          
+          // Clear React Query cache
+          queryClient.clear();
+          
+          // Clear any localStorage that might persist auth state
+          localStorage.removeItem('sb-kdtjkbgnntdtpcgdwmhg-auth-token');
+          localStorage.removeItem('supabase.auth.token');
+          
           return;
         }
         
@@ -165,8 +175,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      console.log('Starting logout process...');
+      
+      // Clear React Query cache first
+      queryClient.clear();
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase signout error:', error);
+        throw error;
+      }
+      
+      // Clear local state immediately
+      setUser(null);
+      setProfile(null);
+      
+      // Clear any persisted localStorage keys
+      try {
+        localStorage.removeItem('sb-kdtjkbgnntdtpcgdwmhg-auth-token');
+        localStorage.removeItem('supabase.auth.token');
+        // Clear any other auth-related keys
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+      } catch (error) {
+        console.error('Error clearing localStorage:', error);
+      }
+      
+      console.log('Logout completed successfully');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      throw error;
+    }
   };
 
   const becomeCreator = async () => {

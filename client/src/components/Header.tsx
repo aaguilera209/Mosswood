@@ -9,18 +9,17 @@ import { User, Settings, LogOut, ChevronDown, BarChart3, Eye } from 'lucide-reac
 import { useLocation } from 'wouter';
 
 export function Header() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [location] = useLocation();
   
   // Check if we're on the storefront page to hide the storefront button
   const isOnStorefront = location.startsWith('/creator/');
-  
-
 
   const handleLogout = async () => {
     try {
-      // Simple logout - clear auth and redirect
-      window.location.href = '/login';
+      await signOut();
+      // Redirect to home page after logout
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
     }

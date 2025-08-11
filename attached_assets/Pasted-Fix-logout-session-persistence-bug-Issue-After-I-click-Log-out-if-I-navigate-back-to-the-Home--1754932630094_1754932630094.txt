@@ -1,0 +1,51 @@
+Fix logout/session persistence bug
+
+Issue
+- After I click “Log out,” if I navigate back to the Home page (Welcome to Mosswood + Featured Creators) or any page, I am still shown as logged in. Expected: once logged out, I should be treated as logged out everywhere (no user in header, no creator-only controls, protected routes blocked).
+
+Stack context
+- Supabase Auth (email/password)
+- React + TypeScript + Tailwind
+- Router (Wouter or similar)
+- TanStack Query (likely)
+- We have a Header/UserMenu and role-based UI
+
+What to implement
+1) Ensure proper sign out
+   - Use `await supabase.auth.signOut()`
+   - Immediately clear all local user state (e.g., auth context) and role in memory.
+   - Invalidate/remove any persisted session keys (localStorage/sessionStorage) that might shadow Supabase state.
+
+2) Centralize auth state
+   - In `supabase.ts` or auth provider, add a single source of truth for the current user.
+   - Subscribe to `supabase.auth.onAuthStateChange` and propagate changes to the app (context or query cache).
+   - When event is `SIGNED_OUT`, reset user context and invalidate relevant queries: `['me']`, `['profile']`, `['purchases']`, etc.
+
+3) Header + UI refresh
+   - Header/UserMenu should derive user from the centralized auth context (not stale props).
+   - After logout, header must immediately rerender to “Sign in / Sign up” state.
+   - Remove any optimistic “user cached” code that ignores auth state changes.
+
+4) Route protection & redirects
+   - Creator-only routes (e.g., /dashboard) and viewer-only private pages must guard on auth context.
+   - On logout, if the user is on a protected page, redirect to `/` or `/login`.
+   - Public pages must not fetch private data for a logged-out user.
+
+5) Cache + storage hygiene
+   - If we use TanStack Query, `queryClient.clear()` or invalidate user-related keys on logout.
+   - Remove any manual `localStorage` flags that imply logged-in (e.g., `isCreator`, `role`).
+   - Ensure no “remember me” shim bypasses Supabase session logic.
+
+6) Test plan (please verify)
+   - Log in → header shows display name and proper menu.
+   - Click “Log out”:
+     • Header immediately shows “Sign in / Sign up”.
+     • Visiting Home or refreshing the page still shows logged-out state.
+     • Navigating to /dashboard while logged out redirects to /login (or /).
+   - Log back in → state updates everywhere without hard refresh.
+
+Deliverables
+- Patch to auth provider and header to rely on a single auth context.
+- Correct `signOut` handler that clears session, cache, and reroutes if needed.
+- Route guards updated to respect auth context.
+- Brief note in PR explaining what local storage keys were removed/changed and which queries are invalidated.
