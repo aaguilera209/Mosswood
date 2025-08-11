@@ -17,28 +17,20 @@ export default function Home() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Fetch real creators from database - force fresh data every time
+  // Fetch real creators from database
   const { data: creators = [], isLoading: creatorsLoading, error } = useQuery({
-    queryKey: ['creators', Date.now()], // Force unique key to bypass cache
+    queryKey: ['creators'],
     queryFn: async () => {
-      console.log('Fetching creators...');
-      const response = await fetch('/api/creators?t=' + Date.now()); // Cache buster
-      console.log('Response status:', response.status);
+      const response = await fetch('/api/creators');
       if (!response.ok) {
-        console.error('Response not ok:', response.status, response.statusText);
         throw new Error('Failed to fetch creators');
       }
-      const data = await response.json();
-      console.log('Creators data received:', data.length, 'creators');
-      return data;
+      return response.json();
     },
-    staleTime: 0,
-    cacheTime: 0, // Don't cache at all
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false,
     retry: 2
   });
-
-  console.log('Current state:', { creatorsCount: creators.length, loading: creatorsLoading, hasError: !!error });
 
   // Transform creators for the carousel component
   const featuredCreators = (creators as any[]).map((creator: any) => ({
