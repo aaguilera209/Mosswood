@@ -17,23 +17,15 @@ export default function Home() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Fetch real creators from database
-  const { data: creators = [], isLoading: creatorsLoading, error, isFetching } = useQuery({
-    queryKey: ['creators'],
-    queryFn: async () => {
-      const response = await fetch('/api/creators');
-      if (!response.ok) {
-        throw new Error('Failed to fetch creators');
-      }
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-    retry: 2
+  // Fetch real creators from database using the configured query client
+  const { data: creators = [], isLoading: creatorsLoading, error, isFetching } = useQuery<any[]>({
+    queryKey: ['/api/creators'],
+    staleTime: 0, // Override default to fetch fresh data
+    refetchOnMount: true,
   });
 
   // Transform creators for the carousel component
-  const featuredCreators = creators.map((creator: any) => ({
+  const featuredCreators = (creators as any[]).map((creator: any) => ({
     username: creator.username,
     displayName: creator.display_name,
     description: creator.tagline || creator.bio || 'New creator',
@@ -111,13 +103,19 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Featured Creators Carousel - Force Display */}
-        <div className="py-8">
-          <div className="mb-4 p-4 bg-muted rounded-lg text-xs">
-            <p>Debug: creators={creators.length}, loading={creatorsLoading.toString()}, error={error ? 'yes' : 'no'}</p>
+        {/* Featured Creators Carousel */}
+        {(creators as any[]).length === 0 && !error ? (
+          <div className="text-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading creators...</p>
           </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-destructive">Failed to load creators. Please try refreshing the page.</p>
+          </div>
+        ) : (
           <FeaturedCreatorsCarousel creators={featuredCreators} />
-        </div>
+        )}
 
         {/* How It Works Section */}
         <section className="bg-muted/50 rounded-lg p-12 text-center">

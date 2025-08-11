@@ -26,12 +26,10 @@ interface FeaturedCreatorsCarouselProps {
 }
 
 const FeaturedCreatorsCarousel = ({ creators = [] }: FeaturedCreatorsCarouselProps) => {
-  console.log('FeaturedCreatorsCarousel render:', creators);
-  
   if (!creators || creators.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">No creators to display (received {creators?.length || 0} creators)</p>
+        <p className="text-muted-foreground">No creators to display</p>
       </div>
     );
   }
