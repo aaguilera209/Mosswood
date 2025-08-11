@@ -17,7 +17,6 @@ export default function Home() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Fetch real creators from database
   const { data: creators = [], isLoading: creatorsLoading, error } = useQuery({
     queryKey: ['creators'],
     queryFn: async () => {
