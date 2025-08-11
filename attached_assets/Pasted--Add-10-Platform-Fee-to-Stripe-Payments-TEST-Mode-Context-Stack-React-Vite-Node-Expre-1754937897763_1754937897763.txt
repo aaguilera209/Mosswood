@@ -1,0 +1,72 @@
+# Add 10% Platform Fee to Stripe Payments (TEST Mode)
+
+## Context
+- Stack: React (Vite) + Node/Express + Supabase + Stripe Checkout (currently working)
+- Current: Full payment goes to creators (minus Stripe fees)
+- Goal: Platform takes 10% fee, creator gets 90% (minus Stripe fees)
+- Stay in TEST mode - no live payments yet
+
+## Key Requirements
+
+### 1. Environment Setup
+Add these to your .env / Replit Secrets:
+```bash
+PLATFORM_FEE_BPS=1000          # 10% in basis points
+MINIMUM_PRICE_CENTS=100         # $1.00 minimum
+MINIMUM_FEE_CENTS=10           # $0.10 minimum platform fee
+```
+
+### 2. Update Checkout Session Creation
+In your `/api/create-checkout-session` endpoint:
+- Add input validation (minimum price, creator has Stripe account)
+- Calculate platform fee: `Math.round(price_cents * 1000 / 10000)` with minimums
+- Add to Stripe session:
+```javascript
+payment_intent_data: {
+  application_fee_amount: platformFeeAmount,
+  transfer_data: { destination: creator.stripe_account_id }
+}
+```
+
+### 3. Database Schema Updates
+Add columns to purchases table:
+- `amount_total` (integer) - total paid
+- `platform_fee_amount` (integer) - our 10%
+- `stripe_fee_amount` (integer) - Stripe's fee
+- `creator_net_amount` (integer) - what creator gets
+- `stripe_payment_intent_id` (text) - for tracking
+
+### 4. Update Webhook Handler
+In `/api/webhooks` for `checkout.session.completed`:
+- Fetch payment intent with expanded balance transaction
+- Calculate actual fees from Stripe data
+- Store purchase record with fee breakdown
+- Use database transaction for safety
+- Check for duplicate processing
+
+### 5. Error Handling
+- Validate minimum prices ($1.00)
+- Check creator has valid Stripe account
+- Handle configuration errors gracefully
+- Return proper HTTP status codes
+
+### 6. Frontend Updates
+- Show fee breakdown on purchase page
+- Handle error cases (creator not set up, price too low)
+- Display receipt with fee details on success page
+
+## Implementation Priority
+1. Start with checkout session updates
+2. Add database schema changes
+3. Update webhook to store fee data
+4. Add validation and error handling
+5. Update frontend for better UX
+
+## Testing
+- Test with various price points ($1, $10, $100)
+- Verify fee calculations are correct
+- Test error cases (no Stripe account, low prices)
+- Check webhook processes fees correctly
+- Confirm database stores all fee data
+
+Stay in TEST mode throughout. Only consider live mode after thorough testing.
