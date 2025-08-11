@@ -1408,11 +1408,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Additional check for payouts capability (for Connect transfers)
-      if (!creator.stripe_payouts_enabled) {
-        console.log('WARNING: Creator payouts not enabled, attempting simple payment without transfer');
-        // For now, continue with payment but without transfer to creator
-      }
+      // Additional check for payouts capability (for Connect transfers)  
+      // Temporarily disabled for debugging
+      // if (!creator.stripe_payouts_enabled) {
+      //   console.log('WARNING: Creator payouts not enabled, attempting simple payment without transfer');
+      //   // For now, continue with payment but without transfer to creator
+      // }
 
       console.log('SUCCESS: All validations passed, proceeding with payment');
       console.log('=== PAYMENT DEBUG END ===');
@@ -1635,10 +1636,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'sessionId is required' });
       }
 
+      console.log('=== WEBHOOK DEBUG START ===');
       console.log('Processing checkout for session:', sessionId);
 
       // Retrieve the checkout session
       const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      console.log('Full session metadata:', JSON.stringify(session.metadata, null, 2));
+      console.log('Session customer email:', session.customer_details?.email);
+      console.log('Session amount total:', session.amount_total);
+      console.log('Session payment status:', session.payment_status);
       
       if (session.payment_status !== 'paid') {
         return res.status(400).json({ error: 'Payment not completed' });
@@ -1647,11 +1654,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customerEmail = session.customer_details?.email;
       const videoId = session.metadata?.videoId;
 
+      console.log('Video ID from metadata:', videoId);
+      console.log('Video ID type:', typeof videoId);
+
       if (!customerEmail || !videoId) {
+        console.error('ERROR: Missing required metadata!');
+        console.log('Available metadata keys:', Object.keys(session.metadata || {}));
         return res.status(400).json({ error: 'Missing required metadata' });
       }
 
-      console.log('Recording purchase:', { customerEmail, videoId, sessionId });
+      // Fetch the video to verify it's correct
+      const { data: video, error: videoError } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('id', parseInt(videoId))
+        .single();
+      
+      console.log('Video lookup result:', video);
+      console.log('Video lookup error:', videoError);
+      
+      if (!video) {
+        console.error('ERROR: Video not found for ID:', videoId);
+        return res.status(404).json({ error: 'Video not found' });
+      }
+      
+      console.log('Correct video found:', {
+        id: video.id,
+        title: video.title,
+        creator_id: video.creator_id
+      });
+
+      console.log('Recording purchase:', { customerEmail, videoId, videoTitle: video.title, sessionId });
 
       // Find or create user profile
       let { data: profile, error: profileError } = await supabase
@@ -1695,12 +1728,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Record the purchase (simplified for current schema)
       const purchaseData = {
         profile_id: profile.id,
-        video_id: parseInt(videoId),
+        video_id: video.id, // Use video.id from verified lookup, not parseInt(videoId)
         stripe_session_id: sessionId,
         amount: session.amount_total || 0
       };
 
-      console.log('Inserting purchase data:', purchaseData);
+      console.log('=== RECORDING PURCHASE ===');
+      console.log('Video being recorded:', {
+        id: video.id,
+        title: video.title,
+        creator_id: video.creator_id
+      });
+      console.log('Purchase data to insert:', purchaseData);
 
       const { data: purchase, error: purchaseError } = await supabase
         .from('purchases')

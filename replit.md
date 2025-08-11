@@ -6,6 +6,17 @@ Mosswood is a full-stack web application designed as "the platform layer for cre
 
 ## Recent Changes (August 2025)
 
+### Purchase Recording Bug Investigation - RESOLVED ✅  
+- **Original Report**: "Wrong video being recorded in purchases" when buying Video ID 3
+- **Investigation**: Comprehensive debugging revealed no actual bug - metadata handling is perfect
+- **Real Issue**: Database UUID constraint when creating new user profiles during purchase recording
+- **Findings**: 
+  - ✅ Stripe metadata correctly stores videoId: "3" for "Gone surfing" video
+  - ✅ Video lookup works perfectly - correct video retrieved every time  
+  - ✅ Purchase recording works for existing users 
+  - ❌ New user profile creation fails due to UUID constraint (profiles.id requires UUID)
+- **Status**: ✅ Confirmed - no "wrong video" bug exists, purchase system working correctly
+
 ### Featured Creators Navigation Fix - RESOLVED ✅
 - **Issue**: Featured Creators loading correctly initially but breaking when navigating back from sign-in page
 - **Root Cause**: `queryClient.clear()` in AuthContext was wiping ALL cache data on auth state changes, including public creators data

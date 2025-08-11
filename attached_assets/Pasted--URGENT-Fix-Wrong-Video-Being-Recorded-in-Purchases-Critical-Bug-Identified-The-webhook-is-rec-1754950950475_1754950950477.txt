@@ -1,0 +1,228 @@
+# URGENT: Fix Wrong Video Being Recorded in Purchases
+
+## Critical Bug Identified
+The webhook is recording the wrong video in the purchases table. You bought "Gone Surfing" but got "Documentary BTS by Maya Chen" in your library.
+
+## Root Cause Analysis
+Looking at your webhook code, the issue is likely in the metadata handling or video lookup logic.
+
+## Immediate Debug Steps
+
+### 1. Add Extensive Webhook Debugging
+Add this debugging to your webhook handler to see exactly what's happening:
+
+```javascript
+// In your webhook handler (/api/process-checkout or similar)
+app.post('/api/process-checkout', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    
+    console.log('=== WEBHOOK DEBUG START ===');
+    console.log('Session ID received:', sessionId);
+    
+    // Retrieve the checkout session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('Full session object:', JSON.stringify(session, null, 2));
+    console.log('Session metadata:', session.metadata);
+    console.log('Session customer email:', session.customer_details?.email);
+    console.log('Session amount total:', session.amount_total);
+    
+    // Check what video ID is in metadata
+    const videoId = session.metadata?.videoId;
+    console.log('Video ID from metadata:', videoId);
+    console.log('Video ID type:', typeof videoId);
+    
+    if (!videoId) {
+      console.error('ERROR: No video ID in session metadata!');
+      console.log('Available metadata keys:', Object.keys(session.metadata || {}));
+      return res.status(400).json({ error: 'Missing video ID in session metadata' });
+    }
+    
+    // Fetch the video to verify it's correct
+    const { data: video, error: videoError } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('id', parseInt(videoId))
+      .single();
+    
+    console.log('Video lookup result:', video);
+    console.log('Video lookup error:', videoError);
+    
+    if (!video) {
+      console.error('ERROR: Video not found for ID:', videoId);
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    console.log('Correct video found:', {
+      id: video.id,
+      title: video.title,
+      creator_id: video.creator_id
+    });
+    
+    // Get customer email and find/create profile
+    const customerEmail = session.customer_details?.email;
+    console.log('Customer email from session:', customerEmail);
+    
+    // Continue with rest of webhook logic...
+    
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+```
+
+### 2. Check Checkout Session Creation Metadata
+Ensure the video ID is properly stored in metadata when creating the session:
+
+```javascript
+// In your checkout session creation (/api/create-checkout-session)
+const session = await stripe.checkout.sessions.create({
+  mode: 'payment',
+  line_items: [/* ... */],
+  success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: `${process.env.FRONTEND_URL}/video/${videoId}`,
+  payment_intent_data: {
+    application_fee_amount: platformFeeAmount,
+    transfer_data: { destination: creator.stripe_account_id },
+    metadata: {
+      video_id: videoId.toString(),
+      creator_id: creator.id,
+      buyer_email: req.user?.email || 'unknown'
+    }
+  },
+  metadata: {
+    videoId: videoId.toString(),        // ← Make sure this is correct
+    video_id: videoId.toString(),       // ← Add backup field
+    creator_id: creator.id,
+    buyer_id: req.user?.id || 'unknown',
+    purchase_type: 'video_purchase'
+  }
+});
+
+console.log('Checkout session created with metadata:', session.metadata);
+```
+
+### 3. Fix the Purchase Recording Logic
+Update the purchase recording to be more explicit:
+
+```javascript
+// In webhook handler, when recording the purchase
+const recordPurchase = async (session, videoId, customerEmail) => {
+  console.log('=== RECORDING PURCHASE ===');
+  console.log('Session ID:', session.id);
+  console.log('Video ID to record:', videoId);
+  console.log('Customer email:', customerEmail);
+  
+  // Double-check the video exists
+  const { data: video, error: videoError } = await supabase
+    .from('videos')
+    .select('id, title, creator_id')
+    .eq('id', parseInt(videoId))
+    .single();
+  
+  if (!video) {
+    throw new Error(`Video ${videoId} not found when recording purchase`);
+  }
+  
+  console.log('Recording purchase for video:', video);
+  
+  // Find or create user profile
+  let { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', customerEmail)
+    .single();
+  
+  if (!profile) {
+    // Create new profile
+    const { data: newProfile, error: createError } = await supabase
+      .from('profiles')
+      .insert({
+        email: customerEmail,
+        role: 'viewer'
+      })
+      .select()
+      .single();
+    
+    if (createError) throw createError;
+    profile = newProfile;
+  }
+  
+  // Record the purchase with explicit video ID
+  const purchaseData = {
+    profile_id: profile.id,
+    video_id: video.id,              // ← Use video.id, not videoId
+    stripe_session_id: session.id,
+    amount: session.amount_total || 0
+  };
+  
+  console.log('Purchase data to insert:', purchaseData);
+  
+  const { data: purchase, error: purchaseError } = await supabase
+    .from('purchases')
+    .insert(purchaseData)
+    .select()
+    .single();
+  
+  if (purchaseError) {
+    console.error('Purchase insert error:', purchaseError);
+    throw purchaseError;
+  }
+  
+  console.log('Purchase recorded successfully:', purchase);
+  return purchase;
+};
+```
+
+### 4. Verify Frontend Sends Correct Video ID
+Check what video ID is being sent from the frontend:
+
+```javascript
+// In your VideoDetail component
+const handleStripeCheckout = async () => {
+  console.log('=== FRONTEND CHECKOUT DEBUG ===');
+  console.log('Video data:', videoData);
+  console.log('Video ID being sent:', videoData?.id);
+  console.log('Video title:', videoData?.title);
+  console.log('===================================');
+  
+  // Make sure you're sending the correct video ID
+  const response = await fetch('/api/create-checkout-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      videoId: videoData.id  // ← Verify this is the correct video ID
+    })
+  });
+  
+  // Rest of checkout logic...
+};
+```
+
+## Immediate Action Plan
+
+1. **Add the debugging code** to your webhook handler
+2. **Test another purchase** and watch the console logs carefully
+3. **Check what video ID** is being stored in Stripe metadata
+4. **Verify the purchase recording** uses the correct video ID
+
+## Most Likely Causes
+
+1. **Metadata not being set correctly** in checkout session creation
+2. **Video ID being overwritten** somewhere in the webhook process
+3. **Database query returning wrong video** due to ID mismatch
+4. **Race condition** in the purchase recording logic
+
+## Expected Debug Output
+
+When you add the debugging and test another purchase, you should see logs like:
+```
+Video ID from metadata: 3
+Video lookup result: { id: 3, title: "Gone surfing", creator_id: "..." }
+Recording purchase for video: { id: 3, title: "Gone surfing" }
+```
+
+If the logs show different video IDs or titles, that will pinpoint exactly where the bug is occurring.
+
+Run this debugging and let me know what the console logs show!
