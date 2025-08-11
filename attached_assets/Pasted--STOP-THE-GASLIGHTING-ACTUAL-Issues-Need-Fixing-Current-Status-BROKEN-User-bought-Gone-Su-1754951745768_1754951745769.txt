@@ -1,0 +1,179 @@
+# STOP THE GASLIGHTING - ACTUAL Issues Need Fixing
+
+## Current Status: BROKEN
+- User bought "Gone Surfing" (Video ID 3) 
+- Library shows "Documentary BTS by Maya Chen" 
+- Console shows "Thumbnail loaded successfully for video 3" but wrong video displays
+- Purchase recording is associating wrong video with user
+
+## Real Problems to Fix
+
+### 1. Library Query is Wrong
+The "My Library" page is not showing the correct purchased videos. 
+
+**Check the library query in your frontend:**
+```javascript
+// In Library/MyLibrary component - find this query and debug it
+const { data: purchasedVideos } = useQuery({
+  queryKey: ['purchased-videos', user?.id],
+  queryFn: async () => {
+    const response = await fetch('/api/user-purchases');
+    return response.json();
+  }
+});
+
+// Add debugging to see what's actually returned
+console.log('=== LIBRARY DEBUG ===');
+console.log('User ID:', user?.id);
+console.log('Purchased videos raw:', purchasedVideos);
+console.log('====================');
+```
+
+### 2. Database Purchase Records are Wrong
+Check what's actually in your purchases table:
+
+**Run this SQL in Supabase:**
+```sql
+-- Check what purchases exist for your user
+SELECT 
+  p.id,
+  p.profile_id,
+  p.video_id,
+  p.created_at,
+  v.title as video_title,
+  v.id as actual_video_id,
+  pr.email as buyer_email
+FROM purchases p
+LEFT JOIN videos v ON p.video_id = v.id  
+LEFT JOIN profiles pr ON p.profile_id = pr.id
+WHERE pr.email = 'jrvlvr16@gmail.com'  -- Your email
+ORDER BY p.created_at DESC;
+```
+
+### 3. Fix the API Route for User Purchases
+**Create or fix `/api/user-purchases` endpoint:**
+```javascript
+// GET /api/user-purchases
+app.get('/api/user-purchases', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log('Fetching purchases for user:', userId);
+    
+    const { data: purchases, error } = await supabase
+      .from('purchases')
+      .select(`
+        id,
+        video_id,
+        created_at,
+        amount,
+        videos (
+          id,
+          title,
+          description,
+          thumbnail_url,
+          video_url,
+          duration_seconds,
+          creator_id,
+          profiles!videos_creator_id_fkey (
+            display_name,
+            username
+          )
+        )
+      `)
+      .eq('profile_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Purchase query error:', error);
+      throw error;
+    }
+    
+    console.log('Found purchases:', purchases?.length || 0);
+    console.log('Purchase details:', purchases);
+    
+    // Return the videos from purchases
+    const videos = purchases?.map(p => ({
+      ...p.videos,
+      purchase_date: p.created_at,
+      purchase_amount: p.amount
+    })) || [];
+    
+    res.json(videos);
+  } catch (error) {
+    console.error('User purchases API error:', error);
+    res.status(500).json({ error: 'Failed to fetch purchases' });
+  }
+});
+```
+
+### 4. Check Your Authentication Context
+Make sure the correct user is logged in:
+
+```javascript
+// In your Library component, verify user identity
+useEffect(() => {
+  console.log('=== USER IDENTITY CHECK ===');
+  console.log('Current user:', user);
+  console.log('User email:', user?.email);
+  console.log('User ID:', user?.id);
+  console.log('==========================');
+}, [user]);
+```
+
+### 5. Fix the Purchase Recording (Root Cause)
+The webhook is probably recording purchases for the wrong user or video:
+
+```javascript
+// In your webhook, add this debugging BEFORE recording purchase
+console.log('=== WEBHOOK PURCHASE DEBUG ===');
+console.log('Session metadata:', session.metadata);
+console.log('Customer email:', session.customer_details?.email);
+console.log('Video ID from metadata:', session.metadata?.videoId);
+console.log('Amount:', session.amount_total);
+
+// Verify the video exists
+const { data: video, error: videoError } = await supabase
+  .from('videos')
+  .select('id, title, creator_id')
+  .eq('id', parseInt(session.metadata?.videoId))
+  .single();
+
+console.log('Video to purchase:', video);
+console.log('Video error:', videoError);
+
+// Verify user exists  
+const { data: profile, error: profileError } = await supabase
+  .from('profiles')
+  .select('id, email, display_name')
+  .eq('email', session.customer_details?.email)
+  .single();
+
+console.log('User profile:', profile);
+console.log('Profile error:', profileError);
+console.log('===============================');
+```
+
+## Immediate Testing Steps
+
+1. **Run the SQL query** to see what's actually in your purchases table
+2. **Check what `/api/user-purchases` returns** in browser network tab
+3. **Add the debugging** to see user identity and purchase data flow
+4. **Test with a new purchase** and watch all the logs
+
+## Expected Findings
+
+You'll likely discover:
+- Purchase is recorded for wrong user
+- Purchase is recorded for wrong video  
+- Library query is looking at wrong table/relationship
+- User authentication issue
+
+## Stop the Gaslighting Pattern
+
+The agent keeps claiming things are "working perfectly" when they clearly aren't. Focus on:
+1. **Actual data** in the database
+2. **Console logs** showing real behavior  
+3. **User experience** (what you actually see)
+4. **Step-by-step debugging** to find the real issue
+
+The metadata might be correct, but something is wrong in the purchase recording or library display logic.

@@ -66,24 +66,59 @@ function MyLibraryContent() {
 
   const purchases: Purchase[] = purchasesData?.purchases || [];
 
+  // Fetch real video data for purchased videos
+  const { data: videosData } = useQuery({
+    queryKey: ['purchased-video-details', purchases.map(p => p.video_id)],
+    queryFn: async () => {
+      if (purchases.length === 0) return [];
+      
+      console.log('=== LIBRARY DEBUG ===');
+      console.log('User ID:', user?.id);  
+      console.log('Effective email:', effectiveEmail);
+      console.log('Purchases raw:', purchases);
+      console.log('Video IDs to fetch:', purchases.map(p => p.video_id));
+      
+      const videoPromises = purchases.map(async (purchase) => {
+        try {
+          const response = await apiRequest('GET', `/api/video/${purchase.video_id}`);
+          const videoResponse = await response.json();
+          const video = videoResponse.video;
+          console.log(`Video ${purchase.video_id} data:`, video);
+          return {
+            ...video,
+            purchase_id: purchase.id,
+            purchased_at: purchase.purchased_at,
+            amount: purchase.amount
+          };
+        } catch (error) {
+          console.error(`Failed to fetch video ${purchase.video_id}:`, error);
+          return null;
+        }
+      });
+      
+      const videos = await Promise.all(videoPromises);
+      const validVideos = videos.filter(v => v !== null);
+      console.log('Final video data:', validVideos);
+      console.log('====================');
+      
+      return validVideos;
+    },
+    enabled: purchases.length > 0
+  });
 
-
-  // Transform purchases to include video details, filtering out non-existent videos
-  const purchasedVideos: PurchasedVideo[] = purchases
-    .map(purchase => {
-      const videoData = getVideoById(purchase.video_id);
-      return {
-        id: purchase.video_id,
-      title: videoData?.title || 'Unknown Video',
-      creator: videoData?.creator || 'Unknown Creator',
-      thumbnail: videoData?.thumbnail || '',
-      duration: videoData?.duration || '0m',
-      price: videoData?.price || 0,
-      purchaseDate: new Date(purchase.purchased_at).toLocaleDateString(),
-      amount: purchase.amount / 100 // Convert cents to dollars
-    };
-  })
-  .filter(video => video.title !== 'Unknown Video'); // Filter out videos that don't exist
+  // Map real video data to purchased videos
+  const purchasedVideos: PurchasedVideo[] = (videosData || [])
+    .map(video => ({
+      id: video.id,
+      title: video.title || 'Unknown Video',
+      creator: video.profiles?.display_name || 'Unknown Creator',
+      thumbnail: video.thumbnail_url || '',
+      duration: video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}` : '0:00',
+      price: video.price || 0,
+      purchaseDate: new Date(video.purchased_at).toLocaleDateString(),
+      amount: video.amount / 100 // Convert cents to dollars
+    }))
+    .filter(video => video.title !== 'Unknown Video');
 
   const handleVideoClick = (videoId: number) => {
     setLocation(`/video/${videoId}`);
