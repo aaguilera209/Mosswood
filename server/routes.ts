@@ -1237,53 +1237,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const MINIMUM_PRICE_CENTS = parseInt(process.env.MINIMUM_PRICE_CENTS || '100'); // $1.00 minimum
       const MINIMUM_FEE_CENTS = parseInt(process.env.MINIMUM_FEE_CENTS || '10'); // $0.10 minimum
 
-      // Look up the video to get price and details
-      const video = getVideoById(parseInt(videoId));
-      if (!video) {
+      // Look up the video with creator details using proper database join
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { data: video, error: videoError } = await supabase
+        .from('videos')
+        .select(`
+          *,
+          profiles!videos_creator_id_fkey (
+            id,
+            username,
+            display_name,
+            stripe_account_id,
+            stripe_charges_enabled
+          )
+        `)
+        .eq('id', parseInt(videoId))
+        .single();
+
+      if (videoError || !video) {
         return res.status(404).json({ error: 'Video not found' });
+      }
+
+      const creator = video.profiles;
+      if (!creator) {
+        return res.status(404).json({ error: 'Creator not found' });
+      }
+
+      // Check if creator has valid Stripe account
+      if (!creator.stripe_account_id || !creator.stripe_charges_enabled) {
+        return res.status(400).json({ 
+          error: 'Creator payouts not available',
+          code: 'STRIPE_NOT_SETUP',
+          message: 'This creator has not completed payment setup yet.'
+        });
       }
 
       if (video.price === 0) {
         return res.status(400).json({ error: 'This video is free' });
       }
 
-      const priceInCents = Math.round(video.price * 100);
+      const priceInCents = video.price; // Already in cents from database
       
       // Validate minimum price
       if (priceInCents < MINIMUM_PRICE_CENTS) {
         return res.status(400).json({ 
-          error: `Minimum price is $${MINIMUM_PRICE_CENTS / 100}. Video price is $${video.price}` 
+          error: `Minimum price is $${MINIMUM_PRICE_CENTS / 100}. Video price is $${priceInCents / 100}` 
         });
       }
 
-      // Get creator details and validate Stripe account
-      if (!supabase) {
-        return res.status(500).json({ error: "Database connection required for platform fees" });
-      }
 
-      const { data: creator, error: creatorError } = await supabase
-        .from('profiles')
-        .select('id, stripe_account_id, stripe_charges_enabled, display_name')
-        .eq('id', video.creator)
-        .single();
-
-      if (creatorError || !creator) {
-        return res.status(404).json({ error: 'Creator not found' });
-      }
-
-      if (!creator.stripe_account_id) {
-        return res.status(400).json({ 
-          error: 'Creator has not set up payments yet',
-          creator_setup_required: true 
-        });
-      }
-
-      if (!creator.stripe_charges_enabled) {
-        return res.status(400).json({ 
-          error: 'Creator payments are not enabled',
-          creator_setup_incomplete: true 
-        });
-      }
 
       // Calculate platform fee
       const platformFeeAmount = Math.max(

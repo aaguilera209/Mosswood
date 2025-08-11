@@ -118,6 +118,10 @@ export default function VideoDetail() {
     }
   }, [videoApiData]);
 
+  // Get creator's Stripe Connect status from video data
+  const creatorProfile = videoApiData?.video?.profiles;
+  const hasStripeSetup = creatorProfile?.stripe_account_id && creatorProfile?.stripe_charges_enabled;
+
   // Clean up animation frame on unmount and handle smooth animation
   useEffect(() => {
     return () => {
@@ -226,6 +230,17 @@ export default function VideoDetail() {
         });
       } else {
         console.error('Failed to create checkout session:', data);
+        
+        // Handle Stripe Connect setup errors specifically
+        if (data.code === 'STRIPE_NOT_SETUP') {
+          toast({
+            title: "Creator Payment Setup Required",
+            description: data.message || "This creator has not completed payment setup yet.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         throw new Error(data.error || 'Failed to create checkout session');
       }
     } catch (error: any) {
@@ -974,18 +989,31 @@ export default function VideoDetail() {
                 </div>
                 
                 {!hasPurchased && videoData.price > 0 && (
-                  <Button
-                    onClick={handleStripeCheckout}
-                    disabled={isProcessingPayment}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-2 w-fit flex items-center space-x-2"
-                  >
-                    {isProcessingPayment && (
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  <div className="flex flex-col gap-2">
+                    {hasStripeSetup ? (
+                      <Button
+                        onClick={handleStripeCheckout}
+                        disabled={isProcessingPayment}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-2 w-fit flex items-center space-x-2"
+                      >
+                        {isProcessingPayment && (
+                          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        )}
+                        <span>
+                          {isProcessingPayment ? 'Processing...' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
+                        </span>
+                      </Button>
+                    ) : (
+                      <div className="text-center p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+                          Payment Setup in Progress
+                        </p>
+                        <p className="text-yellow-600 dark:text-yellow-300 text-sm mt-1">
+                          This creator is still setting up payments. Purchase will be available once setup is complete.
+                        </p>
+                      </div>
                     )}
-                    <span>
-                      {isProcessingPayment ? 'Processing...' : `Buy for $${(videoData.price / 100).toFixed(2)}`}
-                    </span>
-                  </Button>
+                  </div>
                 )}
               </div>
             </div>
