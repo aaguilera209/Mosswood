@@ -276,36 +276,61 @@ function DashboardContent() {
             <Logo showText={true} />
             
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">
-                {displayName} ({profile?.role === 'creator' ? 'Creator' : 'Viewer'})
-              </span>
-              <Button
-                onClick={() => setLocation('/edit-profile')}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <User className="w-4 h-4" />
-                <span>Edit Profile</span>
-              </Button>
-              <Button
-                onClick={() => setLocation(`/creator/${profile?.display_name || profile?.email?.split('@')[0] || 'creator'}`)}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span>Storefront</span>
-              </Button>
-              <ThemeToggle />
-              <Button 
-                variant="outline"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-primary border-border"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Log out
-              </Button>
+              {/* Navigation Links */}
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={() => setLocation('/library')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>My Library</span>
+                </Button>
+                <Button
+                  onClick={() => setLocation('/explore')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Explore</span>
+                </Button>
+              </div>
+              
+              {/* User Info and Actions */}
+              <div className="flex items-center space-x-4 border-l border-border pl-4">
+                <span className="text-sm text-muted-foreground">
+                  {displayName} ({profile?.role === 'creator' ? 'Creator' : 'Viewer'})
+                </span>
+                <Button
+                  onClick={() => setLocation('/edit-profile')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Edit Profile</span>
+                </Button>
+                <Button
+                  onClick={() => setLocation(`/creator/${profile?.display_name || profile?.email?.split('@')[0] || 'creator'}`)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Storefront</span>
+                </Button>
+                <ThemeToggle />
+                <Button 
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-primary border-border"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log out
+                </Button>
+              </div>
             </div>
           </nav>
         </div>

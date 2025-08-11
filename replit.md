@@ -30,6 +30,15 @@ Mosswood is a full-stack web application designed as "the platform layer for cre
 - **Technical Details**: Preserved public data (creators, videos) while clearing private user data on sign out
 - **Status**: ✅ Fixed - Featured Creators now persists across navigation without unnecessary refetching
 
+### Navigation Header UX Improvements - RESOLVED ✅
+- **Issue**: Poor navigation UX - creators had to go Dashboard → Logo → Homepage → My Library (3+ clicks)
+- **Improvements Made**:
+  - ✅ Added "My Library" and "Explore" buttons to dashboard header
+  - ✅ Fixed video page header layout (removed duplicate logos) 
+  - ✅ Added proper back button navigation using browser history
+  - ✅ Improved header consistency across dashboard and video pages
+- **Status**: ✅ Navigation now streamlined - direct access to Library from dashboard
+
 ### Platform Fee System Implementation - NEW ✅
 - **Feature**: Added 10% platform fee to all Stripe payments using Stripe Connect
 - **Implementation**: Enhanced checkout session creation with application fees and transfer data to creators

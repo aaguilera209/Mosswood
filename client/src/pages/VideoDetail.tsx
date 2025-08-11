@@ -316,12 +316,31 @@ export default function VideoDetail() {
       <div className="min-h-screen bg-background text-foreground">
         <header className="border-b border-border px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href="/dashboard" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Dashboard</span>
-            </Link>
             <div className="flex items-center space-x-4">
-              <Logo showText={true} className="text-2xl" />
+              <button 
+                onClick={() => window.history.back()}
+                className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+              <div className="h-6 w-px bg-border"></div>
+              <Link href="/" className="flex items-center">
+                <Logo showText={true} />
+              </Link>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <Link href="/explore">
+                <Button variant="outline" size="sm">
+                  Explore
+                </Button>
+              </Link>
+              <Link href="/library">
+                <Button variant="outline" size="sm">
+                  My Library
+                </Button>
+              </Link>
               <ThemeToggle />
             </div>
           </div>
@@ -576,14 +595,33 @@ export default function VideoDetail() {
       {playbackMode !== 'fullscreen' && (
         <header className="border-b border-border px-4 md:px-6 py-3 md:py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href="/dashboard" className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Dashboard</span>
-              <span className="sm:hidden">Back</span>
-            </Link>
+            {/* Left side - Back button and Logo */}
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={() => window.history.back()}
+                className="text-primary hover:text-primary/80 transition-colors flex items-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+              <div className="h-6 w-px bg-border hidden sm:block"></div>
+              <Link href="/" className="flex items-center">
+                <Logo showText={true} />
+              </Link>
+            </div>
+            
+            {/* Right side - Navigation */}
             <div className="flex items-center space-x-2 md:space-x-4">
-              <Logo showText={false} className="text-xl md:text-2xl md:block" />
-              <Logo showText={true} className="hidden md:block text-xl md:text-2xl" />
+              <Link href="/explore">
+                <Button variant="outline" size="sm">
+                  Explore
+                </Button>
+              </Link>
+              <Link href="/library">
+                <Button variant="outline" size="sm">
+                  My Library
+                </Button>
+              </Link>
               <ThemeToggle />
             </div>
           </div>

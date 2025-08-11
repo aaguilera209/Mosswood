@@ -1,0 +1,298 @@
+# Fix Navigation & Header UX Issues
+
+## Issue 1: Add "My Library" to Creator Dashboard Header
+
+### Current Problem
+Creators have to: Dashboard → Click logo → Homepage → My Library (3 clicks, bad UX)
+
+### Solution: Add My Library to Dashboard Header
+**In your dashboard header component:**
+
+```javascript
+// In Dashboard.tsx or DashboardHeader component
+const DashboardHeader = () => {
+  return (
+    <header className="bg-white shadow-sm border-b">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Left side - Logo */}
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center">
+              <img src="/logo.svg" alt="Mosswood" className="h-8 w-8" />
+              <span className="ml-2 text-xl font-semibold">Mosswood</span>
+            </Link>
+          </div>
+          
+          {/* Center - Dashboard Nav */}
+          <nav className="hidden md:flex space-x-8">
+            <Link to="/dashboard" className="text-gray-900 hover:text-gray-600">
+              Dashboard
+            </Link>
+            <Link to="/dashboard/videos" className="text-gray-600 hover:text-gray-900">
+              My Videos
+            </Link>
+            <Link to="/dashboard/analytics" className="text-gray-600 hover:text-gray-900">
+              Analytics
+            </Link>
+          </nav>
+          
+          {/* Right side - User menu with My Library */}
+          <div className="flex items-center space-x-4">
+            {/* Add My Library button */}
+            <Link 
+              to="/library"
+              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              My Library
+            </Link>
+            
+            {/* Explore link */}
+            <Link 
+              to="/explore"
+              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Explore
+            </Link>
+            
+            {/* User dropdown */}
+            <div className="relative">
+              <button className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <img 
+                  className="h-8 w-8 rounded-full" 
+                  src={user?.avatar_url || '/default-avatar.png'} 
+                  alt={user?.display_name}
+                />
+                <span className="ml-2 text-gray-700">{user?.display_name}</span>
+                <ChevronDownIcon className="ml-1 h-4 w-4 text-gray-500" />
+              </button>
+              
+              {/* Dropdown menu */}
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  Creator Dashboard
+                </Link>
+                <Link to="/library" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  My Library
+                </Link>
+                <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  Edit Profile
+                </Link>
+                <hr className="my-1" />
+                <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  Log out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+```
+
+## Issue 2: Fix Video Page Header Layout
+
+### Current Problem
+Video page has duplicate logos, broken layout, inconsistent navigation
+
+### Solution: Clean Video Page Header
+**In your VideoDetail.tsx component:**
+
+```javascript
+// Replace the broken header section with this clean layout
+const VideoDetailHeader = () => {
+  return (
+    <header className="bg-white shadow-sm border-b">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Left side - Logo and back button */}
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => navigate(-1)}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-1" />
+              Back
+            </button>
+            
+            <div className="h-6 w-px bg-gray-300"></div> {/* Divider */}
+            
+            <Link to="/" className="flex items-center">
+              <img src="/logo.svg" alt="Mosswood" className="h-8 w-8" />
+              <span className="ml-2 text-xl font-semibold">Mosswood</span>
+            </Link>
+          </div>
+          
+          {/* Right side - Navigation */}
+          <div className="flex items-center space-x-4">
+            <Link 
+              to="/explore"
+              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Explore
+            </Link>
+            
+            <Link 
+              to="/library"
+              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              My Library
+            </Link>
+            
+            {/* User menu */}
+            <div className="flex items-center">
+              <img 
+                className="h-8 w-8 rounded-full" 
+                src={user?.avatar_url || '/default-avatar.png'} 
+                alt={user?.display_name}
+              />
+              <span className="ml-2 text-gray-700 text-sm">{user?.display_name}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+// Use this header in your VideoDetail component
+const VideoDetail = () => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <VideoDetailHeader />
+      
+      {/* Rest of your video content */}
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Video player and details */}
+      </main>
+    </div>
+  );
+};
+```
+
+## Issue 3: Make Headers Consistent Across All Pages
+
+### Create a Reusable Header Component
+**Create `components/Header.tsx`:**
+
+```javascript
+// Universal header component that adapts to different pages
+interface HeaderProps {
+  variant?: 'default' | 'dashboard' | 'video';
+  showBackButton?: boolean;
+  title?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ 
+  variant = 'default', 
+  showBackButton = false, 
+  title 
+}) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  return (
+    <header className="bg-white shadow-sm border-b">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Left side */}
+          <div className="flex items-center space-x-4">
+            {showBackButton && (
+              <>
+                <button 
+                  onClick={() => navigate(-1)}
+                  className="flex items-center text-gray-600 hover:text-gray-900"
+                >
+                  <ArrowLeftIcon className="h-5 w-5 mr-1" />
+                  Back
+                </button>
+                <div className="h-6 w-px bg-gray-300"></div>
+              </>
+            )}
+            
+            <Link to="/" className="flex items-center">
+              <img src="/logo.svg" alt="Mosswood" className="h-8 w-8" />
+              <span className="ml-2 text-xl font-semibold">Mosswood</span>
+            </Link>
+            
+            {title && (
+              <>
+                <div className="h-6 w-px bg-gray-300"></div>
+                <h1 className="text-lg font-medium text-gray-900">{title}</h1>
+              </>
+            )}
+          </div>
+          
+          {/* Right side navigation */}
+          <div className="flex items-center space-x-4">
+            {variant === 'dashboard' && (
+              <nav className="hidden md:flex space-x-6">
+                <Link to="/dashboard" className="text-gray-600 hover:text-gray-900">
+                  Dashboard
+                </Link>
+                <Link to="/dashboard/videos" className="text-gray-600 hover:text-gray-900">
+                  Videos
+                </Link>
+              </nav>
+            )}
+            
+            <Link 
+              to="/explore"
+              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Explore
+            </Link>
+            
+            <Link 
+              to="/library"
+              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              My Library
+            </Link>
+            
+            {user ? (
+              <UserMenu user={user} />
+            ) : (
+              <div className="flex space-x-2">
+                <Link to="/login" className="text-gray-600 hover:text-gray-900">
+                  Sign In
+                </Link>
+                <Link to="/signup" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+```
+
+## Usage Examples
+
+```javascript
+// In Dashboard.tsx
+<Header variant="dashboard" title="Creator Dashboard" />
+
+// In VideoDetail.tsx  
+<Header variant="video" showBackButton={true} />
+
+// In other pages
+<Header variant="default" />
+```
+
+## Expected Results After Fixes
+✅ **Dashboard has "My Library" button** - Easy access from creator dashboard  
+✅ **Video page has clean header** - No duplicate logos, consistent navigation  
+✅ **All pages use consistent header** - Better UX across the app  
+✅ **Proper back navigation** - Users can easily return to previous pages  
+
+## Priority Implementation Order
+1. **Add My Library to dashboard header** (quick UX win)
+2. **Fix video page header layout** (removes visual bugs)  
+3. **Create reusable header component** (long-term consistency)
+
+This will give creators a much smoother experience navigating between their dashboard and purchased content!
