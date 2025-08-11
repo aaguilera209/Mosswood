@@ -1,0 +1,129 @@
+# Quick Payment Diagnostic & Layout Fix
+
+## Immediate Issues to Address
+
+### 1. Check What Video ID is Being Sent
+Add this to your VideoDetail component to see what's actually being sent:
+
+```javascript
+// In VideoDetail.tsx, in the handleStripeCheckout function
+const handleStripeCheckout = async () => {
+  console.log('=== FRONTEND DEBUG ===');
+  console.log('Video data:', videoData);
+  console.log('Video ID being sent:', videoData?.id);
+  console.log('Video ID type:', typeof videoData?.id);
+  console.log('Creator ID:', videoData?.creator_id);
+  console.log('======================');
+
+  // Your existing checkout logic here...
+};
+```
+
+### 2. Fix the Layout Corruption (Duplicate Logos)
+The duplicate logos suggest your VideoDetail component is rendering multiple headers. Check your component structure:
+
+```javascript
+// In VideoDetail.tsx - make sure you DON'T have duplicate headers
+return (
+  <div className="min-h-screen bg-gray-50">
+    {/* Remove any duplicate <Header /> components */}
+    {/* Remove any duplicate navigation */}
+    
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Your video content here */}
+    </div>
+  </div>
+);
+```
+
+**Check your routing setup** - ensure the video route doesn't double-wrap with layout:
+```javascript
+// In your router, make sure you're not doing this:
+<Layout>
+  <VideoDetail /> {/* This might already include a layout */}
+</Layout>
+```
+
+### 3. Test Direct API Call
+Let's test the API directly. Add a temporary button to test:
+
+```javascript
+// Add this temporary test function to VideoDetail.tsx
+const testDirectAPI = async () => {
+  try {
+    const response = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        videoId: videoData.id // Use the actual video ID
+      })
+    });
+    
+    const result = await response.json();
+    console.log('Direct API test result:', result);
+    console.log('Response status:', response.status);
+  } catch (error) {
+    console.error('Direct API test error:', error);
+  }
+};
+
+// Add this temporary button to your JSX (remove after testing)
+<button onClick={testDirectAPI} className="bg-red-500 text-white px-4 py-2 rounded">
+  Test API Direct
+</button>
+```
+
+### 4. Check Server Logs
+When you click "Buy for $1.99", check your Replit console for the debug logs. You should see:
+```
+=== PAYMENT DEBUG START ===
+Video ID received: [something]
+Video ID type: [string/number]
+Direct video lookup result: [video object or null]
+```
+
+### 5. Quick Database Check
+Verify the video actually exists in your database. In Supabase, run:
+```sql
+-- Find Alex Aguilera's videos
+SELECT v.id, v.title, v.creator_id, p.display_name, p.stripe_account_id
+FROM videos v
+JOIN profiles p ON v.creator_id = p.id
+WHERE p.display_name = 'Alex Aguilera';
+```
+
+### 6. Fix Video ID Type Issue (Most Likely Problem)
+The issue might be that your frontend is sending a string but your backend expects an integer:
+
+```javascript
+// In your payment route, ensure proper parsing
+const videoIdInt = parseInt(req.body.videoId);
+console.log('Original videoId:', req.body.videoId, 'type:', typeof req.body.videoId);
+console.log('Parsed videoId:', videoIdInt, 'type:', typeof videoIdInt);
+
+if (!videoIdInt || isNaN(videoIdInt)) {
+  return res.status(400).json({ error: 'Invalid video ID format' });
+}
+
+// Use videoIdInt in all database queries
+```
+
+## Expected Findings
+
+After adding the debugging:
+1. **Frontend logs** should show what video ID is being sent
+2. **Backend logs** should show if the video lookup is working
+3. **Direct API test** will bypass any frontend issues
+4. **Database check** will confirm the video exists
+
+## Most Likely Solutions
+
+Based on common patterns:
+1. **Video ID type mismatch** (string vs integer)
+2. **Wrong video ID being passed** from frontend
+3. **Database foreign key issues**
+4. **Authentication middleware interfering**
+
+Run these tests and check the logs - that will tell us exactly what's failing.

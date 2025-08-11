@@ -1305,39 +1305,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Direct video lookup result:', testVideo);
       console.log('Direct video lookup error:', testError);
 
-      // Test if profiles join is working
-      const { data: video, error: videoError } = await supabase
-        .from('videos')
-        .select(`
-          *,
-          profiles!videos_creator_id_fkey (
-            id,
-            username,
-            display_name,
-            stripe_account_id,
-            stripe_charges_enabled
-          )
-        `)
-        .eq('id', videoIdInt)
-        .single();
-
-      console.log('Video with profile join:', video);
-      console.log('Profile join error:', videoError);
-
-      if (videoError || !video) {
-        console.log('ERROR: Video lookup failed');
+      // Check if video was found
+      if (!testVideo) {
+        console.log('ERROR: Video not found in database');
         console.log('=== PAYMENT DEBUG END ===');
         return res.status(404).json({ error: 'Video not found' });
       }
-
-      const creator = video.profiles;
-      console.log('Creator profile from join:', creator);
       
-      if (!creator) {
-        console.log('ERROR: Creator profile is missing from join');
+      // Use the video from direct lookup since it worked
+      const video = testVideo;
+      
+      // Separately fetch creator profile
+      const { data: creator, error: creatorError } = await supabase
+        .from('profiles')
+        .select('id, display_name, email, stripe_account_id, stripe_charges_enabled')
+        .eq('id', video.creator_id)
+        .single();
+
+      console.log('Creator lookup result:', creator);
+      console.log('Creator lookup error:', creatorError);
+
+      if (creatorError || !creator) {
+        console.log('ERROR: Creator lookup failed');
         console.log('=== PAYMENT DEBUG END ===');
         return res.status(404).json({ error: 'Creator not found' });
       }
+
+      // Attach creator to video object for consistency
+      video.profiles = creator;
+      console.log('Creator profile from lookup:', creator);
 
       console.log('Creator Stripe status:', {
         stripe_account_id: creator.stripe_account_id,

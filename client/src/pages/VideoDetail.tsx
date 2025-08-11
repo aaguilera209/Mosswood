@@ -124,15 +124,15 @@ export default function VideoDetail() {
 
   // Fetch more videos from this creator
   const { data: moreFromCreatorVideos = [] } = useQuery({
-    queryKey: ['creator-videos', videoData?.creator_id, videoData?.id],
+    queryKey: ['creator-videos', videoData?.creator, videoData?.id],
     queryFn: async () => {
-      if (!videoData?.creator_id) return [];
+      if (!videoData?.creator) return [];
       
-      const response = await apiRequest('GET', `/api/creators/${videoData.creator_id}/videos?exclude=${videoData.id}`);
+      const response = await apiRequest('GET', `/api/creators/${videoData.creator}/videos?exclude=${videoData.id}`);
       if (!response.ok) throw new Error('Failed to fetch creator videos');
       return response.json();
     },
-    enabled: !!videoData?.creator_id
+    enabled: !!videoData?.creator
   });
 
   // Clean up animation frame on unmount and handle smooth animation
@@ -212,6 +212,13 @@ export default function VideoDetail() {
   };
 
   const handleStripeCheckout = async () => {
+    console.log('=== FRONTEND DEBUG ===');
+    console.log('Video data:', videoData);
+    console.log('Video ID being sent:', videoData?.id);
+    console.log('Video ID type:', typeof videoData?.id);
+    console.log('Creator ID:', videoData?.creator);
+    console.log('======================');
+
     if (!videoData || videoData.price === 0) return;
 
     setIsProcessingPayment(true);
@@ -592,9 +599,9 @@ export default function VideoDetail() {
                     onClick={(e) => e.stopPropagation()}
                     onTouchEnd={(e) => e.stopPropagation()}
                   >
-                    <source src={videoData.video_url} type="video/mp4" />
-                    <source src={videoData.video_url} type="video/webm" />
-                    <source src={videoData.video_url} type="video/quicktime" />
+                    <source src={videoData.file_path} type="video/mp4" />
+                    <source src={videoData.file_path} type="video/webm" />
+                    <source src={videoData.file_path} type="video/quicktime" />
                     Your browser does not support the video tag.
                   </video>
                   
