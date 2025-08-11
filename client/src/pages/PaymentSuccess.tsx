@@ -1,161 +1,166 @@
-import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'wouter';
+import React, { useEffect, useState } from 'react';
+import { useLocation, Link } from 'wouter';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Loader2, Play } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Play, Loader } from 'lucide-react';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { apiRequest } from '@/lib/queryClient';
-
-interface SessionDetails {
-  status: string;
-  customerEmail: string;
-  metadata: {
-    videoId: string;
-    videoTitle: string;
-  };
-}
+import { useToast } from '@/hooks/use-toast';
 
 export default function PaymentSuccess() {
-  const [location, setLocation] = useLocation();
-  const [loading, setLoading] = useState(true);
-  const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [purchaseDetails, setPurchaseDetails] = useState<any>(null);
+  const [videoId, setVideoId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSessionDetails = async () => {
+    const processPayment = async () => {
       try {
-        // Get session ID from URL
+        // Get session ID from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const sessionId = urlParams.get('session_id');
 
         if (!sessionId) {
-          setError('No session ID found');
-          setLoading(false);
+          toast({
+            title: "Error",
+            description: "Payment session not found",
+            variant: "destructive",
+          });
+          setLocation('/');
           return;
         }
 
-        // Fetch session details from backend
-        const response = await apiRequest('GET', `/api/checkout-session?sessionId=${sessionId}`);
-        const data = await response.json();
+        console.log('Processing payment for session:', sessionId);
 
-        if (response.ok) {
-          setSessionDetails(data);
-        } else {
-          setError(data.error || 'Failed to fetch session details');
+        // Process the checkout and record the purchase
+        const response = await apiRequest('POST', '/api/process-checkout', {
+          sessionId
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to process payment');
         }
-      } catch (err: any) {
-        console.error('Error fetching session details:', err);
-        setError('Failed to verify payment');
+
+        const result = await response.json();
+        console.log('Payment processed successfully:', result);
+
+        // Get session details for display
+        const sessionResponse = await apiRequest('GET', `/api/checkout-session?sessionId=${sessionId}`);
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          setPurchaseDetails(sessionData);
+          setVideoId(sessionData.metadata?.videoId);
+        }
+
+        toast({
+          title: "Payment Successful!",
+          description: "Your video purchase has been completed. You can now watch the video.",
+        });
+
+      } catch (error: any) {
+        console.error('Payment processing error:', error);
+        toast({
+          title: "Payment Processing Error",
+          description: error.message || "There was an issue processing your payment",
+          variant: "destructive",
+        });
       } finally {
-        setLoading(false);
+        setIsProcessing(false);
       }
     };
 
-    fetchSessionDetails();
-  }, []);
+    processPayment();
+  }, [setLocation, toast]);
 
-  if (loading) {
+  if (isProcessing) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-lg mx-4">
-          <CardHeader className="text-center">
-            <CardTitle>Verifying Payment</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Please wait while we verify your payment...
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-lg mx-4">
-          <CardHeader className="text-center">
-            <CardTitle className="text-destructive">Payment Verification Failed</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">{error}</p>
-            <Button 
-              onClick={() => setLocation('/')}
-              variant="outline"
-              className="w-full"
-            >
-              Return Home
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 text-center">
+          <div className="max-w-md mx-auto">
+            <Loader className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Processing Payment...</h1>
+            <p className="text-muted-foreground">Please wait while we confirm your purchase.</p>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-lg mx-4">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-          </div>
-          <CardTitle className="text-green-600 dark:text-green-400">
-            Payment Successful!
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {sessionDetails && (
-            <>
-              <div className="text-center space-y-2">
-                <p className="text-muted-foreground">
-                  Thank you for your purchase, <strong>{sessionDetails.customerEmail}</strong>
-                </p>
-                <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300">
-                  Payment Status: {sessionDetails.status}
-                </Badge>
-              </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container mx-auto px-4 py-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-8 text-center">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-6" />
+            
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Payment Successful!
+            </h1>
+            
+            <p className="text-lg text-muted-foreground mb-6">
+              Thank you for your purchase. Your video is now available to watch.
+            </p>
 
-              <div className="bg-muted rounded-lg p-4 space-y-2">
-                <h3 className="font-semibold">Purchase Details</h3>
-                <p className="text-sm text-muted-foreground">
-                  <strong>Video:</strong> {sessionDetails.metadata.videoTitle}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  <strong>Video ID:</strong> {sessionDetails.metadata.videoId}
-                </p>
+            {purchaseDetails && (
+              <div className="bg-muted/50 rounded-lg p-4 mb-6 text-left">
+                <h3 className="font-semibold mb-2">Purchase Details</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Customer Email:</span>
+                    <span>{purchaseDetails.customerEmail}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Payment Status:</span>
+                    <span className="capitalize text-green-600 font-medium">
+                      {purchaseDetails.status}
+                    </span>
+                  </div>
+                  {purchaseDetails.metadata?.videoTitle && (
+                    <div className="flex justify-between">
+                      <span>Video:</span>
+                      <span>{purchaseDetails.metadata.videoTitle}</span>
+                    </div>
+                  )}
+                </div>
               </div>
+            )}
 
-              <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {videoId && (
                 <Button 
-                  onClick={() => {
-                    const videoUrl = `/video/${sessionDetails.metadata.videoId}?purchased=true&videoId=${sessionDetails.metadata.videoId}`;
-                    console.log('Navigating to video with URL:', videoUrl);
-                    window.location.href = videoUrl;
-                  }}
-                  className="w-full"
+                  onClick={() => setLocation(`/video/${videoId}?purchased=true&videoId=${videoId}`)}
+                  className="bg-primary hover:bg-primary/90"
                 >
-                  <Play className="w-4 h-4 mr-2" />
-                  Watch Now
+                  <Play className="h-4 w-4 mr-2" />
+                  Watch Video Now
                 </Button>
-                
-                <Button variant="outline" asChild className="w-full">
-                  <Link href="/library">
-                    View My Library
-                  </Link>
-                </Button>
-                
-                <Button variant="ghost" asChild className="w-full">
-                  <Link href="/">
-                    Return Home
-                  </Link>
-                </Button>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              )}
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setLocation('/library')}
+              >
+                View My Library
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                onClick={() => setLocation('/')}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+      <Footer />
     </div>
   );
 }

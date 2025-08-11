@@ -72,6 +72,13 @@ export default function VideoDetail() {
   
   // Check if user has purchased this video
   const hasPurchased = videoData ? purchases.some((p: any) => p.video_id === videoData.id) : false;
+  
+  console.log('Purchase check:', {
+    videoId: videoData?.id,
+    purchases: purchases,
+    hasPurchased: hasPurchased,
+    purchaseCount: purchases.length
+  });
 
   // Initialize video tracking
   const { trackView, trackTimeUpdate } = useVideoTracking({
@@ -108,6 +115,14 @@ export default function VideoDetail() {
   // Update local state when API data changes
   useEffect(() => {
     if (videoApiData?.video) {
+      console.log('=== VIDEO PLAYBACK DEBUG ===');
+      console.log('Video data:', videoApiData.video);
+      console.log('Video URL:', videoApiData.video.video_url);
+      console.log('File path:', videoApiData.video.file_path);
+      console.log('Video source being used:', videoApiData.video.video_url || videoApiData.video.file_path);
+      console.log('Video can be accessed:', hasPurchased || hasRecentPurchase || isOwnVideo || videoApiData.video.is_free);
+      console.log('============================');
+      
       setVideoData(videoApiData.video);
       // For now, use empty array for related videos since we don't have that API yet
       setRelatedVideos([]);
@@ -116,23 +131,41 @@ export default function VideoDetail() {
       const creatorName = videoApiData.video.profiles?.display_name || 'Unknown Creator';
       setCreatorUsername(creatorName);
     }
-  }, [videoApiData]);
+  }, [videoApiData, hasPurchased, hasRecentPurchase, isOwnVideo]);
 
   // Get creator's Stripe Connect status from video data
   const creatorProfile = videoApiData?.video?.profiles;
   const hasStripeSetup = creatorProfile?.stripe_account_id && creatorProfile?.stripe_charges_enabled;
 
   // Fetch more videos from this creator
-  const { data: moreFromCreatorVideos = [] } = useQuery({
-    queryKey: ['creator-videos', videoData?.creator, videoData?.id],
+  const { data: moreFromCreatorVideos = [], error: creatorVideosError, isLoading: creatorVideosLoading } = useQuery({
+    queryKey: ['creator-videos', videoData?.creator_id, videoData?.id],
     queryFn: async () => {
-      if (!videoData?.creator) return [];
+      const creatorId = videoData?.creator_id;
+      console.log('Fetching videos for creator:', creatorId);
       
-      const response = await apiRequest('GET', `/api/creators/${videoData.creator}/videos?exclude=${videoData.id}`);
-      if (!response.ok) throw new Error('Failed to fetch creator videos');
-      return response.json();
+      if (!creatorId) {
+        console.log('No creator ID available');
+        return [];
+      }
+      
+      const url = `/api/creators/${creatorId}/videos?exclude=${videoData.id}&limit=6`;
+      console.log('Fetching URL:', url);
+      
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error:', response.status, errorText);
+        throw new Error(`Failed to fetch creator videos: ${response.status}`);
+      }
+      
+      const videos = await response.json();
+      console.log('Creator videos fetched:', videos.length, videos);
+      return videos;
     },
-    enabled: !!videoData?.creator
+    enabled: !!videoData?.creator_id
   });
 
   // Clean up animation frame on unmount and handle smooth animation

@@ -1626,6 +1626,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Process successful checkout and record purchase
+  app.post("/api/process-checkout", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.body;
+
+      if (!sessionId || typeof sessionId !== 'string') {
+        return res.status(400).json({ error: 'sessionId is required' });
+      }
+
+      console.log('Processing checkout for session:', sessionId);
+
+      // Retrieve the checkout session
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (session.payment_status !== 'paid') {
+        return res.status(400).json({ error: 'Payment not completed' });
+      }
+
+      const customerEmail = session.customer_details?.email;
+      const videoId = session.metadata?.videoId;
+
+      if (!customerEmail || !videoId) {
+        return res.status(400).json({ error: 'Missing required metadata' });
+      }
+
+      console.log('Recording purchase:', { customerEmail, videoId, sessionId });
+
+      // Find or create user profile
+      let { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', customerEmail)
+        .single();
+
+      if (profileError || !profile) {
+        console.log('Creating new profile for:', customerEmail);
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            email: customerEmail,
+            role: 'viewer'
+          })
+          .select()
+          .single();
+          
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          return res.status(500).json({ error: 'Failed to create user profile' });
+        }
+        
+        profile = newProfile;
+      }
+
+      // Check if purchase already exists
+      const { data: existingPurchase } = await supabase
+        .from('purchases')
+        .select('id')
+        .eq('profile_id', profile.id)
+        .eq('video_id', parseInt(videoId))
+        .single();
+
+      if (existingPurchase) {
+        console.log('Purchase already exists');
+        return res.json({ success: true, alreadyExists: true });
+      }
+
+      // Record the purchase (simplified for current schema)
+      const purchaseData = {
+        profile_id: profile.id,
+        video_id: parseInt(videoId),
+        stripe_session_id: sessionId,
+        amount: session.amount_total || 0
+      };
+
+      console.log('Inserting purchase data:', purchaseData);
+
+      const { data: purchase, error: purchaseError } = await supabase
+        .from('purchases')
+        .insert(purchaseData)
+        .select()
+        .single();
+
+      if (purchaseError) {
+        console.error('Error recording purchase:', purchaseError);
+        return res.status(500).json({ error: 'Failed to record purchase' });
+      }
+
+      console.log('Purchase recorded successfully:', purchase);
+      res.json({ success: true, purchase });
+    } catch (error: any) {
+      console.error('Error processing checkout:', error);
+      res.status(500).json({ error: 'Failed to process checkout' });
+    }
+  });
+
   // Get checkout session details
   app.get("/api/checkout-session", async (req: Request, res: Response) => {
     try {
