@@ -1101,6 +1101,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const videoId = session.metadata?.videoId;
         const userEmail = session.customer_details?.email;
         const amountTotal = session.amount_total; // Amount in cents
+        const platformFeeAmount = parseInt(session.metadata?.platformFeeAmount || '0');
+        const creatorAmount = parseInt(session.metadata?.creatorAmount || '0');
         
         if (!videoId || !userEmail || !amountTotal) {
           console.error('Missing required purchase data:', { videoId, userEmail, amountTotal });
@@ -1112,15 +1114,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Purchase would be recorded:', {
             videoId: parseInt(videoId),
             userEmail,
-            amount: amountTotal
+            amount: amountTotal,
+            platformFee: platformFeeAmount,
+            creatorAmount
           });
           return res.json({ received: true, note: 'Purchase recording skipped - service key needed' });
         }
 
-        console.log('Recording purchase in Supabase:', {
+        // Get the PaymentIntent to access fee details
+        let stripeFeeAmount = null;
+        if (session.payment_intent) {
+          try {
+            const paymentIntent = await stripe.paymentIntents.retrieve(
+              session.payment_intent as string,
+              { expand: ['charges.data.balance_transaction'] }
+            );
+
+            // Extract Stripe fees from the balance transaction
+            const charge = paymentIntent.charges.data[0];
+            if (charge?.balance_transaction && typeof charge.balance_transaction === 'object') {
+              stripeFeeAmount = charge.balance_transaction.fee;
+            }
+            
+            console.log('Fee breakdown from Stripe:', {
+              paymentIntentId: paymentIntent.id,
+              stripeFee: stripeFeeAmount,
+              platformFee: platformFeeAmount,
+              totalAmount: amountTotal
+            });
+          } catch (feeError: any) {
+            console.error('Error fetching fee details:', feeError.message);
+            // Continue without Stripe fee data
+          }
+        }
+
+        console.log('Recording purchase with fee breakdown:', {
           videoId: parseInt(videoId),
           userEmail,
-          amount: amountTotal,
+          amountTotal,
+          platformFeeAmount,
+          stripeFeeAmount,
+          creatorAmount,
           sessionId: session.id
         });
         
@@ -1136,14 +1170,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: 'User profile not found' });
         }
         
-        // Record the purchase in Supabase
+        // Check for duplicate processing
+        const { data: existingPurchase } = await supabase
+          .from('purchases')
+          .select('id')
+          .eq('stripe_session_id', session.id)
+          .single();
+          
+        if (existingPurchase) {
+          console.log('Purchase already processed:', existingPurchase.id);
+          return res.json({ received: true, note: 'Purchase already processed' });
+        }
+        
+        // Record the purchase with fee breakdown
         const { data: purchase, error: purchaseError } = await supabase
           .from('purchases')
           .insert({
             profile_id: profile.id,
             video_id: parseInt(videoId),
             stripe_session_id: session.id,
-            amount: amountTotal
+            amount: amountTotal, // Legacy field
+            amount_total: amountTotal,
+            platform_fee_amount: platformFeeAmount,
+            stripe_fee_amount: stripeFeeAmount,
+            creator_net_amount: creatorAmount,
+            stripe_payment_intent_id: session.payment_intent as string
           })
           .select()
           .single();
@@ -1153,11 +1204,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: 'Failed to record purchase' });
         }
         
-        console.log('Purchase recorded successfully:', {
+        console.log('Purchase recorded successfully with fee breakdown:', {
           purchaseId: purchase.id,
           profileId: profile.id,
           videoId: parseInt(videoId),
-          amount: amountTotal
+          amountTotal,
+          platformFee: platformFeeAmount,
+          stripeFee: stripeFeeAmount,
+          creatorNet: creatorAmount
         });
         
       } catch (error: any) {
@@ -1169,7 +1223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ received: true });
   });
 
-  // Create Stripe Checkout session
+  // Create Stripe Checkout session with platform fee
   app.post("/api/create-checkout-session", async (req: Request, res: Response) => {
     try {
       const { videoId } = req.body;
@@ -1177,6 +1231,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!videoId) {
         return res.status(400).json({ error: 'videoId is required' });
       }
+
+      // Platform fee configuration
+      const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '1000'); // 10% in basis points
+      const MINIMUM_PRICE_CENTS = parseInt(process.env.MINIMUM_PRICE_CENTS || '100'); // $1.00 minimum
+      const MINIMUM_FEE_CENTS = parseInt(process.env.MINIMUM_FEE_CENTS || '10'); // $0.10 minimum
 
       // Look up the video to get price and details
       const video = getVideoById(parseInt(videoId));
@@ -1188,15 +1247,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'This video is free' });
       }
 
+      const priceInCents = Math.round(video.price * 100);
+      
+      // Validate minimum price
+      if (priceInCents < MINIMUM_PRICE_CENTS) {
+        return res.status(400).json({ 
+          error: `Minimum price is $${MINIMUM_PRICE_CENTS / 100}. Video price is $${video.price}` 
+        });
+      }
+
+      // Get creator details and validate Stripe account
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection required for platform fees" });
+      }
+
+      const { data: creator, error: creatorError } = await supabase
+        .from('profiles')
+        .select('id, stripe_account_id, stripe_charges_enabled, display_name')
+        .eq('id', video.creator)
+        .single();
+
+      if (creatorError || !creator) {
+        return res.status(404).json({ error: 'Creator not found' });
+      }
+
+      if (!creator.stripe_account_id) {
+        return res.status(400).json({ 
+          error: 'Creator has not set up payments yet',
+          creator_setup_required: true 
+        });
+      }
+
+      if (!creator.stripe_charges_enabled) {
+        return res.status(400).json({ 
+          error: 'Creator payments are not enabled',
+          creator_setup_incomplete: true 
+        });
+      }
+
+      // Calculate platform fee
+      const platformFeeAmount = Math.max(
+        MINIMUM_FEE_CENTS,
+        Math.round(priceInCents * PLATFORM_FEE_BPS / 10000)
+      );
+
+      const creatorAmount = priceInCents - platformFeeAmount;
+
+      console.log('Platform fee calculation:', {
+        priceInCents,
+        platformFeeAmount,
+        creatorAmount,
+        platformFeePercent: (platformFeeAmount / priceInCents * 100).toFixed(2) + '%'
+      });
+
       // Get the current domain from the request
       const host = req.get('host');
       // Force HTTPS for Stripe checkout (required by Stripe)
       const protocol = 'https';
       const baseUrl = `${protocol}://${host}`;
       
-      console.log('Creating checkout session with baseUrl:', baseUrl);
+      console.log('Creating checkout session with platform fee:', {
+        baseUrl,
+        creatorStripeId: creator.stripe_account_id
+      });
 
-      // Create Stripe Checkout session
+      // Create Stripe Checkout session with platform fee
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -1207,7 +1322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: video.title,
                 description: video.description.substring(0, 200), // Truncate description
               },
-              unit_amount: Math.round(video.price * 100), // Convert to cents
+              unit_amount: priceInCents,
             },
             quantity: 1,
           },
@@ -1215,9 +1330,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'payment',
         success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/payment-cancel`,
+        payment_intent_data: {
+          application_fee_amount: platformFeeAmount,
+          transfer_data: {
+            destination: creator.stripe_account_id,
+          },
+        },
         metadata: {
           videoId: videoId.toString(),
           videoTitle: video.title.substring(0, 50), // Truncate title
+          creatorId: creator.id,
+          platformFeeAmount: platformFeeAmount.toString(),
+          creatorAmount: creatorAmount.toString(),
         },
         // Add billing address collection for testing
         billing_address_collection: 'auto',
@@ -1480,6 +1604,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ hasPurchased: !!purchase });
     } catch (error: any) {
       res.status(500).json({ error: 'Error checking purchase: ' + error.message });
+    }
+  });
+
+  // Test platform fee calculation endpoint
+  app.post("/api/test-platform-fee", async (req, res) => {
+    try {
+      const { price } = req.body; // Price in dollars
+      
+      if (!price || typeof price !== 'number') {
+        return res.status(400).json({ error: 'Price (in dollars) is required' });
+      }
+
+      const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '1000');
+      const MINIMUM_PRICE_CENTS = parseInt(process.env.MINIMUM_PRICE_CENTS || '100');
+      const MINIMUM_FEE_CENTS = parseInt(process.env.MINIMUM_FEE_CENTS || '10');
+
+      const priceInCents = Math.round(price * 100);
+
+      if (priceInCents < MINIMUM_PRICE_CENTS) {
+        return res.status(400).json({
+          error: `Price too low. Minimum is $${MINIMUM_PRICE_CENTS / 100}`
+        });
+      }
+
+      const platformFeeAmount = Math.max(
+        MINIMUM_FEE_CENTS,
+        Math.round(priceInCents * PLATFORM_FEE_BPS / 10000)
+      );
+
+      const creatorAmount = priceInCents - platformFeeAmount;
+
+      res.json({
+        input: {
+          priceInDollars: price,
+          priceInCents
+        },
+        fees: {
+          platformFeeAmount,
+          platformFeeDollars: platformFeeAmount / 100,
+          platformFeePercent: (platformFeeAmount / priceInCents * 100).toFixed(2) + '%'
+        },
+        creator: {
+          creatorAmount,
+          creatorDollars: creatorAmount / 100,
+          creatorPercent: (creatorAmount / priceInCents * 100).toFixed(2) + '%'
+        },
+        configuration: {
+          platformFeeBPS: PLATFORM_FEE_BPS,
+          minimumPriceCents: MINIMUM_PRICE_CENTS,
+          minimumFeeCents: MINIMUM_FEE_CENTS
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Error calculating fees: ' + error.message });
     }
   });
 

@@ -30,7 +30,12 @@ export const purchases = pgTable("purchases", {
   profile_id: uuid("profile_id").notNull(),
   video_id: integer("video_id").notNull(),
   stripe_session_id: text("stripe_session_id").notNull().unique(),
-  amount: integer("amount").notNull(), // Amount in cents
+  amount: integer("amount").notNull(), // Amount in cents (legacy - total amount)
+  amount_total: integer("amount_total").notNull(), // Total paid by customer
+  platform_fee_amount: integer("platform_fee_amount").notNull(), // Platform's 10% fee
+  stripe_fee_amount: integer("stripe_fee_amount"), // Stripe's processing fee
+  creator_net_amount: integer("creator_net_amount").notNull(), // What creator receives
+  stripe_payment_intent_id: text("stripe_payment_intent_id"), // For tracking fees
   purchased_at: timestamp("purchased_at", { withTimezone: true }).defaultNow(),
 });
 

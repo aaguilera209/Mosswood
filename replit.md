@@ -6,6 +6,14 @@ Mosswood is a full-stack web application designed as "the platform layer for cre
 
 ## Recent Changes (August 2025)
 
+### Platform Fee System Implementation - NEW ✅
+- **Feature**: Added 10% platform fee to all Stripe payments using Stripe Connect
+- **Implementation**: Enhanced checkout session creation with application fees and transfer data to creators
+- **Database**: Added fee breakdown columns to purchases table (amount_total, platform_fee_amount, stripe_fee_amount, creator_net_amount)
+- **Validation**: Minimum $1.00 video price, $0.10 minimum platform fee, creator Stripe account verification
+- **Testing**: Comprehensive fee calculation testing with various price points ($1-$100)
+- **Status**: ✅ Operational - platform takes 10%, creators get 90% minus Stripe processing fees
+
 ### Video Thumbnail System - RESOLVED
 - **Issue**: Video thumbnails were displaying colored gradients instead of real video frame captures
 - **Solution**: Implemented authentic FFmpeg-based thumbnail generation extracting JPEG frames at 5-second mark from uploaded videos
@@ -60,5 +68,5 @@ The application utilizes a monorepo structure, separating client, server, and sh
 - **Date Handling**: date-fns
 - **Styling Utilities**: class-variance-authority, clsx
 - **Carousel**: Swiper.js
-- **Payment Processing**: Stripe (Checkout, Connect Express)
+- **Payment Processing**: Stripe (Checkout, Connect Express with 10% platform fees)
 - **Video Processing**: FFmpeg (via fluent-ffmpeg)
