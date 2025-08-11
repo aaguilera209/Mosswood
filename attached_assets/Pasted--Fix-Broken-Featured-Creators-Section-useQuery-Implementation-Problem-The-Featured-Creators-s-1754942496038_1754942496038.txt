@@ -1,0 +1,60 @@
+# Fix Broken Featured Creators Section - useQuery Implementation
+
+## Problem
+The Featured Creators section on the homepage is stuck on "Loading creators..." or showing "No creators to display". This happened after recent changes to the creators fetching logic in `Home.tsx`.
+
+## Root Cause
+The `useQuery` implementation in `Home.tsx` is missing the `queryFn` (the actual function that fetches data) and has incorrect configuration.
+
+## Solution
+Fix the `useQuery` implementation in `client/src/pages/Home.tsx` around line 21-25.
+
+### Current Broken Code:
+```javascript
+const { data: creators = [], isLoading: creatorsLoading, error, isFetching } = 
+  useQuery<any[]>({
+    queryKey: ['/api/creators'],
+    staleTime: 0, // Override default to fetch fresh data
+    refetchOnMount: true,
+  });
+```
+
+### Replace With This Fixed Code:
+```javascript
+const { data: creators = [], isLoading: creatorsLoading, error } = useQuery({
+  queryKey: ['creators'],
+  queryFn: async () => {
+    const response = await fetch('/api/creators');
+    if (!response.ok) {
+      throw new Error('Failed to fetch creators');
+    }
+    return response.json();
+  },
+  staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  refetchOnWindowFocus: false,
+  retry: 2
+});
+```
+
+## Key Changes:
+1. **Add `queryFn`**: The actual fetch function was missing
+2. **Fix `queryKey`**: Use `['creators']` instead of `['/api/creators']`
+3. **Fix `staleTime`**: Use 5 minutes instead of 0 (which forces constant refetching)
+4. **Add proper error handling**: Throw error if response is not ok
+5. **Remove unnecessary props**: Remove `isFetching` if not used
+6. **Add retry logic**: Automatically retry failed requests twice
+
+## Expected Result:
+- Featured Creators section loads properly on homepage
+- Shows creator tiles instead of "Loading creators..." or "No creators to display"
+- Better performance with 5-minute caching
+- Automatic error handling and retries
+
+## Files to Modify:
+- `client/src/pages/Home.tsx` (around line 21-25)
+
+## Test After Fix:
+1. Refresh the homepage
+2. Verify Featured Creators section shows actual creator tiles
+3. Check browser console for any remaining errors
+4. Test that creators load consistently on page refresh

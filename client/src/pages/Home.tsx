@@ -17,11 +17,19 @@ export default function Home() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Fetch real creators from database using the configured query client
-  const { data: creators = [], isLoading: creatorsLoading, error, isFetching } = useQuery<any[]>({
-    queryKey: ['/api/creators'],
-    staleTime: 0, // Override default to fetch fresh data
-    refetchOnMount: true,
+  // Fetch real creators from database
+  const { data: creators = [], isLoading: creatorsLoading, error } = useQuery({
+    queryKey: ['creators'],
+    queryFn: async () => {
+      const response = await fetch('/api/creators');
+      if (!response.ok) {
+        throw new Error('Failed to fetch creators');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 2
   });
 
   // Transform creators for the carousel component
