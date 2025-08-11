@@ -49,9 +49,9 @@ export default function EmailConfirmation() {
             // Refresh the auth profile
             await refreshProfile();
             
-            // Redirect to login after a short delay
+            // Redirect to homepage after a short delay (user is now signed in)
             setTimeout(() => {
-              setLocation('/login?confirmed=true');
+              setLocation('/');
             }, 2000);
           } else {
             setStatus('error');
@@ -120,11 +120,11 @@ export default function EmailConfirmation() {
             {status === 'success' && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  You will be redirected to the login page shortly...
+                  You will be redirected to the homepage shortly...
                 </p>
-                <Link href="/login?confirmed=true">
+                <Link href="/">
                   <Button className="w-full">
-                    Continue to Login
+                    Continue to Home
                   </Button>
                 </Link>
               </div>

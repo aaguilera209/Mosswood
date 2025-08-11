@@ -63,6 +63,16 @@ export function Header() {
                   </>
                 )}
                 
+                {/* Become a Creator CTA for viewers */}
+                {profile?.role === 'viewer' && (
+                  <Link href="/edit-profile">
+                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                      <User className="w-4 h-4 mr-2" />
+                      Become a Creator
+                    </Button>
+                  </Link>
+                )}
+                
                 {/* User Profile Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

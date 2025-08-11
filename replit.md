@@ -46,6 +46,15 @@ Mosswood is a full-stack web application designed as "the platform layer for cre
 - **Additional Improvement**: Also updated Sign In button to use Link component for consistency
 - **Status**: ✅ Both Sign Up buttons now work correctly - no more registration blocking
 
+### Email Confirmation Flow & Creator CTA Fix - RESOLVED ✅
+- **Issue 1**: Email confirmation redirected to password page instead of homepage (signed in)
+- **Solution**: Updated EmailConfirmation to redirect to homepage after successful confirmation since user is already signed in
+- **Issue 2**: No way for viewers to become creators - missing CTA
+- **Solution**: Added prominent "Become a Creator" button in header for viewers and dynamic homepage CTAs
+- **Issue 3**: Theme not auto-detecting system preference
+- **Solution**: Updated ThemeContext to detect system dark/light mode preference on first visit
+- **Status**: ✅ Smooth email confirmation flow, clear creator conversion path, and better theme detection
+
 ### Platform Fee System Implementation - NEW ✅
 - **Feature**: Added 10% platform fee to all Stripe payments using Stripe Connect
 - **Implementation**: Enhanced checkout session creation with application fees and transfer data to creators

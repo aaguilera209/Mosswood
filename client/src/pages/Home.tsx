@@ -93,22 +93,47 @@ export default function Home() {
                 Explore Creators
               </Button>
             </Link>
-            <Link href="/signup">
-              <Button 
-                variant="outline" 
-                size="lg"
-              >
-                Sign Up
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button 
-                variant="ghost" 
-                size="lg"
-              >
-                Sign In
-              </Button>
-            </Link>
+            
+            {/* Show different CTAs based on user state */}
+            {user ? (
+              <>
+                {profile?.role === 'viewer' && (
+                  <Button 
+                    size="lg" 
+                    onClick={handleBecomeCreator}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    Become a Creator
+                  </Button>
+                )}
+                {profile?.role === 'creator' && (
+                  <Link href="/dashboard">
+                    <Button size="lg" variant="outline">
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <Link href="/signup">
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button 
+                    variant="ghost" 
+                    size="lg"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </section>
 
