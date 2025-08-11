@@ -39,6 +39,13 @@ Mosswood is a full-stack web application designed as "the platform layer for cre
   - ✅ Improved header consistency across dashboard and video pages
 - **Status**: ✅ Navigation now streamlined - direct access to Library from dashboard
 
+### Homepage Sign Up Button Fix - RESOLVED ✅
+- **Issue**: "Sign Up" button in hero section showed error instead of navigating to signup page
+- **Root Cause**: Sign Up button was calling `handleBecomeCreator` function instead of navigating to `/signup`
+- **Solution**: Changed Sign Up button to use Link component pointing to `/signup` (same as "Get Started" button)
+- **Additional Improvement**: Also updated Sign In button to use Link component for consistency
+- **Status**: ✅ Both Sign Up buttons now work correctly - no more registration blocking
+
 ### Platform Fee System Implementation - NEW ✅
 - **Feature**: Added 10% platform fee to all Stripe payments using Stripe Connect
 - **Implementation**: Enhanced checkout session creation with application fees and transfer data to creators

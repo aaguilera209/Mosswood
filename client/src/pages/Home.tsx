@@ -93,20 +93,22 @@ export default function Home() {
                 Explore Creators
               </Button>
             </Link>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              onClick={handleBecomeCreator}
-            >
-              Sign Up
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="lg"
-              onClick={() => setLocation('/login')}
-            >
-              Sign In
-            </Button>
+            <Link href="/signup">
+              <Button 
+                variant="outline" 
+                size="lg"
+              >
+                Sign Up
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button 
+                variant="ghost" 
+                size="lg"
+              >
+                Sign In
+              </Button>
+            </Link>
           </div>
         </section>
 
