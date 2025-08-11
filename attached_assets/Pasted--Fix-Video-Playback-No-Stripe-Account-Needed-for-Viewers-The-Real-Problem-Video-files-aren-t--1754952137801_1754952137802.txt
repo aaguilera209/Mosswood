@@ -1,0 +1,192 @@
+# Fix Video Playback - No Stripe Account Needed for Viewers
+
+## The Real Problem
+Video files aren't playing due to storage access issues, NOT Stripe account requirements. Viewers should never need Stripe accounts to watch purchased videos.
+
+## Issues to Fix
+
+### 1. Check Supabase Storage Bucket Policy
+Your videos bucket might not be publicly readable. 
+
+**Go to Supabase → Storage → videos bucket → Settings:**
+```sql
+-- Make videos bucket publicly readable
+-- This should be the policy for your videos bucket:
+CREATE POLICY "Videos are publicly readable" ON storage.objects
+FOR SELECT USING (bucket_id = 'videos');
+
+-- Or if you want more control, only allow access to purchased videos:
+CREATE POLICY "Allow access to purchased videos" ON storage.objects  
+FOR SELECT USING (
+  bucket_id = 'videos' AND 
+  EXISTS (
+    SELECT 1 FROM purchases p 
+    WHERE p.video_id = (storage.objects.metadata->>'video_id')::int
+    AND p.profile_id = auth.uid()
+  )
+);
+```
+
+### 2. Test Video URL Directly
+**Copy a video URL from your console and test it directly in browser:**
+```
+https://[your-project].supabase.co/storage/v1/object/public/videos/[file-name]
+```
+
+If this returns 403 Forbidden, it's a storage policy issue.
+
+### 3. Fix Video URL Generation in Upload
+Ensure videos are uploaded to public bucket with correct URLs:
+
+```javascript
+// In your video upload process
+const uploadVideo = async (videoFile) => {
+  const fileName = `${Date.now()}_${videoFile.name}`;
+  
+  // Upload to PUBLIC videos bucket
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('videos')  // Make sure this bucket exists and is public
+    .upload(fileName, videoFile, {
+      cacheControl: '3600',
+      upsert: false
+    });
+  
+  if (uploadError) {
+    console.error('Upload error:', uploadError);
+    throw uploadError;
+  }
+  
+  // Get PUBLIC URL - this should work without auth
+  const { data: urlData } = supabase.storage
+    .from('videos')
+    .getPublicUrl(fileName);
+  
+  console.log('Generated public URL:', urlData.publicUrl);
+  
+  // Test the URL immediately
+  try {
+    const testResponse = await fetch(urlData.publicUrl, { method: 'HEAD' });
+    console.log('URL test result:', testResponse.status);
+    if (!testResponse.ok) {
+      throw new Error(`Video URL not accessible: ${testResponse.status}`);
+    }
+  } catch (error) {
+    console.error('Video URL test failed:', error);
+  }
+  
+  return urlData.publicUrl;
+};
+```
+
+### 4. Add Video Source Debugging
+**Add this to your VideoDetail component:**
+
+```javascript
+// In VideoDetail.tsx, add debugging for video source
+useEffect(() => {
+  console.log('=== VIDEO SOURCE DEBUG ===');
+  console.log('Video URL:', videoData?.video_url);
+  console.log('File path:', videoData?.file_path);
+  
+  // Test if video URL is accessible
+  const testVideoUrl = async () => {
+    try {
+      const response = await fetch(videoData?.video_url, { method: 'HEAD' });
+      console.log('Video URL status:', response.status);
+      console.log('Video URL headers:', Object.fromEntries(response.headers));
+      console.log('Video accessible:', response.ok);
+    } catch (error) {
+      console.error('Video URL test error:', error);
+    }
+  };
+  
+  if (videoData?.video_url) {
+    testVideoUrl();
+  }
+  console.log('========================');
+}, [videoData]);
+```
+
+### 5. Check Video Element Error Handling
+**Add error handling to your video player:**
+
+```javascript
+// In your video player component
+const handleVideoError = (e) => {
+  console.error('Video playback error:', e);
+  console.error('Error code:', e.target.error?.code);
+  console.error('Error message:', e.target.error?.message);
+  
+  // Common error codes:
+  // 1 = MEDIA_ERR_ABORTED
+  // 2 = MEDIA_ERR_NETWORK  
+  // 3 = MEDIA_ERR_DECODE
+  // 4 = MEDIA_ERR_SRC_NOT_SUPPORTED
+};
+
+// In your video JSX:
+<video
+  src={videoData?.video_url}
+  onError={handleVideoError}
+  onLoadStart={() => console.log('Video load started')}
+  onCanPlay={() => console.log('Video can play')}
+  onLoadedData={() => console.log('Video data loaded')}
+  controls
+>
+  Your browser does not support the video tag.
+</video>
+```
+
+### 6. Check Network Tab in Browser
+**Open Developer Tools → Network tab when playing video:**
+- Look for requests to your video URL
+- Check if they return 200, 403, 404, or CORS errors
+- See response headers and error messages
+
+### 7. Alternative: Signed URLs for Private Videos
+If you want videos to be private, use signed URLs:
+
+```javascript
+// Generate temporary signed URL for purchased videos
+const getSignedVideoUrl = async (videoPath, userId) => {
+  // Check if user purchased this video
+  const { data: purchase } = await supabase
+    .from('purchases')
+    .select('id')
+    .eq('video_id', videoId)
+    .eq('profile_id', userId)
+    .single();
+  
+  if (!purchase) {
+    throw new Error('Video not purchased');
+  }
+  
+  // Generate signed URL (expires in 1 hour)
+  const { data: signedUrl, error } = await supabase.storage
+    .from('videos')
+    .createSignedUrl(videoPath, 3600); // 1 hour
+  
+  if (error) throw error;
+  
+  return signedUrl.signedUrl;
+};
+```
+
+## Testing Steps
+
+1. **Test video URL directly** in browser - should load/download
+2. **Check browser Network tab** for CORS/403 errors  
+3. **Verify storage bucket policies** in Supabase
+4. **Add video error logging** to see exact failure reason
+5. **Test with different video formats** (.mp4, .webm)
+
+## Expected Results
+✅ Video URLs return 200 status when tested directly  
+✅ Video player loads and plays content  
+✅ No CORS or authentication errors  
+✅ Console shows "Video can play" and "Video data loaded"  
+
+## Remember
+- **Viewers never need Stripe accounts** to watch purchased videos
+- **Only the creator needs Stripe Connect** to receive payments  
+- **Video playback is purely a storage/URL access issue**

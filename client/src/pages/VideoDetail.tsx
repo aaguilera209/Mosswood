@@ -118,9 +118,11 @@ export default function VideoDetail() {
       console.log('=== VIDEO PLAYBACK DEBUG ===');
       console.log('Video data:', videoApiData.video);
       console.log('Video URL:', videoApiData.video.video_url);
-      console.log('File path:', videoApiData.video.file_path);
-      console.log('Video source being used:', videoApiData.video.video_url || videoApiData.video.file_path);
+      console.log('Video source being used:', videoApiData.video.video_url);
       console.log('Video can be accessed:', hasPurchased || hasRecentPurchase || isOwnVideo || videoApiData.video.is_free);
+      console.log('Has purchased:', hasPurchased);
+      console.log('Has recent purchase:', hasRecentPurchase);
+      console.log('Is free video:', videoApiData.video.is_free);
       console.log('============================');
       
       setVideoData(videoApiData.video);
@@ -631,10 +633,12 @@ export default function VideoDetail() {
                     muted={isMuted} // Some browsers require muted for autoplay
                     onClick={(e) => e.stopPropagation()}
                     onTouchEnd={(e) => e.stopPropagation()}
+                    onLoadStart={() => console.log('Video loadstart event')}
+                    onLoadedData={() => console.log('Video loadeddata event')}
+                    onCanPlay={() => console.log('Video canplay event')}
+                    onError={(e) => console.error('Play failed:', e.target.error)}
                   >
-                    <source src={videoData.file_path} type="video/mp4" />
-                    <source src={videoData.file_path} type="video/webm" />
-                    <source src={videoData.file_path} type="video/quicktime" />
+                    <source src={videoData.video_url} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                   

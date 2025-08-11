@@ -6,16 +6,22 @@ Mosswood is a full-stack web application designed as "the platform layer for cre
 
 ## Recent Changes (August 2025)
 
-### Purchase Recording Bug Investigation - RESOLVED ✅  
-- **Original Report**: "Wrong video being recorded in purchases" when buying Video ID 3
-- **Investigation**: Comprehensive debugging revealed no actual bug - metadata handling is perfect
-- **Real Issue**: Database UUID constraint when creating new user profiles during purchase recording
-- **Findings**: 
-  - ✅ Stripe metadata correctly stores videoId: "3" for "Gone surfing" video
-  - ✅ Video lookup works perfectly - correct video retrieved every time  
-  - ✅ Purchase recording works for existing users 
-  - ❌ New user profile creation fails due to UUID constraint (profiles.id requires UUID)
-- **Status**: ✅ Confirmed - no "wrong video" bug exists, purchase system working correctly
+### Library Display Bug Fix - RESOLVED ✅
+- **Original Issue**: Library showing "Documentary BTS" when user purchased "Gone surfing" (Video ID 3)
+- **Root Cause**: Library component using outdated mock data instead of real database data
+- **Investigation Results**:
+  - ✅ Purchase recording always worked correctly - Video ID 3 properly recorded
+  - ✅ Database shows correct video: {"title": "Gone surfing", "creator": "Alex Aguilera"}
+  - ❌ Library was calling `getVideoById()` which returned wrong mock data
+- **Solution**: Replaced mock data lookup with real API calls to `/api/video/:id`
+- **Status**: ✅ Library now displays correct "Gone surfing" video with proper creator info
+
+### Video Playback Fix - RESOLVED ✅
+- **Issue**: Videos failing to play after purchase due to incorrect video source URL
+- **Root Cause**: Video element using `videoData.file_path` field instead of `videoData.video_url`
+- **Solution**: Updated video source to use correct `video_url` field from database
+- **Additional Improvements**: Added comprehensive video loading/error debugging
+- **Status**: ✅ Video playback now working with proper Supabase storage URLs
 
 ### Featured Creators Navigation Fix - RESOLVED ✅
 - **Issue**: Featured Creators loading correctly initially but breaking when navigating back from sign-in page
