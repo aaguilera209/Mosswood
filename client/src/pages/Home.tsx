@@ -18,15 +18,18 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   // Fetch real creators from database
-  const { data: creators = [], isLoading: creatorsLoading } = useQuery({
-    queryKey: ['/api/creators'],
+  const { data: creators = [], isLoading: creatorsLoading, error, isFetching } = useQuery({
+    queryKey: ['creators'],
     queryFn: async () => {
       const response = await fetch('/api/creators');
       if (!response.ok) {
         throw new Error('Failed to fetch creators');
       }
       return response.json();
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 2
   });
 
   // Transform creators for the carousel component
@@ -109,10 +112,14 @@ export default function Home() {
         </section>
 
         {/* Featured Creators Carousel */}
-        {creatorsLoading ? (
+        {creators.length === 0 && !error ? (
           <div className="text-center py-12">
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading creators...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-destructive">Failed to load creators. Please try refreshing the page.</p>
           </div>
         ) : (
           <FeaturedCreatorsCarousel creators={featuredCreators} />
