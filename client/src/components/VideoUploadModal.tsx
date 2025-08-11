@@ -122,10 +122,10 @@ export function VideoUploadModal({ isOpen, onClose, redirectTo = 'dashboard' }: 
         errors.push('Please select a valid video file (.mp4, .mov, or .webm)');
       }
       
-      // Check file size (500MB limit)
-      const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+      // Check file size (50MB limit for Supabase storage)
+      const maxSize = 50 * 1024 * 1024; // 50MB in bytes (Supabase storage limit)
       if (formData.file.size > maxSize) {
-        errors.push('Video file must be smaller than 500MB');
+        errors.push('Video file must be smaller than 50MB due to storage limitations');
       }
     }
     
@@ -307,10 +307,10 @@ export function VideoUploadModal({ isOpen, onClose, redirectTo = 'dashboard' }: 
           description: "Your session has expired. Please refresh the page and log in again.",
           variant: "destructive",
         });
-      } else if (error.message?.includes('413') || error.message?.includes('Request Entity Too Large')) {
+      } else if (error.message?.includes('413') || error.message?.includes('Request Entity Too Large') || error.message?.includes('Payload too large') || error.message?.includes('maximum allowed size')) {
         toast({
           title: "File Too Large",
-          description: "Please try a smaller video file (under 100MB recommended).",
+          description: "Video file must be under 50MB due to storage limitations. Please compress your video or use a smaller file.",
           variant: "destructive",
         });
       } else if (error.message?.includes('bucket') || error.message?.includes('storage')) {
