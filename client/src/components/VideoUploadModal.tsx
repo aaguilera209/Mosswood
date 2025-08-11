@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, CheckCircle, FileVideo, AlertCircle } from 'lucide-react';
+import { getVideoDuration, generateThumbnail, formatDuration, formatFileSize } from '@/utils/videoUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +44,50 @@ export function VideoUploadModal({ isOpen, onClose, redirectTo = 'dashboard' }: 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Helper functions for video metadata extraction
+  const getVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        const duration = Math.round(video.duration);
+        resolve(duration);
+      };
+      
+      video.onerror = () => {
+        reject(new Error('Could not load video metadata'));
+      };
+      
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const generateThumbnail = (file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      video.onloadedmetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        video.currentTime = 5; // Get frame at 5 seconds
+      };
+      
+      video.onseeked = () => {
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          window.URL.revokeObjectURL(video.src);
+          resolve(blob!);
+        }, 'image/jpeg', 0.8);
+      };
+      
+      video.src = URL.createObjectURL(file);
+    });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -254,6 +299,27 @@ export function VideoUploadModal({ isOpen, onClose, redirectTo = 'dashboard' }: 
         .filter(tag => tag.length > 0);
 
       // Save video metadata to database
+      // Upload thumbnail if generated
+      let thumbnailUrl: string | null = null;
+      if (thumbnailBlob) {
+        try {
+          const thumbnailPath = `${user.id}/thumbnail_${timestamp}.jpg`;
+          const { data: thumbUpload, error: thumbError } = await supabase.storage
+            .from('videos')
+            .upload(thumbnailPath, thumbnailBlob);
+          
+          if (!thumbError) {
+            const { data: thumbUrlData } = supabase.storage
+              .from('videos')
+              .getPublicUrl(thumbnailPath);
+            thumbnailUrl = thumbUrlData.publicUrl;
+            console.log('Thumbnail uploaded:', thumbnailUrl);
+          }
+        } catch (error) {
+          console.warn('Thumbnail upload failed:', error);
+        }
+      }
+
       const videoData = {
         creator_id: user.id,
         title: formData.title,
@@ -262,7 +328,9 @@ export function VideoUploadModal({ isOpen, onClose, redirectTo = 'dashboard' }: 
         is_free: formData.isFree,
         tags: tagsArray,
         video_url: videoUrl,
-        file_size: formData.file!.size,
+        file_size: fileSize,
+        duration: duration, // Add duration in seconds
+        thumbnail_url: thumbnailUrl // Add thumbnail URL if generated
       };
 
       console.log('Sending video metadata to API:', videoData);

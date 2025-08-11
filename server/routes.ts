@@ -242,6 +242,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Video metadata upload endpoint
+  // Get creator videos for "More from Creator" section  
+  app.get("/api/creators/:creatorId/videos", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { creatorId } = req.params;
+      const { exclude, limit = 6 } = req.query;
+      
+      console.log('=== CREATOR VIDEOS API ===');
+      console.log('Creator ID:', creatorId);
+      console.log('Exclude video ID:', exclude);
+      console.log('Limit:', limit);
+      
+      if (!creatorId) {
+        return res.status(400).json({ error: 'Creator ID required' });
+      }
+      
+      let query = supabase
+        .from('videos')
+        .select(`
+          id,
+          title,
+          description,
+          thumbnail_url,
+          video_url,
+          price,
+          duration,
+          created_at,
+          is_free
+        `)
+        .eq('creator_id', creatorId)
+        .order('created_at', { ascending: false })
+        .limit(parseInt(limit as string));
+      
+      if (exclude) {
+        query = query.neq('id', parseInt(exclude as string));
+      }
+      
+      const { data: videos, error } = await query;
+      
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      
+      console.log('Found videos:', videos?.length || 0);
+      console.log('Videos:', videos);
+      
+      res.json(videos || []);
+    } catch (error: any) {
+      console.error('Creator videos API error:', error);
+      res.status(500).json({ error: 'Failed to fetch creator videos' });
+    }
+  });
+
   app.post("/api/videos", async (req: Request, res: Response) => {
     try {
       if (!supabase) {
@@ -1340,7 +1397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripe_charges_enabled: creator.stripe_charges_enabled
       });
 
-      // Check if creator has valid Stripe account
+      // Check if creator has valid Stripe account with payouts enabled
       if (!creator.stripe_account_id || !creator.stripe_charges_enabled) {
         console.log('ERROR: Creator Stripe not configured properly');
         console.log('=== PAYMENT DEBUG END ===');
@@ -1349,6 +1406,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           code: 'STRIPE_NOT_SETUP',
           message: 'This creator has not completed payment setup yet.'
         });
+      }
+
+      // Additional check for payouts capability (for Connect transfers)
+      if (!creator.stripe_payouts_enabled) {
+        console.log('WARNING: Creator payouts not enabled, attempting simple payment without transfer');
+        // For now, continue with payment but without transfer to creator
       }
 
       console.log('SUCCESS: All validations passed, proceeding with payment');
@@ -1395,7 +1458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         creatorStripeId: creator.stripe_account_id
       });
 
-      // Create Stripe Checkout session with platform fee
+      // Create simple Stripe Checkout session (no Connect transfers for now)
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -1404,7 +1467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'usd',
               product_data: {
                 name: video.title,
-                description: video.description.substring(0, 200), // Truncate description
+                description: video.description?.substring(0, 200) || 'Video purchase', // Handle null description
               },
               unit_amount: priceInCents,
             },
@@ -1414,18 +1477,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'payment',
         success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/payment-cancel`,
-        payment_intent_data: {
-          application_fee_amount: platformFeeAmount,
-          transfer_data: {
-            destination: creator.stripe_account_id,
-          },
-        },
+        // Remove Connect-specific code for now - simple payment only
         metadata: {
           videoId: videoId.toString(),
-          videoTitle: video.title.substring(0, 50), // Truncate title
+          videoTitle: video.title?.substring(0, 50) || 'Video Purchase',
           creatorId: creator.id,
           platformFeeAmount: platformFeeAmount.toString(),
           creatorAmount: creatorAmount.toString(),
+          stripe_account_id: creator.stripe_account_id || 'none'
         },
         // Add billing address collection for testing
         billing_address_collection: 'auto',

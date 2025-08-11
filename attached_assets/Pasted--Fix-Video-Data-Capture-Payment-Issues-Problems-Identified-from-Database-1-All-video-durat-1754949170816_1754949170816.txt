@@ -1,0 +1,405 @@
+# Fix Video Data Capture & Payment Issues
+
+## Problems Identified from Database
+1. **All video durations are NULL** → Shows 0:00 everywhere
+2. **Video URLs are file paths, not accessible URLs** → Potential playback issues  
+3. **Missing metadata** → thumbnail_url, file_size, duration not captured
+4. **Payment failing despite video existing** → Likely authentication issue
+
+## Fix 1: Update Video Upload to Capture Duration & Metadata
+
+### Add Duration Extraction During Upload
+In your video upload component, enhance the upload process:
+
+```javascript
+// Add these helper functions to your video upload component
+
+// Extract video duration
+const getVideoDuration = (file) => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      const duration = Math.round(video.duration);
+      resolve(duration);
+    };
+    
+    video.onerror = () => {
+      reject(new Error('Could not load video metadata'));
+    };
+    
+    video.src = URL.createObjectURL(file);
+  });
+};
+
+// Extract video thumbnail
+const generateThumbnail = (file) => {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    video.onloadedmetadata = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      video.currentTime = 1; // Get frame at 1 second
+    };
+    
+    video.onseeked = () => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(resolve, 'image/jpeg', 0.8);
+      window.URL.revokeObjectURL(video.src);
+    };
+    
+    video.src = URL.createObjectURL(file);
+  });
+};
+
+// Enhanced upload handler
+const handleVideoUpload = async (formData, videoFile) => {
+  try {
+    setUploadStatus('Analyzing video...');
+    
+    // Extract metadata
+    const duration = await getVideoDuration(videoFile);
+    const thumbnail = await generateThumbnail(videoFile);
+    const fileSize = videoFile.size;
+    
+    console.log('Video metadata:', {
+      duration,
+      fileSize,
+      thumbnailSize: thumbnail?.size
+    });
+    
+    setUploadStatus('Uploading video...');
+    
+    // Upload video file first
+    const videoPath = `videos/${Date.now()}_${videoFile.name}`;
+    const { data: videoUpload, error: videoError } = await supabase.storage
+      .from('videos')
+      .upload(videoPath, videoFile);
+    
+    if (videoError) throw videoError;
+    
+    // Upload thumbnail if generated
+    let thumbnailPath = null;
+    if (thumbnail) {
+      setUploadStatus('Uploading thumbnail...');
+      thumbnailPath = `thumbnails/${Date.now()}_thumbnail.jpg`;
+      const { error: thumbError } = await supabase.storage
+        .from('videos')
+        .upload(thumbnailPath, thumbnail);
+      
+      if (thumbError) console.warn('Thumbnail upload failed:', thumbError);
+    }
+    
+    // Get public URLs
+    const { data: videoUrl } = supabase.storage
+      .from('videos')
+      .getPublicUrl(videoPath);
+    
+    const { data: thumbnailUrl } = thumbnailPath 
+      ? supabase.storage.from('videos').getPublicUrl(thumbnailPath)
+      : { data: null };
+    
+    setUploadStatus('Saving video details...');
+    
+    // Save to database with complete metadata
+    const { data: video, error: dbError } = await supabase
+      .from('videos')
+      .insert({
+        title: formData.title,
+        description: formData.description,
+        tags: formData.tags,
+        price: formData.price || 0,
+        creator_id: user.id,
+        video_url: videoUrl.publicUrl,
+        thumbnail_url: thumbnailUrl?.publicUrl,
+        duration_seconds: duration,
+        file_size: fileSize,
+        status: 'published',
+        is_free: formData.price === 0
+      })
+      .select()
+      .single();
+    
+    if (dbError) throw dbError;
+    
+    setUploadStatus('Upload complete!');
+    return video;
+    
+  } catch (error) {
+    console.error('Upload error:', error);
+    setUploadStatus('Upload failed: ' + error.message);
+    throw error;
+  }
+};
+```
+
+## Fix 2: Update Database Schema for Missing Fields
+
+Add the missing columns to your videos table:
+
+```sql
+-- Add missing columns to videos table
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS duration_seconds INTEGER DEFAULT 0;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS file_size BIGINT DEFAULT 0;
+ALTER TABLE videos ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+
+-- Update existing videos with default values
+UPDATE videos SET duration_seconds = 0 WHERE duration_seconds IS NULL;
+UPDATE videos SET file_size = 0 WHERE file_size IS NULL;
+```
+
+## Fix 3: Fix Payment Authentication Issue
+
+The payment is likely failing due to authentication. Add user authentication check:
+
+```javascript
+// In your payment route, ensure user is authenticated
+app.post('/api/create-checkout-session', authenticateUser, async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+    
+    const { videoId } = req.body;
+    const buyerId = req.user.id;
+    
+    console.log('=== PAYMENT DEBUG START ===');
+    console.log('Authenticated user ID:', buyerId);
+    console.log('Video ID received:', videoId);
+    
+    // Rest of your existing payment logic...
+  } catch (error) {
+    console.error('Payment error:', error);
+    res.status(500).json({ error: 'Payment processing failed' });
+  }
+});
+```
+
+## Fix 4: Display Duration Properly
+
+Update your VideoDetail component to handle duration formatting:
+
+```javascript
+// In VideoDetail.tsx, add duration formatting
+const formatDuration = (seconds) => {
+  if (!seconds || seconds === 0) return 'Duration not available';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+// In your JSX:
+<span>Duration: {formatDuration(videoData?.duration_seconds)}</span>
+```
+
+## Fix 5: Fix "More from Creator" Query (CRITICAL BUG)
+
+**IMPORTANT**: Database analysis shows creators have 4+ videos each, so "More from Creator" should be populated but isn't working.
+
+### Debug the Creator Videos Query
+```javascript
+// In VideoDetail.tsx, add extensive debugging for creator videos
+useEffect(() => {
+  console.log('=== MORE FROM CREATOR DEBUG ===');
+  console.log('Video data:', videoData);
+  console.log('Creator ID from video:', videoData?.creator_id);
+  console.log('Creator object from video:', videoData?.creator);
+  console.log('Current video ID:', videoData?.id);
+  console.log('Query enabled?', !!videoData?.creator_id);
+  console.log('==============================');
+}, [videoData]);
+
+const { data: moreFromCreatorVideos = [], error: creatorVideosError, isLoading: creatorVideosLoading } = useQuery({
+  queryKey: ['creator-videos', videoData?.creator_id, videoData?.id],
+  queryFn: async () => {
+    const creatorId = videoData?.creator_id;
+    console.log('Fetching videos for creator:', creatorId);
+    
+    if (!creatorId) {
+      console.log('No creator ID available');
+      return [];
+    }
+    
+    const url = `/api/creators/${creatorId}/videos?exclude=${videoData.id}&limit=6`;
+    console.log('Fetching URL:', url);
+    
+    const response = await fetch(url);
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API error:', response.status, errorText);
+      throw new Error(`Failed to fetch creator videos: ${response.status}`);
+    }
+    
+    const videos = await response.json();
+    console.log('Creator videos fetched:', videos.length, videos);
+    return videos;
+  },
+  enabled: !!videoData?.creator_id
+});
+
+// Log query state
+useEffect(() => {
+  console.log('Creator videos query state:', {
+    loading: creatorVideosLoading,
+    error: creatorVideosError,
+    videosCount: moreFromCreatorVideos?.length || 0
+  });
+}, [moreFromCreatorVideos, creatorVideosError, creatorVideosLoading]);
+```
+
+### Ensure Creator Videos API Endpoint Exists
+**Check if `/api/creators/:creatorId/videos` exists.** If not, create it:
+
+```javascript
+// In server/routes/creators.js or similar
+app.get('/api/creators/:creatorId/videos', async (req, res) => {
+  try {
+    const { creatorId } = req.params;
+    const { exclude, limit = 6 } = req.query;
+    
+    console.log('=== CREATOR VIDEOS API ===');
+    console.log('Creator ID:', creatorId);
+    console.log('Exclude video ID:', exclude);
+    console.log('Limit:', limit);
+    
+    if (!creatorId) {
+      return res.status(400).json({ error: 'Creator ID required' });
+    }
+    
+    let query = supabase
+      .from('videos')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        video_url,
+        price,
+        duration_seconds,
+        created_at,
+        is_free
+      `)
+      .eq('creator_id', creatorId)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+    
+    if (exclude) {
+      query = query.neq('id', parseInt(exclude));
+    }
+    
+    const { data: videos, error } = await query;
+    
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
+    
+    console.log('Found videos:', videos?.length || 0);
+    console.log('Videos:', videos);
+    
+    res.json(videos || []);
+  } catch (error) {
+    console.error('Creator videos API error:', error);
+    res.status(500).json({ error: 'Failed to fetch creator videos' });
+  }
+});
+```
+
+### Fix Query Field Reference
+The issue might be using wrong field. Check if it should be:
+```javascript
+// Try different field references:
+queryKey: ['creator-videos', videoData?.creator_id, videoData?.id],     // First try
+// OR
+queryKey: ['creator-videos', videoData?.profiles?.id, videoData?.id],   // If profiles is nested
+// OR  
+queryKey: ['creator-videos', videoData?.creator?.id, videoData?.id],    // If creator is nested
+```
+
+### Test Direct API Call
+Add temporary test button to verify API works:
+```javascript
+// Temporary test function
+const testCreatorVideosAPI = async () => {
+  const creatorId = videoData?.creator_id;
+  const url = `/api/creators/${creatorId}/videos?exclude=${videoData.id}`;
+  
+  console.log('Testing direct API call:', url);
+  
+  try {
+    const response = await fetch(url);
+    const result = await response.json();
+    console.log('Direct API test result:', result);
+  } catch (error) {
+    console.error('Direct API test failed:', error);
+  }
+};
+
+// Add test button (remove after debugging)
+<button onClick={testCreatorVideosAPI} className="bg-blue-500 text-white px-4 py-2 rounded">
+  Test Creator Videos API
+</button>
+```
+
+### Expected Results Based on Database
+Since database shows creators have 4+ videos each, "More from Creator" should show 3-5 videos (excluding current video).
+
+## Fix 6: Update Existing Videos with Duration
+
+For videos already uploaded, you can add a migration script:
+
+```javascript
+// One-time script to update existing videos
+const updateExistingVideos = async () => {
+  const { data: videos } = await supabase
+    .from('videos')
+    .select('*')
+    .is('duration_seconds', null);
+  
+  for (const video of videos) {
+    // Set reasonable defaults based on video type
+    const estimatedDuration = 120; // 2 minutes default
+    
+    await supabase
+      .from('videos')
+      .update({ 
+        duration_seconds: estimatedDuration,
+        file_size: 50000000 // 50MB default
+      })
+      .eq('id', video.id);
+  }
+};
+```
+
+## Testing Steps
+
+1. **Upload a new video** with the enhanced upload process
+2. **Check database** to see if duration_seconds is populated
+3. **Test payment** with proper authentication
+4. **Check if duration displays** correctly on video page
+5. **Verify thumbnail generation** works
+
+## Expected Results
+✅ New videos capture duration, file size, thumbnails  
+✅ Duration displays properly (e.g., "2:34" instead of "0:00")  
+✅ Payment works for authenticated users  
+✅ "More from Creator" shows appropriate message when empty  
+✅ Video playback uses proper public URLs
