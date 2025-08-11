@@ -11,7 +11,21 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-const FeaturedCreatorsCarousel = ({ creators = [] }) => {
+interface Creator {
+  username: string;
+  displayName: string;
+  description?: string;
+  videoCount?: number;
+  rating?: number;
+  thumbnail?: string;
+  isVerified?: boolean;
+}
+
+interface FeaturedCreatorsCarouselProps {
+  creators: Creator[];
+}
+
+const FeaturedCreatorsCarousel = ({ creators = [] }: FeaturedCreatorsCarouselProps) => {
   if (!creators || creators.length === 0) {
     return (
       <div className="text-center py-12">
@@ -65,14 +79,14 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
         className="featured-creators-swiper"
       >
         {creators.map((creator, index) => (
-          <SwiperSlide key={creator.username || creator.id || index} className="flex-shrink-0 w-80 h-[400px]">
+          <SwiperSlide key={creator.username || index} className="flex-shrink-0 w-80 h-[400px]">
             <Link href={`/creator/${creator.username}`} className="block h-full">
               <div className="flex flex-col h-full bg-card border border-gray-600 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer group">
                 {/* Image container */}
                 <div className="relative flex-shrink-0 h-48 bg-muted">
                   <img 
                     src={creator.thumbnail || `https://picsum.photos/400/300?random=${index + 1}`} 
-                    alt={`${creator.displayName || creator.name} thumbnail`}
+                    alt={`${creator.displayName} thumbnail`}
                     className="w-full h-full object-cover"
                   />
                   
@@ -83,7 +97,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                   <div className="absolute top-3 right-3">
                     <Badge variant="secondary" className="bg-black/60 text-white text-xs">
                       <Play className="w-3 h-3 mr-1" />
-                      {creator.videoCount || creator.videos || 0} videos
+                      {creator.videoCount || 0} videos
                     </Badge>
                   </div>
                   
@@ -99,8 +113,8 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                 <div className="flex-grow flex flex-col p-4">
                   {/* Creator name and verified badge */}
                   <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="font-semibold text-lg text-foreground">{creator.displayName || creator.name}</h3>
-                    {(creator.isVerified || creator.verified) && (
+                    <h3 className="font-semibold text-lg text-foreground">{creator.displayName}</h3>
+                    {creator.isVerified && (
                       <Badge className="bg-blue-500 text-white text-xs">
                         <Star className="w-3 h-3 mr-1 fill-current" />
                         Verified
@@ -121,15 +135,7 @@ const FeaturedCreatorsCarousel = ({ creators = [] }) => {
                         <span>{creator.rating}</span>
                       </div>
                     )}
-                    {creator.followers && (
-                      <div className="flex items-center space-x-1">
-                        <Users className="w-4 h-4" />
-                        <span>{creator.followers} followers</span>
-                      </div>
-                    )}
-                    {!creator.rating && !creator.followers && (
-                      <span className="text-muted-foreground">New creator</span>
-                    )}
+                    <span className="text-muted-foreground">New creator</span>
                   </div>
                   
                   {/* Visit Storefront button */}

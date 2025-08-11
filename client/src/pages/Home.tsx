@@ -40,6 +40,8 @@ export default function Home() {
     isVerified: creator.is_verified || false
   }));
 
+
+
   const handleBecomeCreator = async () => {
     if (!user) {
       toast({
@@ -107,7 +109,14 @@ export default function Home() {
         </section>
 
         {/* Featured Creators Carousel */}
-        <FeaturedCreatorsCarousel creators={featuredCreators} />
+        {creatorsLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading creators...</p>
+          </div>
+        ) : (
+          <FeaturedCreatorsCarousel creators={featuredCreators} />
+        )}
 
         {/* How It Works Section */}
         <section className="bg-muted/50 rounded-lg p-12 text-center">
