@@ -1,0 +1,407 @@
+# PROJECT: Mosswood Admin Dashboard & Stripe Connect Integration
+
+## CONTEXT
+- Platform: Mosswood (creator marketplace)
+- Current state: Basic platform running on Replit
+- Admin email: alex@jrvs.ai with master_admin role
+- Need: Protected admin dashboard + Stripe Connect fee implementation
+
+## PRIMARY OBJECTIVES
+1. Build comprehensive /admin dashboard (master_admin only)
+2. Implement Stripe Connect with 10% platform fee
+3. Ensure all payments flow through proper fee structure
+4. Create real-time analytics and moderation tools
+
+## ROUTES & AUTHENTICATION
+
+### Admin Route Setup
+- Create gated route at `/admin`
+- If user is not `master_admin`, return 404 (do NOT redirect or reveal existence)
+- Use existing Supabase auth; verify on server for all `/api/admin/*` routes with service role key
+- Add small "Admin" link in header visible only to `master_admin` users
+
+### UI Structure
+Simple cards/tables layout (no heavy libraries) with these tabs:
+- Overview
+- Creators  
+- Videos
+- Payments
+- Analytics
+- Settings
+
+## DATABASE SCHEMA
+
+**Note: Database schema updates should be applied directly in Supabase SQL Editor BEFORE running this implementation.**
+
+The following tables and columns must be available in your database:
+- `platform_settings` table with columns: key (text), value (text), updated_at (timestamptz)
+- `admin_audit_log` table for tracking all admin actions
+- `users.suspended_at` column (timestamptz)
+- `creators.verified` column (boolean)
+- `videos.unlisted_at` column (timestamptz)
+- Performance indexes on purchases, videos, and users tables
+
+Default platform fee (1000 basis points = 10%) should be seeded in platform_settings table.
+
+**See separate SQL file for schema updates to run in Supabase.**
+
+## TAB IMPLEMENTATIONS
+
+### A) Overview Tab
+**KPI Cards** (server-backed, real data only):
+- Total users, creators, viewers
+- GMV (last 30 / 7 / 1 day)
+- Purchases (last 30 / 7 / 1 day)  
+- Average order value (AOV)
+- Conversion rate = purchases / unique viewers who visited VideoDetail
+- Last 10 admin actions (from audit log)
+
+**API Endpoint:**
+- `GET /api/admin/overview` (service role; SQL aggregates; no client-side joins)
+
+### B) Creators Tab
+**Table Display:**
+- Columns: display_name, email, Stripe status (not_connected/onboarding/active), verified badge, #videos, GMV, suspended status, joined_at
+- Search bar with 300ms debounce
+- Quick filters: Show only unverified, suspended, no Stripe account
+- Bulk action support (select multiple)
+
+**Row Actions:**
+- Toggle "Verified" status
+- Suspend/Unsuspend (soft-unlists their videos)
+- View Storefront (new tab)
+- View Stripe Dashboard (if connected)
+
+**API Endpoints:**
+- `GET /api/admin/creators?search=&cursor=&filter=` (cursor-based pagination)
+- `POST /api/admin/creators/:id/verify` {verified:boolean}
+- `POST /api/admin/creators/:id/suspend` {suspended:boolean}
+- `POST /api/admin/creators/bulk-action` {ids:[], action:string, value:any}
+
+### C) Videos Tab
+**Table Display:**
+- Columns: title, creator, price, status (published/unlisted/suspended), views, purchases, revenue, created_at
+- Search and filtering capabilities
+- Thumbnail preview on hover
+
+**Row Actions:**
+- Unlist/List toggle
+- Delete (soft delete first, then hard delete with confirmation modal)
+- View on platform (new tab)
+- Download analytics CSV
+
+**API Endpoints:**
+- `GET /api/admin/videos?search=&cursor=&status=`
+- `POST /api/admin/videos/:id/list` {published:boolean}
+- `DELETE /api/admin/videos/:id` (soft delete)
+- `DELETE /api/admin/videos/:id/permanent` (hard delete - removes file + DB row)
+
+### D) Payments Tab
+
+**Panel 1 - Platform Account Status:**
+- Display STRIPE_MODE (test/live) with color coding
+- Stripe account email/name (fetched from Stripe API)
+- Last webhook received timestamp
+- Webhook health status (last 5 webhook results)
+- "Test Webhook" button
+
+**Panel 2 - Platform Fee Configuration:**
+- Current fee: PLATFORM_FEE_BPS (basis points)
+- Input with validation (0-3000, representing 0%-30%)
+- Real-time preview: "10% of $100 = $10 platform fee"
+- Save button with confirmation modal
+- "Refresh Cache" button (clears 5-minute cache)
+- Last updated timestamp and admin who changed it
+
+**Panel 3 - Recent Transactions:**
+- Table: created_at, buyer email (partially masked), creator, video, amount, platform_fee, stripe_fee, net_to_creator, payment_id
+- Export to CSV functionality
+- Filter by date range, creator, status
+
+**API Endpoints:**
+- `GET /api/admin/payments/summary`
+- `GET /api/admin/payments/transactions?cursor=&from=&to=`
+- `GET /api/admin/config/platform-fee`
+- `POST /api/admin/config/platform-fee` {bps:number}
+- `POST /api/admin/payments/test-webhook`
+
+**Stripe Connect Checkout Implementation:**
+```javascript
+// Server-side checkout session creation
+async function createCheckoutSession(videoId, userId) {
+  // 1. Fetch platform fee from settings (with 5min cache)
+  const platformFeeBps = await getCachedPlatformFee();
+  
+  // 2. Get video and creator details
+  const video = await getVideo(videoId);
+  const creator = await getCreator(video.creator_id);
+  
+  // 3. Validate creator has Stripe account
+  if (!creator.stripe_account_id || creator.stripe_status !== 'active') {
+    throw new Error('Creator needs to complete Stripe onboarding before accepting payments');
+  }
+  
+  // 4. Calculate fees
+  const unitAmount = video.price * 100; // Convert to cents
+  const applicationFeeAmount = Math.round(unitAmount * platformFeeBps / 10000);
+  
+  // 5. Create Stripe checkout session
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: video.title,
+          description: `By ${creator.display_name}`,
+        },
+        unit_amount: unitAmount,
+      },
+      quantity: 1,
+    }],
+    payment_intent_data: {
+      application_fee_amount: applicationFeeAmount,
+      transfer_data: {
+        destination: creator.stripe_account_id,
+      },
+    },
+    success_url: `${process.env.BASE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.BASE_URL}/video/${videoId}`,
+    metadata: {
+      video_id: videoId,
+      buyer_id: userId,
+      platform_fee_bps: platformFeeBps,
+    },
+  });
+  
+  // 6. Log transaction attempt
+  await logAdminAction('checkout_created', {
+    video_id: videoId,
+    amount: unitAmount,
+    platform_fee: applicationFeeAmount,
+  });
+  
+  return session;
+}
+```
+
+### E) Analytics Tab
+
+**Controls:**
+- Time range selector: 7/30/90 days or custom range
+- Export all data as CSV
+- Auto-refresh toggle (every 5 minutes)
+
+**Charts & Metrics** (all server-aggregated):
+1. **User Growth:** New signups per day (creators vs viewers line chart)
+2. **Revenue Metrics:** 
+   - GMV per day (bar chart)
+   - Purchases per day (line chart)
+   - Average order value trend
+3. **Engagement:**
+   - Average watch completion rate (if playback events exist)
+   - New vs Returning buyers (stacked area chart)
+4. **Top Performers:**
+   - Top 10 videos by GMV (table)
+   - Top 10 creators by GMV (table)
+   - Top 10 creators by video count
+
+**API Endpoints:**
+- `GET /api/admin/analytics/signups?from=&to=&type=`
+- `GET /api/admin/analytics/gmv?from=&to=`
+- `GET /api/admin/analytics/purchases?from=&to=`
+- `GET /api/admin/analytics/completion?from=&to=`
+- `GET /api/admin/analytics/buyers?from=&to=&cohort=`
+- `GET /api/admin/analytics/top-videos?limit=10&from=&to=`
+- `GET /api/admin/analytics/top-creators?limit=10&from=&to=`
+
+### F) Settings Tab
+
+**Platform Configuration:**
+- Platform fee editor (synced with Payments tab)
+- Feature flags (stored in platform_settings):
+  - ENABLE_SUBSCRIPTIONS (boolean)
+  - ENABLE_PROMO_CODES (boolean)
+  - ENABLE_COMMENTS (boolean)
+  - MAINTENANCE_MODE (boolean with message field)
+- Support contact email
+- Terms of Service URL
+- Privacy Policy URL
+
+**System Health:**
+- Database connection status
+- Stripe API status
+- Storage usage statistics
+- "Re-test Stripe webhooks" button
+- "Clear all caches" button (with confirmation)
+
+**Emergency Controls:**
+- Pause all payments (kill switch)
+- Broadcast message to all users
+- Export full database backup
+
+**API Endpoints:**
+- `GET /api/admin/settings`
+- `POST /api/admin/settings/update` {key:string, value:any}
+- `POST /api/admin/settings/feature-flags` {flags:object}
+- `POST /api/admin/system/clear-cache`
+- `POST /api/admin/system/test-webhooks`
+
+## ERROR HANDLING & EDGE CASES
+
+### Payment Errors
+- **Creator has no Stripe account:** Block checkout, show "Creator needs to complete Stripe onboarding" with CTA button
+- **Stripe webhook fails:** Log to admin_audit_log, display in dashboard with retry option
+- **Payment processing error:** Log full error, notify admin via email, show user-friendly message
+
+### Admin Action Errors  
+- **Platform fee change:** Validate range (0-3000), log old/new values, require confirmation for >20%
+- **Video deletion:** Soft delete first (unlisted_at), hard delete after 30 days or manual confirmation
+- **Creator suspension:** Hide all content, send email notification, log reason
+
+### Data Integrity
+- **Bulk operations:** Process in transactions, rollback on any failure
+- **Concurrent edits:** Use optimistic locking with version numbers
+- **Cache inconsistency:** Provide manual cache clear button, auto-clear on critical updates
+
+## PERFORMANCE REQUIREMENTS
+
+### Database Optimization
+- **Pagination:** Use cursor-based pagination (not OFFSET) for all tables
+- **Caching Strategy:**
+  - Platform settings: 5-minute cache, manual bust available
+  - Analytics data: 1-minute cache for real-time, 1-hour for historical
+  - Creator/video counts: 30-second cache
+- **Query Optimization:**
+  - Consider materialized views for heavy analytics aggregations
+  - Use database functions for complex calculations
+  - Batch API calls where possible
+
+### UI Performance
+- Loading states for all async operations
+- Skeleton screens for initial page loads
+- Virtual scrolling for large tables (>100 rows)
+- Debounced search inputs (300ms)
+- Optimistic UI updates with rollback on error
+
+## UI/UX GUIDELINES
+
+### Visual Design
+- Clean, professional admin interface
+- Toast notifications for all admin actions (success/error)
+- Confirmation modals for destructive actions
+- Mobile-responsive tables (priority columns on small screens)
+- Dark mode support (optional)
+
+### User Feedback
+- Clear success/error messages
+- Progress indicators for long operations
+- Inline validation for forms
+- Tooltips for complex features
+- Keyboard shortcuts for power users
+
+## TESTING REQUIREMENTS
+
+### Critical Test Coverage
+- [ ] Admin auth middleware blocks non-master_admin (returns 404, not 403)
+- [ ] Platform fee calculation: test 0%, 10%, 30% scenarios
+- [ ] Stripe Connect: verify TEST and LIVE mode switching works correctly
+- [ ] Creator suspension properly hides all their videos
+- [ ] Analytics date ranges handle timezone correctly (UTC storage, local display)
+- [ ] Webhook health check endpoint responds with correct status
+- [ ] Bulk operations rollback on partial failure
+- [ ] Cache invalidation works for all cached endpoints
+- [ ] Audit log captures all admin actions with correct data
+
+### Integration Tests
+- [ ] Full checkout flow with platform fee
+- [ ] Creator onboarding to first sale
+- [ ] Admin workflow: suspend creator → verify videos hidden → unsuspend → verify restored
+- [ ] Platform fee change reflects in next checkout
+
+## MONITORING & ALERTS
+
+### Audit Requirements
+- Log all admin actions to admin_audit_log table
+- Include: admin_id, action, target, old_value, new_value, timestamp
+- Retention: Keep audit logs for minimum 90 days
+
+### Alert Triggers
+- Webhook failures > 3 in 1 hour
+- Platform fee changed (email all admins)
+- Creator suspended/unsuspended (email creator)
+- High-value transaction (>$1000)
+- Failed payment rate > 10% in last hour
+
+### Dashboard Metrics
+- Last 10 admin actions widget
+- Current system health status
+- Active admin sessions count
+- Queue sizes (if using job queues)
+
+## SECURITY REQUIREMENTS
+
+### Access Control
+- All `/api/admin/*` endpoints require master_admin role
+- Use Supabase service role key for admin operations
+- Never expose platform_settings to client except through admin APIs
+- Rate limit admin APIs (100 requests per minute)
+
+### Data Protection
+- Mask sensitive data (emails, payment info) in UI
+- Use read-only database replicas for analytics queries
+- Implement request signing for critical operations
+- Log all data exports with admin ID and timestamp
+
+## DEPLOYMENT NOTES
+
+### Environment Variables Required
+```
+STRIPE_SECRET_KEY_TEST=sk_test_...
+STRIPE_SECRET_KEY_LIVE=sk_live_...
+STRIPE_WEBHOOK_SECRET_TEST=whsec_test_...
+STRIPE_WEBHOOK_SECRET_LIVE=whsec_live_...
+STRIPE_MODE=test # or 'live'
+SUPABASE_SERVICE_ROLE_KEY=...
+BASE_URL=https://mosswood.com
+ADMIN_EMAIL_ALERTS=alex@jrvs.ai
+```
+
+### Quick Setup Guide
+1. Run database migrations (schema updates above)
+2. Set environment variables
+3. Deploy admin routes and APIs
+4. Configure Stripe webhooks for both TEST and LIVE
+5. Verify alex@jrvs.ai has master_admin role
+6. Test platform fee calculation in TEST mode
+7. Perform full checkout test before switching to LIVE
+
+### Rollback Plan
+- Keep previous version deployed to separate URL
+- Database migrations should be reversible
+- Feature flags to disable new functionality
+- Backup database before deployment
+
+## ADDITIONAL FEATURES (Quick Wins)
+
+### Phase 2 Enhancements
+- Admin impersonation mode (view site as user, with full audit trail)
+- Bulk CSV upload for creator verification
+- Automated moderation rules (flag videos by keywords)
+- A/B testing framework for platform fees
+- Weekly admin reports via email
+- API rate limiting per creator
+- Content moderation queue with ML flagging
+- Revenue forecasting based on historical data
+
+## SUCCESS CRITERIA
+
+The implementation is complete when:
+1. Admin dashboard is fully functional at /admin (master_admin only)
+2. Platform fee (10% default) applies to all transactions
+3. All analytics show real data (no mock data)
+4. Stripe Connect properly configured for TEST and LIVE
+5. Audit logging captures all admin actions
+6. All critical paths have error handling
+7. Performance targets met (<2s page load, <500ms API response)
+8. Test coverage >80% for admin endpoints

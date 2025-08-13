@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'wouter';
-import { User, Settings, LogOut, ChevronDown, BarChart3, Eye } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, BarChart3, Eye, Shield } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 export function Header() {
@@ -44,6 +44,15 @@ export function Header() {
             </Link>
             {user ? (
               <>
+                {profile?.role === 'master_admin' && (
+                  <Link href="/admin">
+                    <Button variant="outline" size="sm" className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800 dark:text-red-300">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
+                
                 {profile?.role === 'creator' && (
                   <>
                     <Link href="/dashboard">
