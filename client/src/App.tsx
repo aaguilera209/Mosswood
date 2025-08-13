@@ -25,6 +25,7 @@ import PaymentCancel from "@/pages/PaymentCancel";
 import EditVideoComingSoon from "@/pages/EditVideoComingSoon";
 import EditProfile from "@/pages/EditProfile";
 import EmailConfirmation from "@/pages/EmailConfirmation";
+import AdminDashboard from "@/pages/AdminDashboard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 
@@ -40,6 +41,11 @@ function Router() {
       <Route path="/access_token" component={PasswordResetRedirect} />
       <Route path="/manual-reset" component={ManualPasswordReset} />
       <Route path="/confirm-email" component={EmailConfirmation} />
+      <Route path="/admin">
+        <ProtectedRoute requireRole="master_admin">
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Route>
       <Route path="/dashboard">
         <ProtectedRoute requireRole="creator">
           <Dashboard />

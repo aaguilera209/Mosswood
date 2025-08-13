@@ -2035,29 +2035,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let profile = null;
       
       if (decodedIdentifier.includes('@')) {
-        // Email lookup
+        // Email lookup (but exclude admin from public access)
         const { data } = await supabase
           .from('profiles')
           .select('*')
           .eq('email', decodedIdentifier)
+          .neq('role', 'master_admin') // Exclude admin from public profile access
           .single();
         profile = data;
       } else {
-        // Try ID first
+        // Try ID first (but exclude admin from public access)
         const { data: profileById } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', decodedIdentifier)
+          .neq('role', 'master_admin') // Exclude admin from public profile access
           .single();
           
         if (profileById) {
           profile = profileById;
         } else {
-          // Try display_name
+          // Try display_name (but exclude admin from public access)
           const { data: profileByName } = await supabase
             .from('profiles')
             .select('*')
             .eq('display_name', decodedIdentifier)
+            .neq('role', 'master_admin') // Exclude admin from public profile access
             .single();
           profile = profileByName;
           
@@ -2065,7 +2068,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!profile) {
             const { data: allProfiles } = await supabase
               .from('profiles')
-              .select('*');
+              .select('*')
+              .neq('role', 'master_admin'); // Exclude admin from public profile access
             
             // Find profile where URL-friendly version of display_name matches
             profile = allProfiles?.find(p => {
@@ -2258,7 +2262,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data: creators, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'creator');
+        .eq('role', 'creator')
+        .neq('role', 'master_admin'); // Exclude admin from public lists
 
       if (error) {
         console.error('Error fetching creators:', error);
@@ -2718,6 +2723,201 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Storage setup error:', error);
       res.status(500).json({ error: 'Failed to setup storage' });
+    }
+  });
+
+  // ADMIN API ENDPOINTS - Master Admin Only
+  
+  // Admin dashboard statistics
+  app.get("/api/admin/stats", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      // Get total user counts (excluding admin)
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('role')
+        .neq('role', 'master_admin');
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return res.status(500).json({ error: 'Failed to fetch profile stats' });
+      }
+
+      const userCounts = profiles?.reduce((acc: any, profile: any) => {
+        acc.total_users = (acc.total_users || 0) + 1;
+        if (profile.role === 'creator') acc.creators = (acc.creators || 0) + 1;
+        if (profile.role === 'viewer') acc.viewers = (acc.viewers || 0) + 1;
+        return acc;
+      }, {}) || { total_users: 0, creators: 0, viewers: 0 };
+
+      // Get video statistics
+      const { data: videos, error: videosError } = await supabase
+        .from('videos')
+        .select('price, is_free');
+
+      if (videosError) {
+        console.error('Error fetching videos:', videosError);
+        return res.status(500).json({ error: 'Failed to fetch video stats' });
+      }
+
+      const videoStats = videos?.reduce((acc: any, video: any) => {
+        acc.total_videos = (acc.total_videos || 0) + 1;
+        if (video.is_free) acc.free_videos = (acc.free_videos || 0) + 1;
+        else acc.paid_videos = (acc.paid_videos || 0) + 1;
+        return acc;
+      }, {}) || { total_videos: 0, free_videos: 0, paid_videos: 0 };
+
+      // Get purchase statistics
+      const { data: purchases, error: purchasesError } = await supabase
+        .from('purchases')
+        .select('amount_total, platform_fee_amount');
+
+      if (purchasesError) {
+        console.error('Error fetching purchases:', purchasesError);
+        return res.status(500).json({ error: 'Failed to fetch purchase stats' });
+      }
+
+      const purchaseStats = purchases?.reduce((acc: any, purchase: any) => {
+        acc.total_purchases = (acc.total_purchases || 0) + 1;
+        acc.total_revenue = (acc.total_revenue || 0) + purchase.amount_total;
+        acc.platform_fees = (acc.platform_fees || 0) + purchase.platform_fee_amount;
+        return acc;
+      }, {}) || { total_purchases: 0, total_revenue: 0, platform_fees: 0 };
+
+      const avgPurchase = purchaseStats.total_purchases > 0 
+        ? purchaseStats.total_revenue / purchaseStats.total_purchases 
+        : 0;
+
+      res.json({
+        ...userCounts,
+        ...videoStats,
+        ...purchaseStats,
+        avg_purchase: avgPurchase
+      });
+
+    } catch (error: any) {
+      console.error('Admin stats error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Admin user list (excluding admin)
+  app.get("/api/admin/users", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { data: users, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('role', 'master_admin')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        return res.status(500).json({ error: 'Failed to fetch users' });
+      }
+
+      res.json(users || []);
+    } catch (error: any) {
+      console.error('Admin users error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Admin video list with creator info
+  app.get("/api/admin/videos", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { data: videos, error } = await supabase
+        .from('videos')
+        .select(`
+          *,
+          profiles!videos_creator_id_fkey (
+            display_name,
+            email,
+            role
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching videos:', error);
+        return res.status(500).json({ error: 'Failed to fetch videos' });
+      }
+
+      // Filter out videos from admin accounts and format response
+      const filteredVideos = videos?.filter((video: any) => 
+        video.profiles?.role !== 'master_admin'
+      ).map((video: any) => ({
+        ...video,
+        creator_name: video.profiles?.display_name || video.profiles?.email || 'Unknown'
+      })) || [];
+
+      res.json(filteredVideos);
+    } catch (error: any) {
+      console.error('Admin videos error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Admin purchase list with details
+  app.get("/api/admin/purchases", async (req: Request, res: Response) => {
+    try {
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+
+      const { data: purchases, error } = await supabase
+        .from('purchases')
+        .select(`
+          *,
+          videos (
+            title,
+            profiles!videos_creator_id_fkey (
+              display_name,
+              email,
+              role
+            )
+          ),
+          profiles!purchases_profile_id_fkey (
+            display_name,
+            email,
+            role
+          )
+        `)
+        .order('purchased_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Error fetching purchases:', error);
+        return res.status(500).json({ error: 'Failed to fetch purchases' });
+      }
+
+      // Filter out purchases involving admin accounts and format response
+      const filteredPurchases = purchases?.filter((purchase: any) => 
+        purchase.videos?.profiles?.role !== 'master_admin' &&
+        purchase.profiles?.role !== 'master_admin'
+      ).map((purchase: any) => ({
+        ...purchase,
+        video_title: purchase.videos?.title || 'Unknown Video',
+        creator_name: purchase.videos?.profiles?.display_name || purchase.videos?.profiles?.email || 'Unknown Creator',
+        buyer_email: purchase.profiles?.email || 'Unknown Buyer'
+      })) || [];
+
+      res.json(filteredPurchases);
+    } catch (error: any) {
+      console.error('Admin purchases error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 

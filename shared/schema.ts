@@ -43,7 +43,7 @@ export const purchases = pgTable("purchases", {
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
   email: text("email").notNull().unique(),
-  role: text("role", { enum: ["creator", "viewer"] }).notNull().default("viewer"),
+  role: text("role", { enum: ["creator", "viewer", "master_admin"] }).notNull().default("viewer"),
   display_name: text("display_name"),
   tagline: text("tagline"),
   bio: text("bio"),

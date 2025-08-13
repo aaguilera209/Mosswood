@@ -7,7 +7,7 @@ import { Link } from 'wouter';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireRole?: 'creator' | 'user';
+  requireRole?: 'creator' | 'viewer' | 'master_admin';
 }
 
 export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
