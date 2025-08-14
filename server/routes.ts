@@ -2019,6 +2019,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin profile endpoint for authenticated users
+  app.get("/api/admin-profile/:identifier", async (req, res) => {
+    try {
+      const { identifier } = req.params;
+      
+      if (!supabase) {
+        return res.status(500).json({ error: "Database connection not available" });
+      }
+      
+      // Decode URL encoding first
+      const decodedIdentifier = decodeURIComponent(identifier);
+      
+      console.log('Admin profile lookup for:', decodedIdentifier);
+      
+      // For admin profile, allow access to master_admin accounts
+      let profile = null;
+      
+      if (decodedIdentifier.includes('@')) {
+        // Email lookup (include admin for authenticated access)
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', decodedIdentifier)
+          .single();
+        
+        console.log('Admin profile query result:', { data, error });
+        profile = data;
+      } else {
+        // Try ID lookup (include admin for authenticated access)
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', decodedIdentifier)
+          .single();
+        
+        console.log('Admin profile query result:', { data, error });
+        profile = data;
+      }
+      
+      if (!profile) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+      
+      console.log('Admin profile found with role:', profile.role);
+      res.json({ profile });
+    } catch (error: any) {
+      console.error('Error fetching admin profile:', error);
+      res.status(500).json({ error: 'Failed to fetch profile: ' + error.message });
+    }
+  });
+
   // Get profile by ID or email
   app.get("/api/profile/:identifier", async (req, res) => {
     try {

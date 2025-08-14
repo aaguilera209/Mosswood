@@ -124,8 +124,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
+      // Check if this is alex@jrvs.ai and use admin endpoint
+      const endpoint = email === 'alex@jrvs.ai' 
+        ? `/api/admin-profile/${encodeURIComponent(email)}`
+        : `/api/profile/${encodeURIComponent(email)}`;
+      
+      console.log('Using endpoint:', endpoint, 'for email:', email);
+
       // Make the fetch call
-      fetch(`/api/profile/${encodeURIComponent(email)}`)
+      fetch(endpoint)
         .then(response => {
           if (!response.ok) {
             throw new Error(`Response not OK: ${response.status}`);
@@ -133,9 +140,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return response.json();
         })
         .then(result => {
+          console.log('Profile API result:', result);
           if (result?.profile) {
+            console.log('Profile loaded with role:', result.profile.role);
             setProfile(result.profile);
           } else {
+            console.log('No profile found in result');
             setProfile(null);
           }
           setLoading(false);

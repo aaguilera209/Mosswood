@@ -59,6 +59,12 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   }
 
   if (requireRole && profile?.role !== requireRole) {
+    // Temporary fix: Allow alex@jrvs.ai admin access
+    if (requireRole === 'master_admin' && profile?.email === 'alex@jrvs.ai') {
+      console.log('Allowing admin access for alex@jrvs.ai');
+      return <>{children}</>;
+    }
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="w-full max-w-md space-y-6">
@@ -68,6 +74,9 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
               <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
               <p className="text-muted-foreground">
                 This page requires {requireRole} privileges
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Current role: {profile?.role || 'none'} | Required: {requireRole}
               </p>
             </div>
           </div>

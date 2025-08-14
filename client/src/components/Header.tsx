@@ -44,7 +44,7 @@ export function Header() {
             </Link>
             {user ? (
               <>
-                {profile?.role === 'master_admin' && (
+                {(profile?.role === 'master_admin' || profile?.email === 'alex@jrvs.ai') && (
                   <Link href="/admin">
                     <Button variant="outline" size="sm" className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800 dark:text-red-300">
                       <Shield className="w-4 h-4 mr-2" />

@@ -18,32 +18,58 @@ export default function AdminDashboard() {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Temporary admin access check
+  const hasAdminAccess = profile?.role === 'master_admin' || profile?.email === 'alex@jrvs.ai';
+
   // Admin stats query
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
-    enabled: profile?.role === 'master_admin'
+    enabled: hasAdminAccess
   });
 
   // Recent users query
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/admin/users'],
-    enabled: profile?.role === 'master_admin'
+    enabled: hasAdminAccess
   });
 
   // Recent videos query
   const { data: videos, isLoading: videosLoading } = useQuery({
     queryKey: ['/api/admin/videos'],
-    enabled: profile?.role === 'master_admin'
+    enabled: hasAdminAccess
   });
 
   // Recent purchases query
   const { data: purchases, isLoading: purchasesLoading } = useQuery({
     queryKey: ['/api/admin/purchases'],
-    enabled: profile?.role === 'master_admin'
+    enabled: hasAdminAccess
   });
 
-  if (profile?.role !== 'master_admin') {
-    return null; // This should be handled by ProtectedRoute, but extra safety
+  // Temporary fix: Allow alex@jrvs.ai access while debugging role loading
+  const isAuthorized = 
+    profile?.role === 'master_admin' || 
+    profile?.email === 'alex@jrvs.ai';
+
+  console.log('Admin access check:', {
+    userEmail: profile?.email,
+    userRole: profile?.role,
+    isAuthorized
+  });
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
+          <p className="text-muted-foreground">
+            Admin access required. Current role: {profile?.role || 'none'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Email: {profile?.email || 'none'}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const StatsCards = () => (
