@@ -292,6 +292,27 @@ export function VideoUploadModal({ isOpen, onClose, redirectTo = 'dashboard' }: 
       console.log('File uploaded successfully via Supabase');
       setUploadProgress(70);
 
+      // Extract video metadata before saving
+      console.log('Extracting video metadata...');
+      let duration = 0;
+      let thumbnailBlob: Blob | null = null;
+      
+      try {
+        duration = await getVideoDuration(formData.file!);
+        console.log('Video duration:', duration, 'seconds');
+      } catch (error) {
+        console.warn('Could not extract video duration:', error);
+      }
+      
+      try {
+        thumbnailBlob = await generateThumbnail(formData.file!);
+        console.log('Thumbnail generated successfully');
+      } catch (error) {
+        console.warn('Could not generate thumbnail:', error);
+      }
+      
+      const fileSize = formData.file!.size;
+      
       // Parse tags from comma-separated string
       const tagsArray = formData.tags
         .split(',')
