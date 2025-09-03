@@ -1,0 +1,87 @@
+Supabase Security Alert - Critical Database Issues
+I received security alerts from Supabase indicating critical errors in my Project Mosswood database that require immediate attention. The issues are related to Row Level Security (RLS) policies on public tables. I need your help to systematically investigate, fix, and thoroughly test these security vulnerabilities.
+Current Issues Identified:
+ERRORS (3 total):
+
+RLS Disabled on Public Tables - Multiple public tables have Row Level Security disabled, which could result in unauthorized database access:
+
+public.users
+public.creators
+public.followers
+
+
+
+WARNINGS (6 total):
+
+Function Search Path Mutable - Multiple functions have mutable search paths that are not set:
+
+public.handle_new_user
+public.update_updated_at_column
+public.update_daily_analytics
+public.handle_user_login
+
+
+Auth OTP Long Expiry - OTP expiry exceeds recommended threshold
+Leaked Password Protection Disabled - Password protection is currently disabled
+
+INFO/SUGGESTIONS (2 total):
+
+RLS Enabled No Policy - Tables with RLS enabled but no policies created:
+
+public.admin_audit_log
+public.platform_settings
+
+
+
+Required Actions:
+
+Immediate Security Fixes:
+
+Enable RLS on all public tables (users, creators, followers)
+Create appropriate RLS policies for each table based on our application's access patterns
+Review and implement proper policies for admin_audit_log and platform_settings tables
+
+
+Function Security:
+
+Set proper search paths for all identified functions
+Ensure functions are using appropriate security definer settings
+Review function permissions and access controls
+
+
+Authentication Security:
+
+Review and adjust OTP expiry settings to recommended values
+Enable leaked password protection
+
+
+Testing Requirements:
+
+After implementing fixes, create comprehensive tests for:
+
+Each RLS policy to ensure proper access control
+Function execution with different user roles
+Authentication flows with new security settings
+
+
+Test unauthorized access attempts
+Verify that legitimate users can still perform required operations
+
+
+Documentation:
+
+Document all changes made
+Create a security policy reference for future development
+Note any application code changes required due to new policies
+
+
+
+Additional Context:
+
+Database ID: kdtjkbgnntdtclzrbphd
+This is a production database, so please be careful with migrations
+Ensure backward compatibility where possible
+If breaking changes are necessary, provide a migration strategy
+
+Please start by analyzing the current database schema and existing policies (if any), then proceed with implementing the fixes in a systematic manner. Prioritize the ERRORS first, followed by WARNINGS, then INFO items. After each change, verify that the application functionality remains intact.
+Provide regular updates on progress and any potential impacts to the application functionality. If you encounter any issues that might affect production users, alert me before proceeding.
