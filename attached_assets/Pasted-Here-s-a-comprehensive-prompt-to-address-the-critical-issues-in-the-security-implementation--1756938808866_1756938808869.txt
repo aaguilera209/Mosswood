@@ -1,0 +1,125 @@
+Here's a comprehensive prompt to address the critical issues in the security implementation:
+
+---
+
+## Critical Security Implementation Fixes Required
+
+The recent security fixes have introduced several breaking changes and logical errors that need immediate correction. This prompt addresses critical issues found during code review.
+
+### PRIORITY 1: Fix Broken Supabase Integration
+
+The Supabase client integration was incorrectly modified. Please:
+1. Verify the correct Supabase JavaScript client import/configuration
+2. Ensure the client is properly initialized with the correct version
+3. Test the connection to confirm it's working
+
+### PRIORITY 2: Fix Overly Restrictive and Broken RLS Policies
+
+The current RLS policies are too restrictive and contain logical errors. They need to be redesigned with proper user access patterns:
+
+**For the `profiles` table:**
+- Anyone should be able to VIEW profiles (public profiles feature)
+- Users should be able to UPDATE only their own profile (not just master_admin)
+- Remove the unnecessary `role = 'master_admin'` restriction for basic profile operations
+
+**For the `videos` table:**
+- Creators should be able to manage their own videos without needing master_admin role
+- Public videos should be viewable by everyone
+- The current policy logic with `video_id = video_views.video_id` makes no sense - fix this
+
+**For the `followers` table:**
+- Regular users need to be able to follow/unfollow others
+- Remove the master_admin requirement for basic social features
+
+**For the `purchases` table:**
+- Users should see their own purchases
+- Creators should see sales of their content
+
+### PRIORITY 3: Implement Proper Role System
+
+Before using role-based policies, we need a proper role system:
+
+1. Add a `user_role` column to the profiles table if it doesn't exist:
+```sql
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS 
+  user_role text DEFAULT 'user' 
+  CHECK (user_role IN ('user', 'creator', 'admin', 'master_admin'));
+```
+
+2. Create a system for role assignment and validation
+3. Document how roles are assigned and what permissions each role has
+
+### PRIORITY 4: Fix SQL Syntax Errors
+
+Review and fix all SQL scripts for:
+- Missing closing parentheses in verification queries
+- Incorrect LANGUAGE declarations (should be `LANGUAGE plpgsql` not `LANGUAGE plpgsql AS $$`)
+- Incomplete CASE statements
+- Fix the verification query that checks trigger existence
+
+### PRIORITY 5: Correct Function Security Implementation
+
+For each function (`handle_new_user`, `update_updated_at_column`, `update_daily_analytics`, `handle_user_login`):
+
+1. Use correct syntax:
+```sql
+CREATE OR REPLACE FUNCTION function_name()
+RETURNS trigger
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- function body here
+  RETURN NEW;
+END;
+$$;
+```
+
+2. Ensure functions reference existing columns and tables
+3. Add proper error handling
+
+### PRIORITY 6: Fix Admin Audit Logging
+
+The `admin_audit_log` table and related triggers have issues:
+- The trigger references non-existent columns
+- The audit log structure needs to match what's actually being logged
+- Ensure the logging doesn't break normal operations
+
+### TESTING REQUIREMENTS
+
+After making these fixes:
+
+1. **Create a test script** that verifies:
+   - Users can create and update their own profiles
+   - Creators can upload and manage their own videos
+   - Users can follow/unfollow others
+   - Purchase functionality works correctly
+   - Admin functions don't interfere with normal user operations
+
+2. **Test each user flow:**
+   - New user registration
+   - Profile updates
+   - Video uploads (for creators)
+   - Following/unfollowing
+   - Making purchases
+   - Viewing content
+
+3. **Verify the application still works:**
+   - Test the frontend connection to Supabase
+   - Ensure all API calls succeed
+   - Check that existing features aren't broken
+
+### IMPORTANT NOTES
+
+1. **DO NOT apply overly restrictive policies that break basic functionality**
+2. **Always test in a staging environment first**
+3. **Ensure backward compatibility** - existing users should still be able to use the platform
+4. **Document all changes** clearly
+5. **If you're unsure about a restriction, err on the side of maintaining functionality**
+
+Please review the existing security implementation, fix these critical issues, and provide a summary of what was changed and why. Focus on creating a security model that protects data while maintaining full application functionality.
+
+---
+
+This prompt should help the agent correct the critical issues while maintaining a working application.
