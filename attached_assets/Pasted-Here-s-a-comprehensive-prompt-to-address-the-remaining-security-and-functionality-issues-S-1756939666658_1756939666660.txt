@@ -1,0 +1,175 @@
+Here's a comprehensive prompt to address the remaining security and functionality issues:
+
+---
+
+## Security Implementation Refinement - Final Issues to Address
+
+The recent security fixes are much improved, but several issues remain that could impact functionality and security. Please address these specific problems:
+
+### CRITICAL ISSUE 1: Fix Admin Check Logic
+
+The current admin check in multiple policies has flawed logic:
+```sql
+WHERE admin_check_id = auth.uid() AND admin_check_role = 'master_admin'
+```
+
+This checks if the admin is checking themselves, not if the current user IS an admin. Fix this to:
+```sql
+WHERE admin_check.id = auth.uid() AND admin_check.role = 'master_admin'
+```
+
+Apply this fix to ALL policies that check for admin access.
+
+### CRITICAL ISSUE 2: Video Views Security Vulnerability
+
+The current policy allows anyone to insert fake view counts:
+```sql
+CREATE POLICY "video_views_insert_track" ON video_views
+FOR INSERT WITH CHECK (true);
+```
+
+Change this to verify the viewer:
+```sql
+CREATE POLICY "video_views_insert_track" ON video_views
+FOR INSERT WITH CHECK (auth.uid() = viewer_id);
+```
+
+### CRITICAL ISSUE 3: Email Subscription Management
+
+Users cannot manage their own email subscriptions. Add these policies:
+
+```sql
+-- Allow users to view their own subscriptions
+CREATE POLICY "email_subscribers_user_view_own" ON email_subscribers
+FOR SELECT USING (auth.uid() = subscriber_id);
+
+-- Allow users to delete their own subscriptions (unsubscribe)
+CREATE POLICY "email_subscribers_user_delete_own" ON email_subscribers
+FOR DELETE USING (auth.uid() = subscriber_id);
+```
+
+### ISSUE 4: Add Error Handling to Functions
+
+All functions need proper error handling. Update each function to include exception handling:
+
+```sql
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS trigger
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  BEGIN
+    INSERT INTO public.profiles (id, email, role)
+    VALUES (
+      NEW.id,
+      NEW.email,
+      'user'  -- Default role
+    );
+    RETURN NEW;
+  EXCEPTION
+    WHEN others THEN
+      RAISE LOG 'Error in handle_new_user: %', SQLERRM;
+      RETURN NEW;  -- Return NEW to avoid breaking auth flow
+  END;
+END;
+$$;
+```
+
+Apply similar error handling to ALL trigger functions.
+
+### ISSUE 5: Performance Optimizations
+
+Add these indexes to improve query performance:
+
+```sql
+-- Index for role-based queries
+CREATE INDEX idx_profiles_user_role ON profiles(user_role);
+
+-- Index for creator content queries
+CREATE INDEX idx_videos_creator_id ON videos(creator_id);
+
+-- Index for analytics lookups
+CREATE INDEX idx_analytics_daily_video_date ON analytics_daily(video_id, date);
+
+-- Index for subscription queries
+CREATE INDEX idx_email_subscribers_subscriber ON email_subscribers(subscriber_id);
+CREATE INDEX idx_email_subscribers_creator ON email_subscribers(creator_id);
+```
+
+### ISSUE 6: Analytics Security Refinement
+
+The analytics_daily table service role policies are too permissive. Update to be more specific:
+
+```sql
+-- Remove the blanket service role policy and replace with:
+CREATE POLICY "analytics_daily_service_increment" ON analytics_daily
+FOR UPDATE USING (
+  auth.role() = 'service_role' 
+  -- Service role can only increment, not arbitrarily modify
+) WITH CHECK (
+  total_views >= OLD.total_views AND
+  unique_viewers >= OLD.unique_viewers
+);
+```
+
+### ISSUE 7: View Count Validation
+
+Add a check constraint to prevent negative or unrealistic view counts:
+
+```sql
+ALTER TABLE video_views 
+ADD CONSTRAINT valid_watch_time CHECK (
+  watch_time_total >= 0 AND 
+  watch_time_total <= 86400 -- Max 24 hours per view
+);
+
+ALTER TABLE analytics_daily
+ADD CONSTRAINT valid_counts CHECK (
+  total_views >= 0 AND
+  unique_viewers >= 0 AND
+  unique_viewers <= total_views
+);
+```
+
+### Testing Requirements
+
+After implementing these fixes:
+
+1. **Test Admin Functions**: 
+   - Verify admins can manage all content
+   - Verify non-admins cannot access admin functions
+
+2. **Test View Tracking**:
+   - Confirm users can only track their own views
+   - Verify view counts increment properly
+   - Test that fake views cannot be inserted
+
+3. **Test Email Subscriptions**:
+   - Users can subscribe to creators
+   - Users can unsubscribe themselves
+   - Creators can view their subscriber lists
+   - Users cannot modify other users' subscriptions
+
+4. **Performance Testing**:
+   - Run EXPLAIN ANALYZE on common queries
+   - Verify indexes are being used
+   - Check for any slow queries
+
+5. **Error Handling**:
+   - Test function behavior when errors occur
+   - Verify errors are logged but don't break user flows
+
+### Important Notes
+
+- Make these changes incrementally and test after each change
+- Backup the database before applying changes
+- Consider running these in a staging environment first
+- Document any changes that might affect application code
+
+Please implement these fixes carefully and report any issues encountered. The goal is to maintain security while ensuring all user features work correctly.
+
+---
+
+This prompt addresses all the identified issues while being specific and actionable.
